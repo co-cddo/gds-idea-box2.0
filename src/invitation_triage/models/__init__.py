@@ -1,3 +1,5 @@
+from invitation_triage.models.calendar import CalendarEvent
+from invitation_triage.models.decision import TriagedDecision
 from invitation_triage.models.email import RawEmail, SafeEmail
 from invitation_triage.models.invitation import EventType, Invitation, NotInvitation
 from invitation_triage.models.persona import MinisterPersona
@@ -9,4 +11,6 @@ __all__ = [
     "Invitation",
     "NotInvitation",
     "MinisterPersona",
+    "TriagedDecision",
+    "CalendarEvent",
 ]

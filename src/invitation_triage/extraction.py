@@ -1,19 +1,7 @@
-"""
-Invitation extraction using LLM.
-"""
-
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.bedrock import BedrockConverseModel
-from pydantic_ai.providers.bedrock import BedrockProvider
 
-from invitation_triage.config import SONNET_45, bedrock_client
+from invitation_triage.config import model
 from invitation_triage.models import Invitation, NotInvitation, SafeEmail
-
-# Model configuration
-model = BedrockConverseModel(
-    SONNET_45, provider=BedrockProvider(bedrock_client=bedrock_client)
-)
-
 
 # System prompt
 EXTRACTION_INSTRUCTIONS = """

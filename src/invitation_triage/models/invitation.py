@@ -22,7 +22,8 @@ class NotInvitation(BaseModel):
         description="Unique identifier linking back to the source email"
     )
     reason: str = Field(
-        description="Brief explanation of why this is not an invitation (e.g., 'informational update', 'thank you note', 'forwarded document')"
+        description="Brief explanation of why this is not an invitation "
+        "(e.g., 'informational update', 'thank you note', 'forwarded document')"
     )
 
 
@@ -48,7 +49,8 @@ class Invitation(BaseModel):
     )
 
     proposed_times: list[str] = Field(
-        description="Proposed date/time options as raw text (e.g., '15th February 2026, 6:00 PM', 'week of March 4')"
+        description="Proposed date/time options as raw text "
+        "(e.g., '15th February 2026, 6:00 PM', 'week of March 4')"
     )
 
     is_time_flexible: bool = Field(
@@ -56,17 +58,20 @@ class Invitation(BaseModel):
     )
 
     location: str = Field(
-        description="Event location as stated in email (e.g., 'The Royal Society, London' or 'Virtual via Zoom')"
+        description="Event location as stated in email "
+        "(e.g., 'The Royal Society, London' or 'Virtual via Zoom')"
     )
 
     deadline_to_respond: str | None = Field(
         default=None,
-        description="Deadline for responding if mentioned (as raw text, e.g., '5th February 2026')",
+        description="Deadline for responding if mentioned "
+        "(as raw text, e.g., '5th February 2026')",
     )
 
     overall_confidence: float | None = Field(
         default=None,
         ge=0.0,
         le=1.0,
-        description="LLM's confidence in extraction quality (0.0-1.0). 1.0 = very clear, 0.5 = some ambiguity, 0.2 = lots of guessing",
+        description="LLM's confidence in extraction quality (0.0-1.0). "
+        "1.0 = very clear, 0.5 = some ambiguity, 0.2 = lots of guessing",
     )
