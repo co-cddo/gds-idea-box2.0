@@ -7,7 +7,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from invitation_triage.models.email import RawEmail, SafeEmail
+from invitation_triage.models import RawEmail, SafeEmail
 
 # ============================================================================
 # RawEmail Tests
