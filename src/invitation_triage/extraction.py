@@ -1,6 +1,8 @@
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
 from invitation_triage.config import model
+from invitation_triage.exceptions import ExtractionError
 from invitation_triage.models import Invitation, NotInvitation, SafeEmail
 
 # System prompt
@@ -47,6 +49,9 @@ async def extract_invitation(safe_email: SafeEmail) -> Invitation | NotInvitatio
 
     Returns:
         Either an Invitation with extracted details or NotInvitation with reason
+
+    Raises:
+        ExtractionError: If extraction fails due to LLM errors, validation errors, or unexpected issues
     """
 
     agent = Agent(
@@ -70,7 +75,20 @@ RECEIVED: {email.received_date}
 HAS ATTACHMENTS: {email.has_attachments}
 """
 
-    result = await agent.run(
-        "Extract invitation details from this email.", deps=safe_email
-    )
-    return result.output
+    try:
+        result = await agent.run(
+            "Extract invitation details from this email.", deps=safe_email
+        )
+        return result.output
+    except (ModelRetry, UnexpectedModelBehavior) as e:
+        raise ExtractionError(
+            f"LLM failed to extract invitation from email: {str(e)}",
+            email_id=safe_email.email_id,
+            cause=e,
+        ) from e
+    except Exception as e:
+        raise ExtractionError(
+            f"Unexpected error during invitation extraction: {str(e)}",
+            email_id=safe_email.email_id,
+            cause=e,
+        ) from e
