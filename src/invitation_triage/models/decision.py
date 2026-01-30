@@ -28,11 +28,12 @@ class TriagedDecision(BaseModel):
     )
 
     reason: str = Field(
-        description="Short explanation for the decision (1-2 sentences)"
+        min_length=10,
+        description="Short explanation for the decision (1-2 sentences)",
     )
 
     draft_response: str = Field(
-        description="Draft email response ready to send or adapt"
+        min_length=20, description="Draft email response ready to send or adapt"
     )
 
     affected_events: list[str] = Field(

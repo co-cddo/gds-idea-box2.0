@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class EventType(str, Enum):
@@ -22,8 +22,9 @@ class NotInvitation(BaseModel):
         description="Unique identifier linking back to the source email"
     )
     reason: str = Field(
+        min_length=10,
         description="Brief explanation of why this is not an invitation "
-        "(e.g., 'informational update', 'thank you note', 'forwarded document')"
+        "(e.g., 'informational update', 'thank you note', 'forwarded document')",
     )
 
 
@@ -38,10 +39,13 @@ class Invitation(BaseModel):
 
     host_org: str = Field(description="Organization or individual hosting the event")
 
-    purpose: str = Field(description="Stated purpose or description of the event")
+    purpose: str = Field(
+        min_length=10, description="Stated purpose or description of the event"
+    )
 
     event_summary: str = Field(
-        description="Concise 2-3 sentence summary of the event for quick review"
+        min_length=10,
+        description="Concise 2-3 sentence summary of the event for quick review",
     )
 
     topics: list[str] = Field(
@@ -75,3 +79,11 @@ class Invitation(BaseModel):
         description="LLM's confidence in extraction quality (0.0-1.0). "
         "1.0 = very clear, 0.5 = some ambiguity, 0.2 = lots of guessing",
     )
+
+    @field_validator("proposed_times")
+    @classmethod
+    def validate_proposed_times_not_empty(cls, v: list[str]) -> list[str]:
+        """Ensure at least one proposed time is provided."""
+        if not v or len(v) == 0:
+            raise ValueError("proposed_times must contain at least one time option")
+        return v

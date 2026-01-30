@@ -5,7 +5,7 @@ Calendar event models.
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class CalendarEvent(BaseModel):
@@ -38,3 +38,13 @@ class CalendarEvent(BaseModel):
     description: str | None = Field(
         default=None, description="Additional details about the event"
     )
+
+    @model_validator(mode="after")
+    def validate_time_range(self) -> "CalendarEvent":
+        """Ensure start_time is before end_time."""
+        if self.start_time >= self.end_time:
+            raise ValueError(
+                f"start_time ({self.start_time}) must be before "
+                f"end_time ({self.end_time})"
+            )
+        return self
