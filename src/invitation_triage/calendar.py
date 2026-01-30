@@ -8,6 +8,7 @@ In production, this would integrate with Outlook/Google Calendar API.
 from datetime import datetime, timedelta
 from typing import Protocol
 
+from invitation_triage.exceptions import CalendarError
 from invitation_triage.models import CalendarEvent
 
 
@@ -214,13 +215,28 @@ def get_calendar_events(
     Returns:
         List of CalendarEvent instances
 
+    Raises:
+        CalendarError: If date range is invalid or provider fails
+
     Note:
         In production, replace MockCalendar with:
         - OutlookCalendar(credentials)
         - GoogleCalendar(credentials)
         - CalendarAPIClient(api_key)
     """
+    # Validate date range
+    if start_date > end_date:
+        raise CalendarError(
+            f"Invalid date range: start_date ({start_date}) must be <= end_date ({end_date})"
+        )
+
     if provider is None:
         provider = MockCalendar()
 
-    return provider.get_events(start_date, end_date)
+    try:
+        return provider.get_events(start_date, end_date)
+    except Exception as e:
+        # Wrap provider exceptions in CalendarError
+        raise CalendarError(
+            f"Calendar provider failed to retrieve events: {str(e)}", cause=e
+        ) from e
