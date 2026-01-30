@@ -1,9 +1,13 @@
+import logging
+
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
 from invitation_triage.config import model
 from invitation_triage.exceptions import ExtractionError
 from invitation_triage.models import Invitation, NotInvitation, SafeEmail
+
+logger = logging.getLogger(__name__)
 
 # System prompt
 EXTRACTION_INSTRUCTIONS = """
@@ -75,18 +79,57 @@ RECEIVED: {email.received_date}
 HAS ATTACHMENTS: {email.has_attachments}
 """
 
+    logger.info(
+        "Extracting invitation from email",
+        extra={"email_id": safe_email.email_id, "subject": safe_email.subject},
+    )
+
     try:
         result = await agent.run(
             "Extract invitation details from this email.", deps=safe_email
         )
-        return result.output
+        output = result.output
+
+        # Log result type
+        result_type = type(output).__name__
+        logger.info(
+            f"Extraction complete: {result_type}",
+            extra={"email_id": safe_email.email_id, "result_type": result_type},
+        )
+
+        if isinstance(output, NotInvitation):
+            logger.debug(
+                f"Not an invitation: {output.reason}",
+                extra={"email_id": safe_email.email_id, "reason": output.reason},
+            )
+        elif isinstance(output, Invitation):
+            logger.debug(
+                f"Invitation extracted: {output.event_type} from {output.host_org}",
+                extra={
+                    "email_id": safe_email.email_id,
+                    "event_type": output.event_type,
+                    "host_org": output.host_org,
+                },
+            )
+
+        return output
     except (ModelRetry, UnexpectedModelBehavior) as e:
+        logger.error(
+            f"LLM failed to extract invitation: {str(e)}",
+            extra={"email_id": safe_email.email_id},
+            exc_info=True,
+        )
         raise ExtractionError(
             f"LLM failed to extract invitation from email: {str(e)}",
             email_id=safe_email.email_id,
             cause=e,
         ) from e
     except Exception as e:
+        logger.error(
+            f"Unexpected extraction error: {str(e)}",
+            extra={"email_id": safe_email.email_id},
+            exc_info=True,
+        )
         raise ExtractionError(
             f"Unexpected error during invitation extraction: {str(e)}",
             email_id=safe_email.email_id,

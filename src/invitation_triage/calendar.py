@@ -5,11 +5,14 @@ Mock implementation returns realistic calendar events for testing.
 In production, this would integrate with Outlook/Google Calendar API.
 """
 
+import logging
 from datetime import datetime, timedelta
 from typing import Protocol
 
 from invitation_triage.exceptions import CalendarError
 from invitation_triage.models import CalendarEvent
+
+logger = logging.getLogger(__name__)
 
 
 class CalendarProvider(Protocol):
@@ -226,17 +229,40 @@ def get_calendar_events(
     """
     # Validate date range
     if start_date > end_date:
+        logger.error(
+            f"Invalid date range: start ({start_date}) > end ({end_date})"
+        )
         raise CalendarError(
-            f"Invalid date range: start_date ({start_date}) must be <= end_date ({end_date})"
+            f"Invalid date range: start_date ({start_date}) "
+            f"must be <= end_date ({end_date})"
         )
 
     if provider is None:
         provider = MockCalendar()
 
+    logger.debug(
+        f"Querying calendar: {start_date} to {end_date}",
+        extra={
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "provider": type(provider).__name__,
+        },
+    )
+
     try:
-        return provider.get_events(start_date, end_date)
+        events = provider.get_events(start_date, end_date)
+        logger.info(
+            f"Retrieved {len(events)} calendar events",
+            extra={"event_count": len(events)},
+        )
+        return events
     except Exception as e:
+        logger.error(
+            f"Calendar provider failed: {str(e)}",
+            exc_info=True,
+        )
         # Wrap provider exceptions in CalendarError
         raise CalendarError(
-            f"Calendar provider failed to retrieve events: {str(e)}", cause=e
+            f"Calendar provider failed to retrieve events: {str(e)}",
+            cause=e,
         ) from e

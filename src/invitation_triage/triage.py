@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -16,6 +17,8 @@ from invitation_triage.models import (
     MinisterPersona,
     TriagedDecision,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class TriageDeps(BaseModel):
@@ -171,13 +174,17 @@ async def check_calendar(
     Raises:
         CalendarError: If datetime parsing fails or calendar query fails
     """
-    print(f"   📅 Checking calendar: {start_datetime} to {end_datetime}")
+    logger.debug(f"Calendar check requested: {start_datetime} to {end_datetime}")
 
     # Parse ISO datetime strings - this is the tool's responsibility
     try:
         start = datetime.fromisoformat(start_datetime.replace(" ", "T"))
         end = datetime.fromisoformat(end_datetime.replace(" ", "T"))
     except (ValueError, AttributeError) as e:
+        logger.error(
+            f"Invalid datetime format: start='{start_datetime}', "
+            f"end='{end_datetime}'"
+        )
         raise CalendarError(
             f"Invalid datetime format. Expected 'YYYY-MM-DD HH:MM', "
             f"got start='{start_datetime}', end='{end_datetime}'",
@@ -185,7 +192,9 @@ async def check_calendar(
         ) from e
 
     # Call calendar function - CalendarError will propagate naturally
-    return get_calendar_events(start, end, provider=MockCalendar())
+    events = get_calendar_events(start, end, provider=MockCalendar())
+    logger.debug(f"Found {len(events)} events in requested time range")
+    return events
 
 
 async def triage_invitation(
@@ -205,6 +214,16 @@ async def triage_invitation(
         TriageError: If triage fails due to LLM errors or unexpected issues
         CalendarError: If calendar checking fails (propagated from tool)
     """
+    logger.info(
+        f"Triaging invitation from {invitation.host_org}",
+        extra={
+            "email_id": invitation.email_id,
+            "host_org": invitation.host_org,
+            "event_type": invitation.event_type,
+            "minister": persona.name,
+        },
+    )
+
     deps = TriageDeps(persona=persona, invite=invitation)
 
     try:
@@ -212,17 +231,46 @@ async def triage_invitation(
             "Please triage this invitation and provide your recommendation.",
             deps=deps,
         )
-        return result.output
+        decision = result.output
+
+        logger.info(
+            f"Triage complete: {decision.decision} (priority: {decision.priority})",
+            extra={
+                "email_id": invitation.email_id,
+                "decision": decision.decision,
+                "priority": decision.priority,
+            },
+        )
+        logger.debug(
+            f"Reason: {decision.reason}",
+            extra={"email_id": invitation.email_id, "reason": decision.reason},
+        )
+
+        return decision
     except CalendarError:
         # Re-raise calendar errors as-is (already domain-specific)
+        logger.error(
+            "Calendar error during triage",
+            extra={"email_id": invitation.email_id},
+        )
         raise
     except (ModelRetry, UnexpectedModelBehavior) as e:
+        logger.error(
+            f"LLM failed during triage: {str(e)}",
+            extra={"email_id": invitation.email_id},
+            exc_info=True,
+        )
         raise TriageError(
             f"LLM failed to triage invitation: {str(e)}",
             invitation_id=invitation.email_id,
             cause=e,
         ) from e
     except Exception as e:
+        logger.error(
+            f"Unexpected triage error: {str(e)}",
+            extra={"email_id": invitation.email_id},
+            exc_info=True,
+        )
         raise TriageError(
             f"Unexpected error during invitation triage: {str(e)}",
             invitation_id=invitation.email_id,
