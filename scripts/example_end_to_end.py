@@ -11,14 +11,26 @@ Usage:
 """
 
 import asyncio
+import logging
 from datetime import datetime
 
 from invitation_triage.extraction import extract_invitation
-from invitation_triage.models import MinisterPersona, NotInvitation, RawEmail, SafeEmail
+from invitation_triage.models import (
+    MinisterPersona,
+    NotInvitation,
+    RawEmail,
+    SafeEmail,
+)
 from invitation_triage.triage import triage_invitation
 
 
 async def main():
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
     # Sample emails to process
     emails = [
         RawEmail(

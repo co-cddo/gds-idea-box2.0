@@ -6,12 +6,19 @@ Usage:
 """
 
 import asyncio
+import logging
 
 from invitation_triage.models import Invitation, MinisterPersona
 from invitation_triage.triage import triage_invitation
 
 
 async def main():
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
     # Invitation 1: High-profile AI safety reception
     invitation_1 = Invitation(
         email_id="test_001",
