@@ -2,12 +2,14 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
 from invitation_triage.calendar import (
     MockCalendar,
     get_calendar_events,
 )
 from invitation_triage.config import model
+from invitation_triage.exceptions import CalendarError, TriageError
 from invitation_triage.models import (
     CalendarEvent,
     Invitation,
@@ -152,9 +154,12 @@ async def check_calendar(
 
     Use this to check availability for the proposed meeting times.
     You decide the appropriate range based on the invitation's flexibility:
-    - Fixed time (e.g., "15th Feb, 3-4pm"): check_calendar("2026-02-15 15:00", "2026-02-15 16:00")
-    - Flexible day (e.g., "anytime Friday"): check_calendar("2026-02-14 00:00", "2026-02-14 23:59")
-    - Flexible week (e.g., "week of March 4"): check_calendar("2026-03-04 00:00", "2026-03-10 23:59")
+    - Fixed time (e.g., "15th Feb, 3-4pm"):
+      check_calendar("2026-02-15 15:00", "2026-02-15 16:00")
+    - Flexible day (e.g., "anytime Friday"):
+      check_calendar("2026-02-14 00:00", "2026-02-14 23:59")
+    - Flexible week (e.g., "week of March 4"):
+      check_calendar("2026-03-04 00:00", "2026-03-10 23:59")
 
     Args:
         start_datetime: Start of range in ISO format 'YYYY-MM-DD HH:MM'
@@ -162,14 +167,24 @@ async def check_calendar(
 
     Returns:
         List of all calendar events in that range
+
+    Raises:
+        CalendarError: If datetime parsing fails or calendar query fails
     """
-
     print(f"   📅 Checking calendar: {start_datetime} to {end_datetime}")
-    # Parse ISO datetime strings
-    start = datetime.fromisoformat(start_datetime.replace(" ", "T"))
-    end = datetime.fromisoformat(end_datetime.replace(" ", "T"))
 
-    # Call your existing calendar function
+    # Parse ISO datetime strings - this is the tool's responsibility
+    try:
+        start = datetime.fromisoformat(start_datetime.replace(" ", "T"))
+        end = datetime.fromisoformat(end_datetime.replace(" ", "T"))
+    except (ValueError, AttributeError) as e:
+        raise CalendarError(
+            f"Invalid datetime format. Expected 'YYYY-MM-DD HH:MM', "
+            f"got start='{start_datetime}', end='{end_datetime}'",
+            cause=e,
+        ) from e
+
+    # Call calendar function - CalendarError will propagate naturally
     return get_calendar_events(start, end, provider=MockCalendar())
 
 
@@ -185,11 +200,31 @@ async def triage_invitation(
 
     Returns:
         TriagedDecision with recommendation and draft response
+
+    Raises:
+        TriageError: If triage fails due to LLM errors or unexpected issues
+        CalendarError: If calendar checking fails (propagated from tool)
     """
     deps = TriageDeps(persona=persona, invite=invitation)
 
-    result = await triage_agent.run(
-        "Please triage this invitation and provide your recommendation.", deps=deps
-    )
-
-    return result.output
+    try:
+        result = await triage_agent.run(
+            "Please triage this invitation and provide your recommendation.",
+            deps=deps,
+        )
+        return result.output
+    except CalendarError:
+        # Re-raise calendar errors as-is (already domain-specific)
+        raise
+    except (ModelRetry, UnexpectedModelBehavior) as e:
+        raise TriageError(
+            f"LLM failed to triage invitation: {str(e)}",
+            invitation_id=invitation.email_id,
+            cause=e,
+        ) from e
+    except Exception as e:
+        raise TriageError(
+            f"Unexpected error during invitation triage: {str(e)}",
+            invitation_id=invitation.email_id,
+            cause=e,
+        ) from e
