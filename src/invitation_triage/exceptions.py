@@ -40,3 +40,12 @@ class PersonaError(TriageBaseException):
         self.persona_path = persona_path
         self.cause = cause
         super().__init__(message)
+
+
+class SubmissionExtractionError(TriageBaseException):
+    """Error during submission extraction from text."""
+
+    def __init__(self, message: str, text_preview: str | None = None, cause: Exception | None = None):
+        self.text_preview = text_preview
+        self.cause = cause
+        super().__init__(message)
