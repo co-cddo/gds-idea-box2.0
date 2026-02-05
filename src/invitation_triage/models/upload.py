@@ -85,21 +85,6 @@ class SafeUpload(BaseModel):
             metadata=raw_upload.metadata,
         )
 
-    def to_processed_upload(self) -> "ProcessedUpload":
-        """Convert to ProcessedUpload for classification."""
-        return ProcessedUpload(
-            upload_id=self.upload_id,
-            text=self.safe_text,
-            source_type=self.source_type,
-            filename=self.filename,
-            upload_timestamp=self.upload_timestamp,
-            metadata={
-                **self.metadata,
-                "pii_extracted": self.pii_extracted,
-                "links_extracted": self.links_extracted,
-                "file_size": self.file_size,
-            },
-        )
 
     def restore_pii(self, text: str) -> str:
         """Restore PII to redacted text (for authorized use)."""
@@ -121,53 +106,6 @@ class SafeUpload(BaseModel):
         return restored
 
 
-class ProcessedUpload(BaseModel):
-    """
-    Processed document ready for classification.
-
-    Contains extracted text and metadata from uploaded file or email.
-    Text extraction happens upstream - this model receives the already-extracted text.
-    """
-
-    upload_id: str = Field(
-        description="Unique identifier for this upload"
-    )
-
-    text: str = Field(
-        min_length=10,
-        description=(
-            "Extracted text content from document "
-            "(email body, PDF text, Word doc, etc.)"
-        )
-    )
-
-    # Metadata fields
-    source_type: str | None = Field(
-        default=None,
-        description="Type of source: 'email', 'pdf', 'docx', 'txt', etc."
-    )
-
-    filename: str | None = Field(
-        default=None,
-        description="Original filename if from file upload"
-    )
-
-    subject: str | None = Field(
-        default=None,
-        description="Email subject line if from email source"
-    )
-
-    upload_timestamp: datetime = Field(
-        default_factory=datetime.now,
-        description="When this document was uploaded/received"
-    )
-
-    metadata: dict = Field(
-        default_factory=dict,
-        description="Additional metadata (sender, attachments, file size, etc.)"
-    )
-
-
 class UploadClassification(BaseModel):
     """
     Result of classifying an upload.
@@ -177,7 +115,7 @@ class UploadClassification(BaseModel):
     """
 
     upload_id: str = Field(
-        description="Links back to the ProcessedUpload that was classified"
+        description="Links back to the SafeUpload that was classified"
     )
 
     document_type: Literal["invitation", "submission", "other"] = Field(

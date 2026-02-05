@@ -5,7 +5,6 @@ from invitation_triage.models.invitation import EventType, Invitation, NotInvita
 from invitation_triage.models.persona import MinisterPersona
 from invitation_triage.models.submission import NotSubmission, Submission
 from invitation_triage.models.upload import (
-    ProcessedUpload,
     RawUpload,
     SafeUpload,
     UploadClassification,
@@ -22,7 +21,6 @@ __all__ = [
     "CalendarEvent",
     "Submission",
     "NotSubmission",
-    "ProcessedUpload",
     "RawUpload",
     "SafeUpload",
     "UploadClassification",

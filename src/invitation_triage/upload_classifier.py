@@ -5,7 +5,7 @@ from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
 from invitation_triage.config import model
 from invitation_triage.exceptions import ClassificationError
-from invitation_triage.models import ProcessedUpload, UploadClassification
+from invitation_triage.models import SafeUpload, UploadClassification
 
 logger = logging.getLogger(__name__)
 
@@ -43,14 +43,14 @@ RULES:
 """
 
 
-async def classify_upload(processed_upload: ProcessedUpload) -> UploadClassification:
+async def classify_upload(safe_upload: SafeUpload) -> UploadClassification:
     """
-    Classify document type from processed upload.
+    Classify document type from safe upload.
 
     Simple agent with no tools - pure classification based on text and metadata.
 
     Args:
-        processed_upload: Document with extracted text and metadata
+        safe_upload: Document with PII-redacted text and metadata
 
     Returns:
         UploadClassification with type, confidence, and reasoning
@@ -62,7 +62,7 @@ async def classify_upload(processed_upload: ProcessedUpload) -> UploadClassifica
     agent = Agent(
         model=model,
         output_type=UploadClassification,
-        deps_type=ProcessedUpload,
+        deps_type=SafeUpload,
     )
 
     @agent.system_prompt
@@ -71,8 +71,6 @@ async def classify_upload(processed_upload: ProcessedUpload) -> UploadClassifica
 
         # Include metadata context if available
         metadata_str = ""
-        if doc.subject:
-            metadata_str += f"\nSUBJECT: {doc.subject}"
         if doc.source_type:
             metadata_str += f"\nSOURCE: {doc.source_type}"
         if doc.filename:
@@ -84,26 +82,26 @@ Here is the document to classify:
 {metadata_str}
 
 TEXT:
-{doc.text}
+{doc.safe_text}
 """
 
     logger.info(
         "Classifying document",
         extra={
-            "upload_id": processed_upload.upload_id,
-            "text_length": len(processed_upload.text),
-            "source_type": processed_upload.source_type,
+            "upload_id": safe_upload.upload_id,
+            "text_length": len(safe_upload.safe_text),
+            "source_type": safe_upload.source_type,
         },
     )
 
     try:
-        result = await agent.run("Classify this document type.", deps=processed_upload)
+        result = await agent.run("Classify this document type.", deps=safe_upload)
         classification = result.output
 
         logger.info(
             f"Classification complete: {classification.document_type} (confidence: {classification.confidence:.2f})",
             extra={
-                "upload_id": processed_upload.upload_id,
+                "upload_id": safe_upload.upload_id,
                 "document_type": classification.document_type,
                 "confidence": classification.confidence,
             },
@@ -114,22 +112,22 @@ TEXT:
     except (ModelRetry, UnexpectedModelBehavior) as e:
         logger.error(
             f"LLM failed to classify document: {str(e)}",
-            extra={"upload_id": processed_upload.upload_id},
+            extra={"upload_id": safe_upload.upload_id},
             exc_info=True,
         )
         raise ClassificationError(
             f"LLM failed to classify document: {str(e)}",
-            text_preview=processed_upload.text[:200],
+            text_preview=safe_upload.safe_text[:200],
             cause=e,
         ) from e
     except Exception as e:
         logger.error(
             f"Unexpected classification error: {str(e)}",
-            extra={"upload_id": processed_upload.upload_id},
+            extra={"upload_id": safe_upload.upload_id},
             exc_info=True,
         )
         raise ClassificationError(
             f"Unexpected error during classification: {str(e)}",
-            text_preview=processed_upload.text[:200],
+            text_preview=safe_upload.safe_text[:200],
             cause=e,
         ) from e

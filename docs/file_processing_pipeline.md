@@ -2,7 +2,7 @@
 
 ## Overview
 
-The file processing pipeline converts uploaded files (PDF, DOCX, TXT) into `ProcessedUpload` objects ready for classification, following the same PII redaction pattern as the email pipeline.
+The file processing pipeline converts uploaded files (PDF, DOCX, TXT) into `SafeUpload` objects ready for classification, following the same PII redaction pattern as the email pipeline.
 
 ## Architecture
 
@@ -14,8 +14,6 @@ extract_text_from_file()  # Text extraction
 RawUpload (upload_id, filename, source_type, raw_text, metadata)
     ↓
 SafeUpload.from_raw_upload()  # PII extraction & redaction
-    ↓
-ProcessedUpload (text=safe_text, metadata includes PII)
     ↓
 classify_upload()  # Ready for classification
 ```
@@ -58,7 +56,6 @@ SafeUpload(
 
 **Methods:**
 - `from_raw_upload(raw_upload)` - Extract PII and create SafeUpload
-- `to_processed_upload()` - Convert to ProcessedUpload
 - `restore_pii(text)` - Restore redacted PII (authorized use)
 - `restore_links(text)` - Restore redacted URLs
 
@@ -85,6 +82,7 @@ Main function that:
 ```python
 from invitation_triage.file_extraction import extract_text_from_file
 from invitation_triage.models.upload import SafeUpload
+from invitation_triage.upload_classifier import classify_upload
 
 # 1. Extract text from file
 raw_upload = extract_text_from_file("document.pdf")
@@ -92,15 +90,14 @@ raw_upload = extract_text_from_file("document.pdf")
 # 2. Redact PII
 safe_upload = SafeUpload.from_raw_upload(raw_upload)
 
-# 3. Convert to ProcessedUpload
-processed = safe_upload.to_processed_upload()
+# 3. Classify
+classification = await classify_upload(safe_upload)
 
-# 4. Classify
-classification = await classify_upload(processed)
-
-# 5. Extract based on type
+# 4. Extract based on type
 if classification.document_type == "submission":
-    submission = await extract_submission(processed.text)
+    submission = await extract_submission(safe_upload.safe_text)
+elif classification.document_type == "invitation":
+    invitation = await extract_invitation_from_text(safe_upload.safe_text)
 ```
 
 ## Demo Script
@@ -115,7 +112,7 @@ The script demonstrates:
 - Text extraction from file
 - PII detection and redaction
 - Metadata extraction
-- Conversion to ProcessedUpload
+- SafeUpload ready for classification
 
 ## Dependencies
 
@@ -153,7 +150,7 @@ uv run ruff check .
 
 The file processing pipeline integrates with existing components:
 
-1. **Classification** - ProcessedUpload → classify_upload()
+1. **Classification** - SafeUpload → classify_upload()
 2. **Extraction** - Based on classification type
 3. **Calendar** - For invitation triage
 4. **Decision** - For submission processing

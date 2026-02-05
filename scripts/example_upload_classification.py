@@ -7,8 +7,9 @@ Usage:
 
 import asyncio
 import logging
+from datetime import datetime
 
-from invitation_triage.models import ProcessedUpload
+from invitation_triage.models import SafeUpload
 from invitation_triage.upload_classifier import classify_upload
 
 
@@ -54,16 +55,21 @@ Prof. Sarah Johnson
 Chief Executive, The Royal Society
 """
 
-    upload1 = ProcessedUpload(
+    # For test data, create SafeUpload directly (PII already handled in test text)
+    upload1 = SafeUpload(
         upload_id="TEST-001",
-        text=invitation_text,
+        filename="royal_society_invite.eml",
         source_type="email",
-        subject="Invitation: Royal Society Annual Conference Keynote",
+        safe_text=invitation_text,
+        upload_timestamp=datetime.now(),
+        pii_extracted={"emails": [], "phone_numbers": [], "names": []},
+        links_extracted=[],
+        metadata={},
     )
 
     print(f"\nUpload ID: {upload1.upload_id}")
     print(f"Source: {upload1.source_type}")
-    print(f"Subject: {upload1.subject}")
+    print(f"Filename: {upload1.filename}")
     print(f"\nText preview: {invitation_text[:150]}...")
 
     print("\n🤖 Classifying document...")
@@ -111,11 +117,15 @@ Jane Smith, Deputy Director - AI Policy
 DSIT
 """
 
-    upload2 = ProcessedUpload(
+    upload2 = SafeUpload(
         upload_id="TEST-002",
-        text=submission_text,
-        source_type="pdf",
         filename="AI_Safety_Funding_Submission.pdf",
+        source_type="pdf",
+        safe_text=submission_text,
+        upload_timestamp=datetime.now(),
+        pii_extracted={"emails": [], "phone_numbers": [], "names": []},
+        links_extracted=[],
+        metadata={},
     )
 
     print(f"\nUpload ID: {upload2.upload_id}")
@@ -155,16 +165,20 @@ Director of Events
 Tech Innovation UK
 """
 
-    upload3 = ProcessedUpload(
+    upload3 = SafeUpload(
         upload_id="TEST-003",
-        text=other_text,
+        filename="thank_you.eml",
         source_type="email",
-        subject="Thank you for your participation",
+        safe_text=other_text,
+        upload_timestamp=datetime.now(),
+        pii_extracted={"emails": [], "phone_numbers": [], "names": []},
+        links_extracted=[],
+        metadata={},
     )
 
     print(f"\nUpload ID: {upload3.upload_id}")
     print(f"Source: {upload3.source_type}")
-    print(f"Subject: {upload3.subject}")
+    print(f"Filename: {upload3.filename}")
     print(f"\nText preview: {other_text[:150]}...")
 
     print("\n🤖 Classifying document...")
@@ -199,16 +213,20 @@ David Chen
 Head of Stakeholder Engagement
 """
 
-    upload4 = ProcessedUpload(
+    upload4 = SafeUpload(
         upload_id="TEST-004",
-        text=ambiguous_text,
+        filename="stakeholder_forum.eml",
         source_type="email",
-        subject="Quarterly Stakeholder Forum - March",
+        safe_text=ambiguous_text,
+        upload_timestamp=datetime.now(),
+        pii_extracted={"emails": [], "phone_numbers": [], "names": []},
+        links_extracted=[],
+        metadata={},
     )
 
     print(f"\nUpload ID: {upload4.upload_id}")
     print(f"Source: {upload4.source_type}")
-    print(f"Subject: {upload4.subject}")
+    print(f"Filename: {upload4.filename}")
     print(f"\nText preview: {ambiguous_text[:150]}...")
 
     print("\n🤖 Classifying document...")

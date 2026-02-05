@@ -5,8 +5,7 @@ Shows the complete flow:
 1. Extract text from file (PDF/DOCX/TXT)
 2. Create RawUpload
 3. Extract PII to create SafeUpload
-4. Convert to ProcessedUpload
-5. Ready for classification
+4. Ready for classification
 
 Usage:
     uv run python scripts/example_file_processing.py <file_path>
@@ -104,19 +103,10 @@ def main():
         print("   ...")
     print("   " + "-" * 70)
 
-    # Step 3: Convert to ProcessedUpload
-    print("\n3. Converting to ProcessedUpload...")
-    processed = safe_upload.to_processed_upload()
-
-    print(f"   ✓ Upload ID: {processed.upload_id}")
-    print(f"   ✓ Source type: {processed.source_type}")
-    print(f"   ✓ Filename: {processed.filename}")
-    print(f"   ✓ Text length: {len(processed.text)} characters")
-    print(f"   ✓ Timestamp: {processed.upload_timestamp}")
-
-    # Step 4: Ready for classification
-    print("\n4. Ready for classification pipeline:")
-    print("   → ProcessedUpload can now be passed to classify_upload()")
+    # Step 3: Ready for classification
+    print("\n3. Ready for classification pipeline:")
+    print("   → SafeUpload can now be passed to classify_upload()")
+    print("   → classification = await classify_upload(safe_upload)")
     print("   → Based on classification, route to:")
     print("      - extract_invitation() for 'invitation' type")
     print("      - extract_submission() for 'submission' type")
@@ -126,7 +116,7 @@ def main():
     print("PIPELINE COMPLETE")
     print("=" * 80)
     print("\nNext steps:")
-    print("  1. Pass ProcessedUpload to classify_upload()")
+    print("  1. Pass SafeUpload to classify_upload()")
     print("  2. Extract structured data based on classification")
     print("  3. PII can be restored using safe_upload.restore_pii() when authorized")
 
