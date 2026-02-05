@@ -49,3 +49,12 @@ class SubmissionExtractionError(TriageBaseException):
         self.text_preview = text_preview
         self.cause = cause
         super().__init__(message)
+
+
+class ClassificationError(TriageBaseException):
+    """Error during document classification."""
+
+    def __init__(self, message: str, text_preview: str | None = None, cause: Exception | None = None):
+        self.text_preview = text_preview
+        self.cause = cause
+        super().__init__(message)
