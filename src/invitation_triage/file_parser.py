@@ -124,9 +124,7 @@ def extract_text_from_file(
             )
 
         # Write binary data to temp file
-        with tempfile.NamedTemporaryFile(
-            delete=False, suffix=f".{file_type}"
-        ) as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_type}") as tmp:
             tmp.write(binary_data)
             temp_file_path = tmp.name
 

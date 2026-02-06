@@ -16,7 +16,7 @@ Example:
 
 import sys
 
-from invitation_triage.file_extraction import extract_text_from_file
+from invitation_triage.file_parser import extract_text_from_file
 from invitation_triage.models.document import SafeDocument
 
 

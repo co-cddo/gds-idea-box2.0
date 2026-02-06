@@ -46,7 +46,9 @@ def test_extract_pii_no_emails():
 
 def test_extract_pii_duplicate_emails():
     """Test that duplicate emails are deduplicated."""
-    text = "Contact john@example.com. Please email john@example.com for more information."
+    text = (
+        "Contact john@example.com. Please email john@example.com for more information."
+    )
 
     pii = PIIRedactor.extract_pii(text)
 
@@ -434,7 +436,9 @@ def test_round_trip_complete():
     redactor = PIIRedactor()
 
     original_subject = "Meeting Request"
-    original_body = "Contact john@example.com or call 07700900123. Visit https://example.com"
+    original_body = (
+        "Contact john@example.com or call 07700900123. Visit https://example.com"
+    )
 
     # Process (extract and redact)
     safe_subject = redactor.process(original_subject)

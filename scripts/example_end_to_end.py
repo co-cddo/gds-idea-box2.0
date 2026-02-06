@@ -14,7 +14,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from invitation_triage.extraction import extract_invitation
+from invitation_triage.invitation_extraction import extract_invitation
 from invitation_triage.models import (
     MinisterPersona,
     NotInvitation,
@@ -113,12 +113,20 @@ Tech UK
         print("\n🔒 Step 1: Redacting PII...")
         safe_email = SafeEmail.from_raw_email(raw_email)
         print(f"   - Emails extracted: {len(safe_email.pii_extracted['emails'])}")
-        print(f"   - Phone numbers extracted: {len(safe_email.pii_extracted['phone_numbers'])}")
+        print(
+            f"   - Phone numbers extracted: {len(safe_email.pii_extracted['phone_numbers'])}"
+        )
         print(f"   - Links extracted: {len(safe_email.links_extracted)}")
 
-        # Step 1b: Extract invitation details
-        print("\n🤖 Step 2: Extracting invitation details with LLM...")
-        result = await extract_invitation(safe_email)
+        # Step 1b: Convert to SafeDocument
+        print("\n📄 Step 2: Converting to SafeDocument...")
+        safe_doc = safe_email.to_document()
+        print(f"   - Document ID: {safe_doc.document_id[:16]}...")
+        print(f"   - Source: {safe_doc.source_type}")
+
+        # Step 1c: Extract invitation details
+        print("\n🤖 Step 3: Extracting invitation details with LLM...")
+        result = await extract_invitation(safe_doc)
 
         # Check if it's an invitation
         if isinstance(result, NotInvitation):
@@ -135,12 +143,14 @@ Tech UK
         invitation = result
         print(f"   Event Type: {invitation.event_type}")
         print(f"   Host: {invitation.host_org}")
-        print(f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}")
+        print(
+            f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}"
+        )
         print(f"   Time: {', '.join(invitation.proposed_times)}")
         print(f"   Location: {invitation.location}")
 
         # Step 2: Triage with calendar checking
-        print("\n🤖 Step 3: Triaging (checking calendar & making recommendation)...")
+        print("\n🤖 Step 4: Triaging (checking calendar & making recommendation)...")
         triaged = await triage_invitation(invitation, persona)
 
         # ====================================================================

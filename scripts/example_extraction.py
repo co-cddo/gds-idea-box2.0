@@ -9,7 +9,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from invitation_triage.extraction import extract_invitation
+from invitation_triage.invitation_extraction import extract_invitation
 from invitation_triage.models import NotInvitation, RawEmail, SafeEmail
 
 
@@ -55,9 +55,15 @@ sarah.chen@aisi.gov.uk
     print(f"   - Emails extracted: {len(safe_email.pii_extracted['emails'])}")
     print(f"   - Links extracted: {len(safe_email.links_extracted)}")
 
+    # Convert to SafeDocument
+    print("\n📄 Converting to SafeDocument...")
+    safe_doc = safe_email.to_document()
+    print(f"   - Document ID: {safe_doc.document_id}")
+    print(f"   - Source: {safe_doc.source_type}")
+
     # Extract invitation
     print("\n🤖 Extracting invitation details with LLM...")
-    result = await extract_invitation(safe_email)
+    result = await extract_invitation(safe_doc)
 
     # Display results
     print("\n" + "=" * 80)

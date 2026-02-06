@@ -5,7 +5,7 @@ from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
 from invitation_triage.config import model
 from invitation_triage.exceptions import SubmissionExtractionError
-from invitation_triage.models import NotSubmission, Submission
+from invitation_triage.models import NotSubmission, SafeDocument, Submission
 
 logger = logging.getLogger(__name__)
 
@@ -56,14 +56,14 @@ For Submission, extract all relevant details accurately from the text.
 """
 
 
-async def extract_submission(text: str) -> Submission | NotSubmission:
+async def extract_submission(safe_doc: SafeDocument) -> Submission | NotSubmission:
     """
-    Extract submission details from document text.
+    Extract submission details from document.
 
     Pure information extraction - doesn't consider minister preferences or make decisions.
 
     Args:
-        text: Document text (from email body, PDF extraction, Word doc, etc.)
+        safe_doc: Document with PII-redacted text and metadata
 
     Returns:
         Either a Submission with extracted details or NotSubmission with reason
@@ -72,27 +72,37 @@ async def extract_submission(text: str) -> Submission | NotSubmission:
         SubmissionExtractionError: If extraction fails due to LLM errors, validation errors, or unexpected issues
     """
 
-    agent = Agent(model=model, output_type=Submission | NotSubmission, deps_type=str)
+    agent = Agent(
+        model=model, output_type=Submission | NotSubmission, deps_type=SafeDocument
+    )
 
     @agent.system_prompt
     def get_system_prompt(ctx):
-        document_text = ctx.deps
+        doc = ctx.deps
 
         return f"""{SUBMISSION_EXTRACTION_INSTRUCTIONS}
 
-Here is the document text to analyze:
+Here is the document to analyze:
 
-{document_text}
+SOURCE: {doc.source_type}
+TIMESTAMP: {doc.document_timestamp}
+
+TEXT:
+{doc.safe_text}
 """
 
     logger.info(
-        "Extracting submission from document text",
-        extra={"text_length": len(text), "text_preview": text[:100]},
+        "Extracting submission from document",
+        extra={
+            "document_id": safe_doc.document_id,
+            "source_type": safe_doc.source_type,
+            "text_length": len(safe_doc.safe_text),
+        },
     )
 
     try:
         result = await agent.run(
-            "Extract submission details from this document.", deps=text
+            "Extract submission details from this document.", deps=safe_doc
         )
         output = result.output
 
@@ -106,7 +116,10 @@ Here is the document text to analyze:
         if isinstance(output, NotSubmission):
             logger.debug(
                 f"Not a submission: {output.reason}",
-                extra={"reason": output.reason, "suggested_category": output.suggested_category},
+                extra={
+                    "reason": output.reason,
+                    "suggested_category": output.suggested_category,
+                },
             )
         elif isinstance(output, Submission):
             logger.debug(
@@ -122,22 +135,28 @@ Here is the document text to analyze:
     except (ModelRetry, UnexpectedModelBehavior) as e:
         logger.error(
             f"LLM failed to extract submission: {str(e)}",
-            extra={"text_preview": text[:200]},
+            extra={
+                "document_id": safe_doc.document_id,
+                "text_preview": safe_doc.safe_text[:200],
+            },
             exc_info=True,
         )
         raise SubmissionExtractionError(
             f"LLM failed to extract submission from document: {str(e)}",
-            text_preview=text[:200] if text else None,
+            text_preview=safe_doc.safe_text[:200] if safe_doc.safe_text else None,
             cause=e,
         ) from e
     except Exception as e:
         logger.error(
             f"Unexpected extraction error: {str(e)}",
-            extra={"text_preview": text[:200]},
+            extra={
+                "document_id": safe_doc.document_id,
+                "text_preview": safe_doc.safe_text[:200],
+            },
             exc_info=True,
         )
         raise SubmissionExtractionError(
             f"Unexpected error during submission extraction: {str(e)}",
-            text_preview=text[:200] if text else None,
+            text_preview=safe_doc.safe_text[:200] if safe_doc.safe_text else None,
             cause=e,
         ) from e

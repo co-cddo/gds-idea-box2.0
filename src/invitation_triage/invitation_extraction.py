@@ -5,7 +5,7 @@ from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
 from invitation_triage.config import model
 from invitation_triage.exceptions import ExtractionError
-from invitation_triage.models import Invitation, NotInvitation, SafeEmail
+from invitation_triage.models import Invitation, NotInvitation, SafeDocument
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +42,14 @@ For Invitation, extract all relevant details accurately.
 """
 
 
-async def extract_invitation(safe_email: SafeEmail) -> Invitation | NotInvitation:
+async def extract_invitation(safe_doc: SafeDocument) -> Invitation | NotInvitation:
     """
-    Extract invitation details from email.
+    Extract invitation details from document.
 
     Pure information extraction - doesn't consider minister preferences.
 
     Args:
-        safe_email: Email with PII redacted
+        safe_doc: Document with PII-redacted text and metadata
 
     Returns:
         Either an Invitation with extracted details or NotInvitation with reason
@@ -59,34 +59,35 @@ async def extract_invitation(safe_email: SafeEmail) -> Invitation | NotInvitatio
     """
 
     agent = Agent(
-        model=model, output_type=Invitation | NotInvitation, deps_type=SafeEmail
+        model=model, output_type=Invitation | NotInvitation, deps_type=SafeDocument
     )
 
     @agent.system_prompt
-    def get_system_prompt(ctx: RunContext[SafeEmail]) -> str:
-        email = ctx.deps
+    def get_system_prompt(ctx: RunContext[SafeDocument]) -> str:
+        doc = ctx.deps
 
         return f"""{EXTRACTION_INSTRUCTIONS}
 
-Here is the email to analyze:
+Here is the document to analyze:
 
-SUBJECT: {email.subject}
+SOURCE: {doc.source_type}
+TIMESTAMP: {doc.document_timestamp}
 
-BODY:
-{email.body}
-
-RECEIVED: {email.received_date}
-HAS ATTACHMENTS: {email.has_attachments}
+TEXT:
+{doc.safe_text}
 """
 
     logger.info(
-        "Extracting invitation from email",
-        extra={"email_id": safe_email.email_id, "subject": safe_email.subject},
+        "Extracting invitation from document",
+        extra={
+            "document_id": safe_doc.document_id,
+            "source_type": safe_doc.source_type,
+        },
     )
 
     try:
         result = await agent.run(
-            "Extract invitation details from this email.", deps=safe_email
+            "Extract invitation details from this document.", deps=safe_doc
         )
         output = result.output
 
@@ -94,19 +95,19 @@ HAS ATTACHMENTS: {email.has_attachments}
         result_type = type(output).__name__
         logger.info(
             f"Extraction complete: {result_type}",
-            extra={"email_id": safe_email.email_id, "result_type": result_type},
+            extra={"document_id": safe_doc.document_id, "result_type": result_type},
         )
 
         if isinstance(output, NotInvitation):
             logger.debug(
                 f"Not an invitation: {output.reason}",
-                extra={"email_id": safe_email.email_id, "reason": output.reason},
+                extra={"document_id": safe_doc.document_id, "reason": output.reason},
             )
         elif isinstance(output, Invitation):
             logger.debug(
                 f"Invitation extracted: {output.event_type} from {output.host_org}",
                 extra={
-                    "email_id": safe_email.email_id,
+                    "document_id": safe_doc.document_id,
                     "event_type": output.event_type,
                     "host_org": output.host_org,
                 },
@@ -116,22 +117,22 @@ HAS ATTACHMENTS: {email.has_attachments}
     except (ModelRetry, UnexpectedModelBehavior) as e:
         logger.error(
             f"LLM failed to extract invitation: {str(e)}",
-            extra={"email_id": safe_email.email_id},
+            extra={"document_id": safe_doc.document_id},
             exc_info=True,
         )
         raise ExtractionError(
-            f"LLM failed to extract invitation from email: {str(e)}",
-            email_id=safe_email.email_id,
+            f"LLM failed to extract invitation from document: {str(e)}",
+            document_id=safe_doc.document_id,
             cause=e,
         ) from e
     except Exception as e:
         logger.error(
             f"Unexpected extraction error: {str(e)}",
-            extra={"email_id": safe_email.email_id},
+            extra={"document_id": safe_doc.document_id},
             exc_info=True,
         )
         raise ExtractionError(
             f"Unexpected error during invitation extraction: {str(e)}",
-            email_id=safe_email.email_id,
+            document_id=safe_doc.document_id,
             cause=e,
         ) from e

@@ -182,8 +182,7 @@ async def check_calendar(
         end = datetime.fromisoformat(end_datetime.replace(" ", "T"))
     except (ValueError, AttributeError) as e:
         logger.error(
-            f"Invalid datetime format: start='{start_datetime}', "
-            f"end='{end_datetime}'"
+            f"Invalid datetime format: start='{start_datetime}', end='{end_datetime}'"
         )
         raise CalendarError(
             f"Invalid datetime format. Expected 'YYYY-MM-DD HH:MM', "

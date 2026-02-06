@@ -7,8 +7,9 @@ Usage:
 
 import asyncio
 import logging
+from datetime import datetime
 
-from invitation_triage.models import NotSubmission
+from invitation_triage.models import NotSubmission, SafeDocument
 from invitation_triage.submission_extraction import extract_submission
 
 
@@ -63,9 +64,23 @@ DSIT
     print("=" * 80)
     print(f"\nDocument preview: {submission_text[:100]}...")
 
+    # Create SafeDocument
+    print("\n📄 Creating SafeDocument...")
+    safe_doc = SafeDocument(
+        document_id="test-submission-1",
+        filename="urgent_submission.txt",
+        source_type="txt",
+        safe_text=submission_text,
+        document_timestamp=datetime.now(),
+        pii_extracted={"emails": [], "phone_numbers": []},
+        links_extracted=[],
+    )
+    print(f"   - Document ID: {safe_doc.document_id}")
+    print(f"   - Source: {safe_doc.source_type}")
+
     # Extract submission
     print("\n🤖 Extracting submission details with LLM...")
-    result = await extract_submission(submission_text)
+    result = await extract_submission(safe_doc)
 
     # Display results
     print("\n" + "=" * 80)
@@ -147,8 +162,21 @@ DSIT
 """
 
     print(f"\nDocument preview: {routine_text[:100]}...")
+
+    # Create SafeDocument
+    print("\n📄 Creating SafeDocument...")
+    safe_doc2 = SafeDocument(
+        document_id="test-submission-2",
+        filename="routine_submission.txt",
+        source_type="txt",
+        safe_text=routine_text,
+        document_timestamp=datetime.now(),
+        pii_extracted={"emails": [], "phone_numbers": []},
+        links_extracted=[],
+    )
+
     print("\n🤖 Extracting submission details with LLM...")
-    result2 = await extract_submission(routine_text)
+    result2 = await extract_submission(safe_doc2)
 
     print("\n" + "=" * 80)
     print("RESULTS")
@@ -194,8 +222,21 @@ Chief Executive, The Royal Society
 """
 
     print(f"\nDocument preview: {invitation_text[:100]}...")
+
+    # Create SafeDocument
+    print("\n📄 Creating SafeDocument...")
+    safe_doc3 = SafeDocument(
+        document_id="test-invitation-1",
+        filename="not_a_submission.txt",
+        source_type="txt",
+        safe_text=invitation_text,
+        document_timestamp=datetime.now(),
+        pii_extracted={"emails": [], "phone_numbers": []},
+        links_extracted=[],
+    )
+
     print("\n🤖 Extracting submission details with LLM...")
-    result3 = await extract_submission(invitation_text)
+    result3 = await extract_submission(safe_doc3)
 
     print("\n" + "=" * 80)
     print("RESULTS")

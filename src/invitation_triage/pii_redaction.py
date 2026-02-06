@@ -83,10 +83,12 @@ class PIIRedactor:
                 new_index = len(self.links)
                 domain_match = re.search(r"https?://([^/]+)", new_link["url"])
                 domain = domain_match.group(1) if domain_match else "unknown"
-                self.links.append({
-                    "url": new_link["url"],
-                    "placeholder": f"[LINK_{new_index}: {domain}]"
-                })
+                self.links.append(
+                    {
+                        "url": new_link["url"],
+                        "placeholder": f"[LINK_{new_index}: {domain}]",
+                    }
+                )
 
     @staticmethod
     def extract_pii(text: str) -> dict[str, list[str]]:
@@ -136,10 +138,12 @@ class PIIRedactor:
             domain_match = re.search(r"https?://([^/]+)", url)
             domain = domain_match.group(1) if domain_match else "unknown"
 
-            links.append({
-                "placeholder": f"[LINK_{i}: {domain}]",
-                "url": url,
-            })
+            links.append(
+                {
+                    "placeholder": f"[LINK_{i}: {domain}]",
+                    "url": url,
+                }
+            )
 
         return links
 
