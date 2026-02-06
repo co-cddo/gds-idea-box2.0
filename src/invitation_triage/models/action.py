@@ -108,9 +108,7 @@ class FinalDraft(BaseModel):
 
     document_id: str
 
-    content: str = Field(
-        min_length=50, description="Final draft text ready to send"
-    )
+    content: str = Field(min_length=50, description="Final draft text ready to send")
 
     was_modified: bool = Field(
         description="True if the draft was redrafted based on office notes, "

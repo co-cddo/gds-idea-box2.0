@@ -82,7 +82,9 @@ async def main():
     print("\n🔒 Step 2: Redacting PII...")
     safe_doc = SafeDocument.from_raw_document(raw_document)
     print(f"   ✓ Emails extracted: {len(safe_doc.pii_extracted['emails'])}")
-    print(f"   ✓ Phone numbers extracted: {len(safe_doc.pii_extracted['phone_numbers'])}")
+    print(
+        f"   ✓ Phone numbers extracted: {len(safe_doc.pii_extracted['phone_numbers'])}"
+    )
     print(f"   ✓ Links extracted: {len(safe_doc.links_extracted)}")
 
     # ====================================================================
@@ -117,7 +119,9 @@ async def main():
             print("\n✅ INVITATION EXTRACTED")
             print(f"   Event Type: {invitation.event_type}")
             print(f"   Host: {invitation.host_org}")
-            print(f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}")
+            print(
+                f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}"
+            )
             print(f"   Time: {', '.join(invitation.proposed_times)}")
             print(f"   Location: {invitation.location}")
 
@@ -159,9 +163,7 @@ async def main():
                 print("-" * 80)
 
             except FileNotFoundError:
-                print(
-                    "\n⚠️  No persona file found (data/example_science_minister.json)"
-                )
+                print("\n⚠️  No persona file found (data/example_science_minister.json)")
                 print("   → Skipping triage step")
 
     elif classification.document_type == "submission":
@@ -216,16 +218,16 @@ async def main():
             print(submission.draft_response)
             print("-" * 80)
 
-            print("\n💡 NOTE: Submissions contain official recommendations + draft response")
+            print(
+                "\n💡 NOTE: Submissions contain official recommendations + draft response"
+            )
             print("   → No triage step needed (recommendation is in the submission)")
 
     elif classification.document_type == "other":
         print("\n" + "=" * 80)
         print("DOCUMENT TYPE: OTHER")
         print("=" * 80)
-        print(
-            "\nℹ️  This document doesn't match invitation or submission patterns."
-        )
+        print("\nℹ️  This document doesn't match invitation or submission patterns.")
         print("   Document type 'other' is not yet supported for extraction.")
         print("\n   → No further processing")
 
