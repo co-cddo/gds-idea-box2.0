@@ -118,6 +118,11 @@ DSIT
 
         print(f"\nSummary:\n{result.summary}")
 
+        print(f"\n✉️  Draft Response:")
+        print("-" * 80)
+        print(result.draft_response)
+        print("-" * 80)
+
         if result.overall_confidence:
             print(f"\nConfidence: {result.overall_confidence:.2f}")
 
@@ -193,6 +198,11 @@ DSIT
         print(f"Urgency: {result2.urgency_assessment}")
         print(f"Official Recommendation: {result2.official_recommendation}")
         print(f"\nSummary:\n{result2.summary}")
+
+        print(f"\n✉️  Draft Response:")
+        print("-" * 80)
+        print(result2.draft_response)
+        print("-" * 80)
 
     # Test a third example: not a submission (invitation)
     print("\n\n" + "=" * 80)

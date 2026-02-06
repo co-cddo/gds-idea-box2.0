@@ -87,6 +87,15 @@ class Submission(BaseModel):
         "(e.g., 'Previous contingency draw-down for quantum centre (Oct 2025)')",
     )
 
+    # Draft response
+    draft_response: str = Field(
+        min_length=50,
+        description="Draft response memo/email back to the submitting official, "
+        "addressing their recommendation and the minister's position. "
+        "Should be professional, clear, and ready to send with minimal edits. "
+        "(e.g., 'Thank you for your submission on AI Safety funding. I approve...')",
+    )
+
     # Confidence
     overall_confidence: float | None = Field(
         default=None,

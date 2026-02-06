@@ -211,8 +211,13 @@ async def main():
             print(f"\n📄 SUMMARY:")
             print(f"   {submission.summary}")
 
-            print("\n💡 NOTE: Submissions contain official recommendations")
-            print("   → No triage step needed (decision is in the submission)")
+            print(f"\n✉️  DRAFT RESPONSE:")
+            print("-" * 80)
+            print(submission.draft_response)
+            print("-" * 80)
+
+            print("\n💡 NOTE: Submissions contain official recommendations + draft response")
+            print("   → No triage step needed (recommendation is in the submission)")
 
     elif classification.document_type == "other":
         print("\n" + "=" * 80)
