@@ -4,8 +4,9 @@ from typing import Any
 
 import pandas as pd
 from dateutil import parser
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from invitation_triage.models.document import RawDocument, SafeDocument
 from invitation_triage.pii_redaction import PIIRedactor
 
 
@@ -17,6 +18,11 @@ class RawEmail(BaseModel):
     body: str
     received_date: datetime
     has_attachments: bool = False
+    attachments: list[RawDocument] = Field(
+        default_factory=list,
+        description="Email attachments as RawDocuments "
+        "(empty for current MVP test data)",
+    )
 
     @classmethod
     def _generate_id(
@@ -100,20 +106,49 @@ class SafeEmail(BaseModel):
     body: str  # PII-redacted
     received_date: datetime
     has_attachments: bool = False
+    attachments: list[SafeDocument] = Field(
+        default_factory=list,
+        description="Processed email attachments (empty for MVP test data)",
+    )
     pii_extracted: dict[str, list[str]]
     links_extracted: list[dict[str, str]]
 
     @classmethod
     def from_raw_email(cls, raw_email: RawEmail) -> "SafeEmail":
-        """Extract PII and create SafeEmail using PIIRedactor."""
-        # Create PIIRedactor instance for this email (and potential attachments)
+        """
+        Extract PII and create SafeEmail using PIIRedactor.
+
+        Processes email body and any attachments with shared PIIRedactor instance
+        for consistent PII numbering across all text.
+        """
+        # Create PIIRedactor instance shared across email + attachments
         redactor = PIIRedactor()
 
-        # Process subject
+        # Process subject and body
         safe_subject = redactor.process(raw_email.subject)
-
-        # Process body
         safe_body = redactor.process(raw_email.body)
+
+        # Process attachments (if any)
+        processed_attachments = []
+        for raw_doc in raw_email.attachments:
+            # Process attachment text with shared redactor for consistent numbering
+            safe_text = redactor.process(raw_doc.raw_text)
+
+            # Create SafeDocument for this attachment
+            safe_doc = SafeDocument(
+                document_id=raw_doc.document_id,
+                filename=raw_doc.filename,
+                source_type=raw_doc.source_type,
+                safe_text=safe_text,
+                document_timestamp=raw_doc.document_timestamp,
+                # Note: pii/links from shared redactor,
+                # will be duplicated in email-level too
+                pii_extracted=redactor.pii.copy(),
+                links_extracted=redactor.links.copy(),
+                file_size=raw_doc.file_size,
+                metadata=raw_doc.metadata,
+            )
+            processed_attachments.append(safe_doc)
 
         return cls(
             email_id=raw_email.email_id,
@@ -121,8 +156,41 @@ class SafeEmail(BaseModel):
             body=safe_body,
             received_date=raw_email.received_date,
             has_attachments=raw_email.has_attachments,
-            pii_extracted=redactor.pii,  # Access accumulated PII
-            links_extracted=redactor.links,  # Access accumulated links
+            attachments=processed_attachments,
+            pii_extracted=redactor.pii,  # All PII from email + attachments
+            links_extracted=redactor.links,  # All links from email + attachments
+        )
+
+    def to_document(self) -> SafeDocument:
+        """
+        Convert email (+ attachments) to single SafeDocument for unified processing.
+
+        Concatenates email body with all attachment texts into one document.
+        This enables emails to be processed through the same pipeline as file uploads.
+        """
+        # Start with email content
+        combined_text = f"Subject: {self.subject}\n\n{self.body}"
+
+        # Append each attachment
+        for att in self.attachments:
+            combined_text += f"\n\n--- Attachment: {att.filename} ---\n{att.safe_text}"
+
+        # PII and links already accumulated in email-level fields
+        # (shared PIIRedactor ensured consistent numbering)
+
+        return SafeDocument(
+            document_id=self.email_id,
+            filename=f"email_{self.email_id}",
+            source_type="email",
+            safe_text=combined_text,
+            document_timestamp=self.received_date,
+            pii_extracted=self.pii_extracted.copy(),
+            links_extracted=self.links_extracted.copy(),
+            metadata={
+                "subject": self.subject,
+                "has_attachments": self.has_attachments,
+                "attachment_count": len(self.attachments),
+            },
         )
 
     def restore_links(self, text: str) -> str:

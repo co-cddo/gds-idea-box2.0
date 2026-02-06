@@ -414,3 +414,174 @@ def test_safe_email_long_tracking_url():
     # Can restore the full URL
     restored = safe.restore_links(safe.body)
     assert "utm_source=email" in restored
+
+
+# ============================================================================
+# Attachment Tests
+# ============================================================================
+
+
+def test_safe_email_with_no_attachments():
+    """Test SafeEmail with empty attachments list (backward compatibility)."""
+    raw_email = RawEmail(
+        email_id="test",
+        subject="Test Subject",
+        body="Test body",
+        received_date=datetime(2026, 1, 15, 10, 0),
+        has_attachments=False,
+    )
+
+    safe_email = SafeEmail.from_raw_email(raw_email)
+
+    assert safe_email.attachments == []
+    assert len(safe_email.attachments) == 0
+
+
+def test_safe_email_with_attachments():
+    """Test SafeEmail processes attachments with shared PIIRedactor."""
+    from invitation_triage.models.document import RawDocument
+
+    # Create an attachment
+    attachment = RawDocument(
+        document_id="att-1",
+        filename="report.txt",
+        source_type="txt",
+        raw_text="Contact bob@test.org at +447700900456",
+        document_timestamp=datetime(2026, 1, 15, 10, 0),
+        file_size=50,
+        metadata={},
+    )
+
+    raw_email = RawEmail(
+        email_id="test",
+        subject="Report",
+        body="See attached from alice@example.com",
+        received_date=datetime(2026, 1, 15, 10, 0),
+        has_attachments=True,
+        attachments=[attachment],
+    )
+
+    safe_email = SafeEmail.from_raw_email(raw_email)
+
+    # Check attachments processed
+    assert len(safe_email.attachments) == 1
+    assert safe_email.attachments[0].filename == "report.txt"
+    assert "[EMAIL_1]" in safe_email.attachments[0].safe_text
+    assert "bob@test.org" not in safe_email.attachments[0].safe_text
+
+    # Check PII accumulated from both email and attachment
+    assert len(safe_email.pii_extracted["emails"]) == 2
+    assert "alice@example.com" in safe_email.pii_extracted["emails"]
+    assert "bob@test.org" in safe_email.pii_extracted["emails"]
+
+
+def test_safe_email_attachment_pii_numbering_consistent():
+    """Test that PII numbering is consistent across email body and attachments."""
+    from invitation_triage.models.document import RawDocument
+
+    # Email has john@example.com
+    # Attachment has john@example.com again (should get same [EMAIL_0] placeholder)
+    attachment = RawDocument(
+        document_id="att-1",
+        filename="doc.txt",
+        source_type="txt",
+        raw_text="Reply to john@example.com about this",
+        document_timestamp=datetime(2026, 1, 15, 10, 0),
+        file_size=50,
+        metadata={},
+    )
+
+    raw_email = RawEmail(
+        email_id="test",
+        subject="Update",
+        body="Contact john@example.com for details",
+        received_date=datetime(2026, 1, 15, 10, 0),
+        has_attachments=True,
+        attachments=[attachment],
+    )
+
+    safe_email = SafeEmail.from_raw_email(raw_email)
+
+    # Same email should get same placeholder
+    assert "[EMAIL_0]" in safe_email.body
+    assert "[EMAIL_0]" in safe_email.attachments[0].safe_text
+
+    # Only one unique email in extracted PII
+    assert len(safe_email.pii_extracted["emails"]) == 1
+    assert "john@example.com" in safe_email.pii_extracted["emails"]
+
+
+def test_safe_email_to_document_no_attachments():
+    """Test converting SafeEmail to SafeDocument (no attachments)."""
+    raw_email = RawEmail(
+        email_id="test-123",
+        subject="Meeting",
+        body="Let's meet tomorrow",
+        received_date=datetime(2026, 1, 15, 10, 0),
+        has_attachments=False,
+    )
+
+    safe_email = SafeEmail.from_raw_email(raw_email)
+    safe_doc = safe_email.to_document()
+
+    # Check SafeDocument fields
+    assert safe_doc.document_id == "test-123"
+    assert safe_doc.source_type == "email"
+    assert safe_doc.filename == "email_test-123"
+    assert "Subject: Meeting" in safe_doc.safe_text
+    assert "Let's meet tomorrow" in safe_doc.safe_text
+    assert safe_doc.metadata["subject"] == "Meeting"
+    assert safe_doc.metadata["has_attachments"] is False
+    assert safe_doc.metadata["attachment_count"] == 0
+
+
+def test_safe_email_to_document_with_attachments():
+    """Test converting SafeEmail with attachments to unified SafeDocument."""
+    from invitation_triage.models.document import RawDocument
+
+    attachment1 = RawDocument(
+        document_id="att-1",
+        filename="report.txt",
+        source_type="txt",
+        raw_text="First attachment content",
+        document_timestamp=datetime(2026, 1, 15, 10, 0),
+        file_size=50,
+        metadata={},
+    )
+
+    attachment2 = RawDocument(
+        document_id="att-2",
+        filename="data.txt",
+        source_type="txt",
+        raw_text="Second attachment content",
+        document_timestamp=datetime(2026, 1, 15, 10, 0),
+        file_size=50,
+        metadata={},
+    )
+
+    raw_email = RawEmail(
+        email_id="test-456",
+        subject="Report and Data",
+        body="Please review the attached files",
+        received_date=datetime(2026, 1, 15, 10, 0),
+        has_attachments=True,
+        attachments=[attachment1, attachment2],
+    )
+
+    safe_email = SafeEmail.from_raw_email(raw_email)
+    safe_doc = safe_email.to_document()
+
+    # Check document contains email body
+    assert "Subject: Report and Data" in safe_doc.safe_text
+    assert "Please review the attached files" in safe_doc.safe_text
+
+    # Check document contains both attachments
+    assert "--- Attachment: report.txt ---" in safe_doc.safe_text
+    assert "First attachment content" in safe_doc.safe_text
+    assert "--- Attachment: data.txt ---" in safe_doc.safe_text
+    assert "Second attachment content" in safe_doc.safe_text
+
+    # Check metadata
+    assert safe_doc.metadata["has_attachments"] is True
+    assert safe_doc.metadata["attachment_count"] == 2
+    assert safe_doc.source_type == "email"
