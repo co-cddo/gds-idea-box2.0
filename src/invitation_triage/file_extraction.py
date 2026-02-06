@@ -1,13 +1,13 @@
 """
-Text extraction from uploaded files (PDF, DOCX, TXT).
+Text extraction from documented files (PDF, DOCX, TXT).
 
-Converts file uploads to RawUpload model with extracted text content.
+Converts file documents to RawDocument model with extracted text content.
 """
 
 import os
 from datetime import datetime
 
-from invitation_triage.models.upload import RawUpload
+from invitation_triage.models.document import RawDocument
 
 
 def extract_text_from_pdf(file_path: str) -> tuple[str, dict]:
@@ -74,9 +74,9 @@ def extract_text_from_txt(file_path: str) -> tuple[str, dict]:
     return text, metadata
 
 
-def extract_text_from_file(file_path: str, file_type: str | None = None) -> RawUpload:
+def extract_text_from_file(file_path: str, file_type: str | None = None) -> RawDocument:
     """
-    Main function - extract text from file and create RawUpload.
+    Main function - extract text from file and create RawDocument.
 
     Args:
         file_path: Path to the file to process
@@ -84,7 +84,7 @@ def extract_text_from_file(file_path: str, file_type: str | None = None) -> RawU
                    If not provided, will be inferred from file extension.
 
     Returns:
-        RawUpload with extracted text and metadata
+        RawDocument with extracted text and metadata
 
     Raises:
         ValueError: If file type is not supported
@@ -118,20 +118,19 @@ def extract_text_from_file(file_path: str, file_type: str | None = None) -> RawU
         text, metadata = extract_text_from_txt(file_path)
     else:
         raise ValueError(
-            f"Unsupported file type: {file_type}. "
-            f"Supported types: pdf, docx, txt"
+            f"Unsupported file type: {file_type}. Supported types: pdf, docx, txt"
         )
 
-    # Generate upload ID
+    # Generate document ID
     filename = os.path.basename(file_path)
-    upload_id = RawUpload._generate_upload_id(text, filename)
+    document_id = RawDocument._generate_document_id(text, filename)
 
-    return RawUpload(
-        upload_id=upload_id,
+    return RawDocument(
+        document_id=document_id,
         filename=filename,
         source_type=file_type,
         raw_text=text,
-        upload_timestamp=datetime.now(),
+        document_timestamp=datetime.now(),
         file_size=os.path.getsize(file_path),
         metadata=metadata,
     )

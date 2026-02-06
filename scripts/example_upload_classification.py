@@ -1,16 +1,17 @@
 """
-Test of upload classification.
+Test of document classification.
 
 Usage:
-    uv run python scripts/example_upload_classification.py
+    uv run python scripts/example_document_classification.py
 """
 
 import asyncio
 import logging
 from datetime import datetime
 
-from invitation_triage.models import SafeUpload
-from invitation_triage.upload_classifier import classify_upload
+from invitation_triage.document_classifier import classify_document
+
+from invitation_triage.models import SafeDocument
 
 
 async def main():
@@ -22,7 +23,7 @@ async def main():
     )
 
     print("=" * 80)
-    print("UPLOAD CLASSIFICATION TEST")
+    print("document CLASSIFICATION TEST")
     print("=" * 80)
 
     # Test 1: Invitation
@@ -55,25 +56,25 @@ Prof. Sarah Johnson
 Chief Executive, The Royal Society
 """
 
-    # For test data, create SafeUpload directly (PII already handled in test text)
-    upload1 = SafeUpload(
-        upload_id="TEST-001",
+    # For test data, create SafeDocument directly (PII already handled in test text)
+    document1 = SafeDocument(
+        document_id="TEST-001",
         filename="royal_society_invite.eml",
         source_type="email",
         safe_text=invitation_text,
-        upload_timestamp=datetime.now(),
+        document_timestamp=datetime.now(),
         pii_extracted={"emails": [], "phone_numbers": [], "names": []},
         links_extracted=[],
         metadata={},
     )
 
-    print(f"\nUpload ID: {upload1.upload_id}")
-    print(f"Source: {upload1.source_type}")
-    print(f"Filename: {upload1.filename}")
+    print(f"\ndocument ID: {document1.document_id}")
+    print(f"Source: {document1.source_type}")
+    print(f"Filename: {document1.filename}")
     print(f"\nText preview: {invitation_text[:150]}...")
 
     print("\n🤖 Classifying document...")
-    result1 = await classify_upload(upload1)
+    result1 = await classify_document(document1)
 
     print("\n" + "-" * 80)
     print("CLASSIFICATION RESULT")
@@ -117,24 +118,24 @@ Jane Smith, Deputy Director - AI Policy
 DSIT
 """
 
-    upload2 = SafeUpload(
-        upload_id="TEST-002",
+    document2 = SafeDocument(
+        document_id="TEST-002",
         filename="AI_Safety_Funding_Submission.pdf",
         source_type="pdf",
         safe_text=submission_text,
-        upload_timestamp=datetime.now(),
+        document_timestamp=datetime.now(),
         pii_extracted={"emails": [], "phone_numbers": [], "names": []},
         links_extracted=[],
         metadata={},
     )
 
-    print(f"\nUpload ID: {upload2.upload_id}")
-    print(f"Source: {upload2.source_type}")
-    print(f"Filename: {upload2.filename}")
+    print(f"\ndocument ID: {document2.document_id}")
+    print(f"Source: {document2.source_type}")
+    print(f"Filename: {document2.filename}")
     print(f"\nText preview: {submission_text[:150]}...")
 
     print("\n🤖 Classifying document...")
-    result2 = await classify_upload(upload2)
+    result2 = await classify_document(document2)
 
     print("\n" + "-" * 80)
     print("CLASSIFICATION RESULT")
@@ -165,24 +166,24 @@ Director of Events
 Tech Innovation UK
 """
 
-    upload3 = SafeUpload(
-        upload_id="TEST-003",
+    document3 = SafeDocument(
+        document_id="TEST-003",
         filename="thank_you.eml",
         source_type="email",
         safe_text=other_text,
-        upload_timestamp=datetime.now(),
+        document_timestamp=datetime.now(),
         pii_extracted={"emails": [], "phone_numbers": [], "names": []},
         links_extracted=[],
         metadata={},
     )
 
-    print(f"\nUpload ID: {upload3.upload_id}")
-    print(f"Source: {upload3.source_type}")
-    print(f"Filename: {upload3.filename}")
+    print(f"\ndocument ID: {document3.document_id}")
+    print(f"Source: {document3.source_type}")
+    print(f"Filename: {document3.filename}")
     print(f"\nText preview: {other_text[:150]}...")
 
     print("\n🤖 Classifying document...")
-    result3 = await classify_upload(upload3)
+    result3 = await classify_document(document3)
 
     print("\n" + "-" * 80)
     print("CLASSIFICATION RESULT")
@@ -213,24 +214,24 @@ David Chen
 Head of Stakeholder Engagement
 """
 
-    upload4 = SafeUpload(
-        upload_id="TEST-004",
+    document4 = SafeDocument(
+        document_id="TEST-004",
         filename="stakeholder_forum.eml",
         source_type="email",
         safe_text=ambiguous_text,
-        upload_timestamp=datetime.now(),
+        document_timestamp=datetime.now(),
         pii_extracted={"emails": [], "phone_numbers": [], "names": []},
         links_extracted=[],
         metadata={},
     )
 
-    print(f"\nUpload ID: {upload4.upload_id}")
-    print(f"Source: {upload4.source_type}")
-    print(f"Filename: {upload4.filename}")
+    print(f"\ndocument ID: {document4.document_id}")
+    print(f"Source: {document4.source_type}")
+    print(f"Filename: {document4.filename}")
     print(f"\nText preview: {ambiguous_text[:150]}...")
 
     print("\n🤖 Classifying document...")
-    result4 = await classify_upload(upload4)
+    result4 = await classify_document(document4)
 
     print("\n" + "-" * 80)
     print("CLASSIFICATION RESULT")
@@ -243,10 +244,18 @@ Head of Stakeholder Engagement
     print("\n\n" + "=" * 80)
     print("TEST SUMMARY")
     print("=" * 80)
-    print(f"\nTest 1 (Invitation):     {result1.document_type} (confidence: {result1.confidence:.2f})")
-    print(f"Test 2 (Submission):     {result2.document_type} (confidence: {result2.confidence:.2f})")
-    print(f"Test 3 (Other):          {result3.document_type} (confidence: {result3.confidence:.2f})")
-    print(f"Test 4 (Ambiguous):      {result4.document_type} (confidence: {result4.confidence:.2f})")
+    print(
+        f"\nTest 1 (Invitation):     {result1.document_type} (confidence: {result1.confidence:.2f})"
+    )
+    print(
+        f"Test 2 (Submission):     {result2.document_type} (confidence: {result2.confidence:.2f})"
+    )
+    print(
+        f"Test 3 (Other):          {result3.document_type} (confidence: {result3.confidence:.2f})"
+    )
+    print(
+        f"Test 4 (Ambiguous):      {result4.document_type} (confidence: {result4.confidence:.2f})"
+    )
 
     print("\n" + "=" * 80)
     print("ALL TESTS COMPLETE")
