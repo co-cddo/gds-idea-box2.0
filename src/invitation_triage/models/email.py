@@ -1,11 +1,12 @@
 import hashlib
-import re
 from datetime import datetime
 from typing import Any
 
 import pandas as pd
 from dateutil import parser
 from pydantic import BaseModel
+
+from invitation_triage.pii_redaction import PIIRedactor
 
 
 class RawEmail(BaseModel):
@@ -104,19 +105,15 @@ class SafeEmail(BaseModel):
 
     @classmethod
     def from_raw_email(cls, raw_email: RawEmail) -> "SafeEmail":
-        """Create SafeEmail by extracting PII and links from RawEmail."""
-        # Extract PII
-        pii = cls._extract_pii(raw_email.subject, raw_email.body)
+        """Extract PII and create SafeEmail using PIIRedactor."""
+        # Create PIIRedactor instance for this email (and potential attachments)
+        redactor = PIIRedactor()
 
-        # Extract links
-        links = cls._extract_links(raw_email.subject, raw_email.body)
+        # Process subject
+        safe_subject = redactor.process(raw_email.subject)
 
-        # Redact PII first, then links
-        safe_subject = cls._redact_pii(raw_email.subject, pii)
-        safe_subject = cls._redact_links(safe_subject, links)
-
-        safe_body = cls._redact_pii(raw_email.body, pii)
-        safe_body = cls._redact_links(safe_body, links)
+        # Process body
+        safe_body = redactor.process(raw_email.body)
 
         return cls(
             email_id=raw_email.email_id,
@@ -124,87 +121,14 @@ class SafeEmail(BaseModel):
             body=safe_body,
             received_date=raw_email.received_date,
             has_attachments=raw_email.has_attachments,
-            pii_extracted=pii,
-            links_extracted=links,
+            pii_extracted=redactor.pii,  # Access accumulated PII
+            links_extracted=redactor.links,  # Access accumulated links
         )
-
-    @staticmethod
-    def _extract_links(subject: str, body: str) -> list[dict[str, str]]:
-        """Extract URLs and create domain-visible placeholders."""
-        text = f"{subject} {body}"
-        url_pattern = r'https?://[^\s<>"{}|\\^`\[\]]+'
-        urls = list(set(re.findall(url_pattern, text)))
-
-        links = []
-        for i, url in enumerate(urls):
-            # Extract domain
-            domain_match = re.search(r"https?://([^/]+)", url)
-            domain = domain_match.group(1) if domain_match else "unknown"
-
-            links.append({"placeholder": f"[LINK_{i}: {domain}]", "url": url})
-
-        return links
-
-    @staticmethod
-    def _redact_links(text: str, links: list[dict[str, str]]) -> str:
-        """Replace URLs with domain-visible placeholders."""
-        redacted = text
-        for link in links:
-            redacted = redacted.replace(link["url"], link["placeholder"])
-        return redacted
 
     def restore_links(self, text: str) -> str:
         """Restore links to redacted text."""
-        restored = text
-        for link in self.links_extracted:
-            restored = restored.replace(link["placeholder"], link["url"])
-        return restored
-
-    @staticmethod
-    def _extract_pii(subject: str, body: str) -> dict[str, list[str]]:
-        """Extract PII from text. Returns dict of PII types to values."""
-        import re
-
-        text = f"{subject} {body}"
-        pii = {
-            "emails": [],
-            "phone_numbers": [],
-            "names": [],  # TODO: Add NER for name detection
-        }
-
-        # Extract email addresses
-        email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
-        pii["emails"] = list(set(re.findall(email_pattern, text)))
-
-        # Extract UK phone numbers (basic pattern)
-        phone_pattern = r"(?:\b0\d{10}\b|\+44\d{10}\b)"
-        pii["phone_numbers"] = list(set(re.findall(phone_pattern, text)))
-
-        return pii
-
-    @staticmethod
-    def _redact_pii(text: str, pii: dict[str, list[str]]) -> str:
-        """Redact PII from text with placeholders."""
-        redacted = text
-
-        # Redact emails
-        for i, email in enumerate(pii["emails"]):
-            redacted = redacted.replace(email, f"[EMAIL_{i}]")
-
-        # Redact phone numbers
-        for i, phone in enumerate(pii["phone_numbers"]):
-            redacted = redacted.replace(phone, f"[PHONE_{i}]")
-
-        return redacted
+        return PIIRedactor.restore_links(text, self.links_extracted)
 
     def restore_pii(self, text: str) -> str:
         """Restore PII to redacted text (for authorized use)."""
-        restored = text
-
-        for i, email in enumerate(self.pii_extracted["emails"]):
-            restored = restored.replace(f"[EMAIL_{i}]", email)
-
-        for i, phone in enumerate(self.pii_extracted["phone_numbers"]):
-            restored = restored.replace(f"[PHONE_{i}]", phone)
-
-        return restored
+        return PIIRedactor.restore_pii(text, self.pii_extracted)

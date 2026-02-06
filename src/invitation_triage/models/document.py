@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from invitation_triage.pii_redaction import PIIRedactor
+
 
 class RawDocument(BaseModel):
     """Raw Document type file before PII extraction."""
@@ -48,17 +50,12 @@ class SafeDocument(BaseModel):
 
     @classmethod
     def from_raw_document(cls, raw_document: "RawDocument") -> "SafeDocument":
-        """Extract PII and create SafeDocument."""
-        # Reuse SafeEmail PII extraction methods
-        from invitation_triage.models.email import SafeEmail
+        """Extract PII and create SafeDocument using PIIRedactor."""
+        # Create PIIRedactor instance for this document
+        redactor = PIIRedactor()
 
-        # Extract PII and links (using empty subject since files don't have one)
-        pii = SafeEmail._extract_pii("", raw_document.raw_text)
-        links = SafeEmail._extract_links("", raw_document.raw_text)
-
-        # Redact PII, then links
-        safe_text = SafeEmail._redact_pii(raw_document.raw_text, pii)
-        safe_text = SafeEmail._redact_links(safe_text, links)
+        # Process text through redactor
+        safe_text = redactor.process(raw_document.raw_text)
 
         return cls(
             document_id=raw_document.document_id,
@@ -66,30 +63,19 @@ class SafeDocument(BaseModel):
             source_type=raw_document.source_type,
             safe_text=safe_text,
             document_timestamp=raw_document.document_timestamp,
-            pii_extracted=pii,
-            links_extracted=links,
+            pii_extracted=redactor.pii,  # Access accumulated PII
+            links_extracted=redactor.links,  # Access accumulated links
             file_size=raw_document.file_size,
             metadata=raw_document.metadata,
         )
 
     def restore_pii(self, text: str) -> str:
         """Restore PII to redacted text (for authorized use)."""
-        restored = text
-
-        for i, email in enumerate(self.pii_extracted["emails"]):
-            restored = restored.replace(f"[EMAIL_{i}]", email)
-
-        for i, phone in enumerate(self.pii_extracted["phone_numbers"]):
-            restored = restored.replace(f"[PHONE_{i}]", phone)
-
-        return restored
+        return PIIRedactor.restore_pii(text, self.pii_extracted)
 
     def restore_links(self, text: str) -> str:
         """Restore links to redacted text."""
-        restored = text
-        for link in self.links_extracted:
-            restored = restored.replace(link["placeholder"], link["url"])
-        return restored
+        return PIIRedactor.restore_links(text, self.links_extracted)
 
 
 class DocumentClassification(BaseModel):
