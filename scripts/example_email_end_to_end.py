@@ -1,13 +1,14 @@
 """
-Complete end-to-end test of the invitation triage system.
+Complete end-to-end test of email processing pipeline.
 
-This script demonstrates the full pipeline:
+This script demonstrates the full pipeline for email invitations:
 1. Raw email → SafeEmail (PII redaction)
-2. SafeEmail → Invitation extraction (LLM)
-3. Invitation → Triaged decision with calendar checking (LLM)
+2. SafeEmail → SafeDocument (unified document format)
+3. SafeDocument → Invitation extraction (LLM)
+4. Invitation → Triaged decision with calendar checking (LLM)
 
 Usage:
-    uv run python scripts/example_end_to_end.py
+    uv run python scripts/example_email_end_to_end.py
 """
 
 import asyncio
