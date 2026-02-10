@@ -1,8 +1,12 @@
 """
-Redraft response based on office notes.
+LLM-based invitation response redrafting.
 
-When the office responds with 'yes_but' or 'no', the original draft needs to be
-modified to reflect the minister's actual position.
+When the office responds with 'yes_but' or 'no' to an invitation triage
+recommendation, the original draft needs to be modified to reflect the
+minister's actual position.
+
+This module handles invitations only. Submissions use deterministic
+template formatting via submission_reply.py.
 """
 
 import logging
@@ -12,14 +16,14 @@ from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
 from invitation_triage.config import model
 from invitation_triage.exceptions import ExtractionError
-from invitation_triage.models import Submission, TriagedDecision
+from invitation_triage.models import TriagedDecision
 
 logger = logging.getLogger(__name__)
 
 REDRAFT_INSTRUCTIONS = """
 You are an expert at drafting ministerial correspondence.
 
-Your task is to modify an existing draft response based on new instructions from the minister or Private Office.
+Your task is to modify an existing draft invitation response based on new instructions from the minister or Private Office.
 
 RULES FOR REDRAFTING:
 - Maintain professional, ministerial tone
@@ -31,47 +35,40 @@ RULES FOR REDRAFTING:
 
 COMMON REDRAFT SCENARIOS:
 
-1. CONDITIONAL ACCEPTANCE (invitation):
+1. CONDITIONAL ACCEPTANCE:
    - Original: "I would be delighted to attend..."
    - Notes: "Can only do 7pm onwards, not 6pm"
    - Redraft: Modify to specify the timing constraint while maintaining acceptance
 
-2. REDUCED APPROVAL (submission):
-   - Original: "I approve the £3M funding as recommended..."
-   - Notes: "Approve £2M only, not £3M"
-   - Redraft: Change amount and add request for revised scope
-
-3. REQUEST MORE INFO (submission):
-   - Original: "I approve the funding as recommended..."
-   - Notes: "Need more detail on partner commitments first"
-   - Redraft: Change to request additional information before deciding
-
-4. DECLINE (invitation):
+2. DECLINE:
    - Original: "I would be delighted to attend..."
    - Notes: "Cabinet committee conflict, cannot attend"
    - Redraft: Politely decline and explain the conflict
+
+3. DELEGATE:
+   - Original: "I would be delighted to attend..."
+   - Notes: "Send junior minister instead"
+   - Redraft: Express interest, explain delegation, name the delegate
 
 Your redrafted response should be ready to send and accurately reflect the office notes.
 """
 
 
-async def redraft_response(
+async def redraft_invitation_response(
     original_draft: str,
     office_notes: str,
-    source: TriagedDecision | Submission,
-    document_type: str,
+    source: TriagedDecision,
 ) -> str:
     """
-    Redraft response based on office notes.
+    Redraft an invitation response based on office notes.
 
     Called when office responds with 'yes_but' or 'no' to modify the original
-    system-generated draft.
+    system-generated draft for an invitation.
 
     Args:
-        original_draft: The original draft from triage or submission extraction
+        original_draft: The original draft from triage
         office_notes: Office notes explaining modifications/conditions
-        source: The original TriagedDecision or Submission for context
-        document_type: "invitation" or "submission" for context
+        source: The original TriagedDecision for context
 
     Returns:
         Redrafted response text ready to send
@@ -85,18 +82,10 @@ async def redraft_response(
 
     @agent.system_prompt
     def get_system_prompt(ctx) -> str:
-        # Build context from source
-        if isinstance(source, TriagedDecision):
-            context = f"""
+        context = f"""
 DOCUMENT TYPE: Invitation
 ORIGINAL DECISION: {source.decision}
 ORIGINAL REASONING: {source.reason}
-"""
-        else:  # Submission
-            context = f"""
-DOCUMENT TYPE: Submission
-POLICY AREA: {source.policy_area}
-OFFICIAL RECOMMENDATION: {source.official_recommendation}
 """
 
         return f"""{REDRAFT_INSTRUCTIONS}
@@ -114,9 +103,9 @@ Return only the redrafted text, nothing else.
 """
 
     logger.info(
-        "Redrafting response",
+        "Redrafting invitation response",
         extra={
-            "document_type": document_type,
+            "email_id": source.email_id,
             "notes_preview": office_notes[:100],
         },
     )
@@ -128,31 +117,31 @@ Return only the redrafted text, nothing else.
         redrafted = result.output
 
         logger.info(
-            f"Redraft complete: {len(redrafted)} characters",
-            extra={"document_type": document_type, "length": len(redrafted)},
+            f"Invitation redraft complete: {len(redrafted)} characters",
+            extra={"email_id": source.email_id, "length": len(redrafted)},
         )
 
         return redrafted
 
     except (ModelRetry, UnexpectedModelBehavior) as e:
         logger.error(
-            f"LLM failed to redraft response: {str(e)}",
-            extra={"document_type": document_type},
+            f"LLM failed to redraft invitation response: {str(e)}",
+            extra={"email_id": source.email_id},
             exc_info=True,
         )
         raise ExtractionError(
-            f"LLM failed to redraft response: {str(e)}",
-            text_preview=original_draft[:200],
+            f"LLM failed to redraft invitation response: {str(e)}",
+            email_id=source.email_id,
             cause=e,
         ) from e
     except Exception as e:
         logger.error(
-            f"Unexpected error during redraft: {str(e)}",
-            extra={"document_type": document_type},
+            f"Unexpected error during invitation redraft: {str(e)}",
+            extra={"email_id": source.email_id},
             exc_info=True,
         )
         raise ExtractionError(
-            f"Unexpected error during redraft: {str(e)}",
-            text_preview=original_draft[:200],
+            f"Unexpected error during invitation redraft: {str(e)}",
+            email_id=source.email_id,
             cause=e,
         ) from e

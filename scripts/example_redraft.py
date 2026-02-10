@@ -1,7 +1,9 @@
 """
-Test of response redrafting.
+Test of response redrafting and submission reply generation.
 
-Shows how original drafts are modified based on office notes.
+Shows how:
+- Invitation drafts are modified by LLM based on office notes
+- Submission replies are generated formulaically from minister's response
 
 Usage:
     uv run python scripts/example_redraft.py
@@ -10,8 +12,9 @@ Usage:
 import asyncio
 import logging
 
-from invitation_triage.models import Submission, TriagedDecision
-from invitation_triage.redraft import redraft_response
+from invitation_triage.invitation_redraft import redraft_invitation_response
+from invitation_triage.models import Submission, SubmissionResponse, TriagedDecision
+from invitation_triage.submission_reply import generate_submission_reply
 
 
 async def main():
@@ -23,15 +26,15 @@ async def main():
     )
 
     print("=" * 80)
-    print("REDRAFT RESPONSE TEST")
+    print("RESPONSE GENERATION TEST")
     print("=" * 80)
 
     # ========================================================================
-    # TEST 1: Invitation - Conditional Acceptance
+    # TEST 1: Invitation - Conditional Acceptance (LLM redraft)
     # ========================================================================
 
     print("\n" + "=" * 80)
-    print("TEST 1: INVITATION - CONDITIONAL ACCEPTANCE")
+    print("TEST 1: INVITATION - CONDITIONAL ACCEPTANCE (LLM redraft)")
     print("=" * 80)
 
     original_invitation_draft = """Dear Dr Chen,
@@ -44,12 +47,12 @@ Best regards"""
 
     office_notes_1 = "Can only attend from 7pm onwards due to Cabinet committee"
 
-    print("\n📄 ORIGINAL DRAFT:")
+    print("\n ORIGINAL DRAFT:")
     print("-" * 80)
     print(original_invitation_draft)
     print("-" * 80)
 
-    print(f"\n📝 OFFICE NOTES: {office_notes_1}")
+    print(f"\n OFFICE NOTES: {office_notes_1}")
 
     # Create mock source for context (would normally come from triage)
     mock_decision = TriagedDecision(
@@ -60,39 +63,26 @@ Best regards"""
         draft_response=original_invitation_draft,
     )
 
-    print("\n🤖 Redrafting response...")
-    redrafted_1 = await redraft_response(
+    print("\n Redrafting invitation response...")
+    redrafted_1 = await redraft_invitation_response(
         original_draft=original_invitation_draft,
         office_notes=office_notes_1,
         source=mock_decision,
-        document_type="invitation",
     )
 
-    print("\n✉️  REDRAFTED RESPONSE:")
+    print("\n REDRAFTED RESPONSE:")
     print("-" * 80)
     print(redrafted_1)
     print("-" * 80)
 
     # ========================================================================
-    # TEST 2: Submission - Reduced Approval
+    # TEST 2: Submission - Minister's Response (template-based)
     # ========================================================================
 
     print("\n\n" + "=" * 80)
-    print("TEST 2: SUBMISSION - REDUCED APPROVAL")
+    print("TEST 2: SUBMISSION - REDUCED APPROVAL (template reply)")
     print("=" * 80)
 
-    original_submission_draft = """I approve the £3M funding from contingency reserve as recommended. Please proceed with Treasury notifications by the 7 February deadline and ensure contracts are signed by 15 February."""
-
-    office_notes_2 = "Approve £2M only, not the full £3M. Request revised project scope"
-
-    print("\n📄 ORIGINAL DRAFT:")
-    print("-" * 80)
-    print(original_submission_draft)
-    print("-" * 80)
-
-    print(f"\n📝 OFFICE NOTES: {office_notes_2}")
-
-    # Create mock submission for context
     mock_submission = Submission(
         submission_id="SUB-TEST-001",
         policy_area="AI Safety and International Collaboration",
@@ -101,42 +91,33 @@ Best regards"""
         official_recommendation="Approve £3M from contingency reserve",
         urgency_assessment="urgent",
         decision_deadline="7 February 2026",
-        draft_response=original_submission_draft,
+        draft_response="I approve the £3M funding from contingency reserve as recommended.",
     )
 
-    print("\n🤖 Redrafting response...")
-    redrafted_2 = await redraft_response(
-        original_draft=original_submission_draft,
-        office_notes=office_notes_2,
-        source=mock_submission,
-        document_type="submission",
+    submission_response_2 = SubmissionResponse(
+        submission_id="SUB-TEST-001",
+        minister_response="Approve £2M only, not £3M. Request revised project scope.",
     )
 
-    print("\n✉️  REDRAFTED RESPONSE:")
+    print(f"\n MINISTER'S RESPONSE: {submission_response_2.minister_response}")
+
+    reply_2 = generate_submission_reply(
+        submission=mock_submission,
+        response=submission_response_2,
+    )
+
+    print("\n SUBMISSION REPLY:")
     print("-" * 80)
-    print(redrafted_2)
+    print(reply_2.reply_text)
     print("-" * 80)
 
     # ========================================================================
-    # TEST 3: Submission - Request More Info
+    # TEST 3: Submission - Request More Info (template-based)
     # ========================================================================
 
     print("\n\n" + "=" * 80)
-    print("TEST 3: SUBMISSION - REQUEST MORE INFO")
+    print("TEST 3: SUBMISSION - REQUEST MORE INFO (template reply)")
     print("=" * 80)
-
-    original_submission_draft_3 = """I approve the £3M funding from contingency reserve as recommended. Please proceed with Treasury notifications by the 7 February deadline."""
-
-    office_notes_3 = (
-        "Need more detail on international partner commitments before approving"
-    )
-
-    print("\n📄 ORIGINAL DRAFT:")
-    print("-" * 80)
-    print(original_submission_draft_3)
-    print("-" * 80)
-
-    print(f"\n📝 OFFICE NOTES: {office_notes_3}")
 
     mock_submission_3 = Submission(
         submission_id="SUB-TEST-002",
@@ -146,24 +127,29 @@ Best regards"""
         official_recommendation="Approve £3M from contingency reserve",
         urgency_assessment="urgent",
         decision_deadline="7 February 2026",
-        draft_response=original_submission_draft_3,
+        draft_response="I approve the £3M funding from contingency reserve as recommended.",
     )
 
-    print("\n🤖 Redrafting response...")
-    redrafted_3 = await redraft_response(
-        original_draft=original_submission_draft_3,
-        office_notes=office_notes_3,
-        source=mock_submission_3,
-        document_type="submission",
+    submission_response_3 = SubmissionResponse(
+        submission_id="SUB-TEST-002",
+        minister_response="Need more detail on international partner commitments before approving. "
+        "Please provide a breakdown of partner contributions and timelines.",
     )
 
-    print("\n✉️  REDRAFTED RESPONSE:")
+    print(f"\n MINISTER'S RESPONSE: {submission_response_3.minister_response}")
+
+    reply_3 = generate_submission_reply(
+        submission=mock_submission_3,
+        response=submission_response_3,
+    )
+
+    print("\n SUBMISSION REPLY:")
     print("-" * 80)
-    print(redrafted_3)
+    print(reply_3.reply_text)
     print("-" * 80)
 
     print("\n" + "=" * 80)
-    print("✨ All redraft tests complete!")
+    print("All response generation tests complete!")
     print("=" * 80)
 
 

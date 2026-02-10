@@ -1,7 +1,8 @@
 """
 Test of complete action extraction flow.
 
-Shows the full workflow from office response to extracted actions.
+Shows the full workflow from office response to extracted actions,
+using LLM redraft for invitations and template replies for submissions.
 
 Usage:
     uv run python scripts/example_action_extraction.py
@@ -13,14 +14,16 @@ import logging
 from datetime import datetime
 
 from invitation_triage.action_extraction import extract_actions
+from invitation_triage.invitation_redraft import redraft_invitation_response
 from invitation_triage.models import (
     DocumentClassification,
     OfficeResponse,
     SafeDocument,
     Submission,
+    SubmissionResponse,
     TriagedDecision,
 )
-from invitation_triage.redraft import redraft_response
+from invitation_triage.submission_reply import generate_submission_reply
 
 
 async def main():
@@ -87,26 +90,25 @@ Best regards"""
         notes="Can only attend from 7pm onwards due to Cabinet committee",
     )
 
-    print("\n📝 OFFICE RESPONSE:")
+    print("\n OFFICE RESPONSE:")
     print(f"   Decision: {office_response_1.decision}")
     print(f"   Notes: {office_response_1.notes}")
 
-    # Redraft the response
-    print("\n🤖 Redrafting response based on office notes...")
-    final_draft_1 = await redraft_response(
+    # Redraft the invitation response using LLM
+    print("\n Redrafting invitation response based on office notes...")
+    final_draft_1 = await redraft_invitation_response(
         original_draft=original_draft_1,
         office_notes=office_response_1.notes,
         source=triaged_1,
-        document_type="invitation",
     )
 
-    print("\n✉️  REDRAFTED RESPONSE:")
+    print("\n REDRAFTED RESPONSE:")
     print("-" * 80)
     print(final_draft_1)
     print("-" * 80)
 
     # Extract actions
-    print("\n🤖 Extracting actions...")
+    print("\n Extracting actions...")
     result_1 = await extract_actions(
         document=safe_doc_1,
         classification=classification_1,
@@ -115,7 +117,7 @@ Best regards"""
         final_draft=final_draft_1,
     )
 
-    print("\n📋 EXTRACTED ACTIONS:")
+    print("\n EXTRACTED ACTIONS:")
     print(f"   Total Actions: {len(result_1.actions)}")
     print(f"   Summary: {result_1.summary}")
     print()
@@ -133,11 +135,11 @@ Best regards"""
             print(f"     Has Draft: Yes ({len(action.draft_content)} chars)")
 
     # ========================================================================
-    # TEST 2: Submission - Approve with Reduced Amount
+    # TEST 2: Submission - Minister's Response (template reply)
     # ========================================================================
 
     print("\n\n" + "=" * 80)
-    print("TEST 2: SUBMISSION - APPROVE WITH REDUCED AMOUNT")
+    print("TEST 2: SUBMISSION - APPROVE WITH REDUCED AMOUNT (template reply)")
     print("=" * 80)
 
     # Mock SafeDocument
@@ -160,8 +162,6 @@ Best regards"""
     )
 
     # Mock Submission
-    original_draft_2 = """I approve the £3M funding from contingency reserve as recommended. Please proceed with Treasury notifications by the 7 February deadline and ensure contracts are signed by 15 February."""
-
     submission_2 = Submission(
         submission_id="SUB-2026-001",
         policy_area="AI Safety and International Collaboration",
@@ -170,46 +170,41 @@ Best regards"""
         official_recommendation="Approve £3M from contingency reserve",
         urgency_assessment="urgent",
         decision_deadline="7 February 2026",
-        draft_response=original_draft_2,
+        draft_response="I approve the £3M funding from contingency reserve as recommended. "
+        "Please proceed with Treasury notifications by the 7 February deadline "
+        "and ensure contracts are signed by 15 February.",
     )
 
-    # Office Response - "yes_but" with reduced amount
-    office_response_2 = OfficeResponse(
-        document_id="sub-001",
-        document_type="submission",
-        decision="yes_but",
-        notes="Approve £2M only, not £3M. Request revised project scope.",
+    # Minister's freeform response
+    submission_response_2 = SubmissionResponse(
+        submission_id="SUB-2026-001",
+        minister_response="Approve £2M only, not £3M. Request revised project scope.",
     )
 
-    print("\n📝 OFFICE RESPONSE:")
-    print(f"   Decision: {office_response_2.decision}")
-    print(f"   Notes: {office_response_2.notes}")
+    print(f"\n MINISTER'S RESPONSE: {submission_response_2.minister_response}")
 
-    # Redraft the response
-    print("\n🤖 Redrafting response based on office notes...")
-    final_draft_2 = await redraft_response(
-        original_draft=original_draft_2,
-        office_notes=office_response_2.notes,
-        source=submission_2,
-        document_type="submission",
+    # Generate template-based reply (no LLM)
+    reply_2 = generate_submission_reply(
+        submission=submission_2,
+        response=submission_response_2,
     )
 
-    print("\n✉️  REDRAFTED RESPONSE:")
+    print("\n SUBMISSION REPLY:")
     print("-" * 80)
-    print(final_draft_2)
+    print(reply_2.reply_text)
     print("-" * 80)
 
     # Extract actions
-    print("\n🤖 Extracting actions...")
+    print("\n Extracting actions...")
     result_2 = await extract_actions(
         document=safe_doc_2,
         classification=classification_2,
         source=submission_2,
-        office_response=office_response_2,
-        final_draft=final_draft_2,
+        office_response=submission_response_2,
+        final_draft=reply_2.reply_text,
     )
 
-    print("\n📋 EXTRACTED ACTIONS:")
+    print("\n EXTRACTED ACTIONS:")
     print(f"   Total Actions: {len(result_2.actions)}")
     print(f"   Summary: {result_2.summary}")
     print()
@@ -237,13 +232,13 @@ Best regards"""
     # Convert to dict for JSON serialization
     result_dict = result_1.model_dump(mode="json")
 
-    print("\n📄 JSON Output Preview:")
+    print("\n JSON Output Preview:")
     print(json.dumps(result_dict, indent=2)[:500] + "...")
 
     print("\n" + "=" * 80)
-    print("✨ All action extraction tests complete!")
+    print("All action extraction tests complete!")
     print("=" * 80)
-    print("\n💾 Actions can be stored as JSON for tracking and execution.")
+    print("\n Actions can be stored as JSON for tracking and execution.")
 
 
 if __name__ == "__main__":

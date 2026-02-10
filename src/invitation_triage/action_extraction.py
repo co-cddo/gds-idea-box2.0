@@ -20,6 +20,7 @@ from invitation_triage.models import (
     OfficeResponse,
     SafeDocument,
     Submission,
+    SubmissionResponse,
     TriagedDecision,
 )
 
@@ -98,7 +99,7 @@ async def extract_actions(
     document: SafeDocument,
     classification: DocumentClassification,
     source: TriagedDecision | Submission,
-    office_response: OfficeResponse,
+    office_response: OfficeResponse | SubmissionResponse,
     final_draft: str,
 ) -> ActionExtractionResult:
     """
@@ -108,7 +109,9 @@ async def extract_actions(
         document: The original document
         classification: Document classification
         source: Original TriagedDecision or Submission for context
-        office_response: Office's response (yes/yes_but/no + notes)
+        office_response: Office's response - OfficeResponse for invitations
+            (yes/yes_but/no + notes) or SubmissionResponse for submissions
+            (freeform minister response)
         final_draft: Final draft text (original or redrafted)
 
     Returns:
@@ -123,9 +126,15 @@ async def extract_actions(
         def __init__(self):
             self.document_id = document.document_id
             self.document_type = classification.document_type
-            self.office_decision = office_response.decision
-            self.office_notes = office_response.notes
             self.final_draft = final_draft
+
+            # Extract office decision/notes based on response type
+            if isinstance(office_response, SubmissionResponse):
+                self.office_decision = "minister_response"
+                self.office_notes = office_response.minister_response
+            else:
+                self.office_decision = office_response.decision
+                self.office_notes = office_response.notes
 
             # Context from source
             if isinstance(source, TriagedDecision):
@@ -196,11 +205,18 @@ Return a list of Action objects.
         actions = result.output
 
         # Build final draft object
+        if isinstance(office_response, SubmissionResponse):
+            was_modified = True  # Submission replies are always generated from response
+            office_notes = office_response.minister_response
+        else:
+            was_modified = office_response.decision in ["yes_but", "no"]
+            office_notes = office_response.notes
+
         final_draft_obj = FinalDraft(
             document_id=document.document_id,
             content=final_draft,
-            was_modified=office_response.decision in ["yes_but", "no"],
-            office_notes=office_response.notes,
+            was_modified=was_modified,
+            office_notes=office_notes,
         )
 
         # Fill in source document details for each action
@@ -210,21 +226,29 @@ Return a list of Action objects.
 
         # Generate summary
         action_summary = f"{len(actions)} action(s) extracted"
-        if office_response.decision == "yes":
+        if isinstance(office_response, SubmissionResponse):
+            decision_text = (
+                f"Minister's response: {office_response.minister_response}"
+            )
+            office_decision_value = "yes"  # Default for ActionExtractionResult
+        elif office_response.decision == "yes":
             decision_text = "approved/accepted as recommended"
+            office_decision_value = office_response.decision
         elif office_response.decision == "yes_but":
             decision_text = (
                 f"approved/accepted with modifications: {office_response.notes}"
             )
+            office_decision_value = office_response.decision
         else:  # no
             decision_text = f"declined/rejected: {office_response.notes}"
+            office_decision_value = office_response.decision
 
         summary = f"Decision: {decision_text}. {action_summary}."
 
         extraction_result = ActionExtractionResult(
             document_id=document.document_id,
             document_type=classification.document_type,
-            office_decision=office_response.decision,
+            office_decision=office_decision_value,
             final_draft=final_draft_obj,
             actions=actions,
             summary=summary,
