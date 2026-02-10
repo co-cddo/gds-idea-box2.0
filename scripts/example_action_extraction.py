@@ -17,7 +17,7 @@ from invitation_triage.action_extraction import extract_actions
 from invitation_triage.invitation_redraft import redraft_invitation_response
 from invitation_triage.models import (
     DocumentClassification,
-    OfficeResponse,
+    InvitationResponse,
     SafeDocument,
     Submission,
     SubmissionResponse,
@@ -83,9 +83,8 @@ Best regards"""
     )
 
     # Office Response - "yes_but" with modification
-    office_response_1 = OfficeResponse(
+    office_response_1 = InvitationResponse(
         document_id="invite-001",
-        document_type="invitation",
         decision="yes_but",
         notes="Can only attend from 7pm onwards due to Cabinet committee",
     )

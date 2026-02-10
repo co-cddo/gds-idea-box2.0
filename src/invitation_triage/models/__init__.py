@@ -2,7 +2,7 @@ from invitation_triage.models.action import (
     Action,
     ActionExtractionResult,
     FinalDraft,
-    OfficeResponse,
+    InvitationResponse,
 )
 from invitation_triage.models.calendar import CalendarEvent
 from invitation_triage.models.decision import TriagedDecision
@@ -31,7 +31,7 @@ __all__ = [
     "MinisterPersona",
     "NotInvitation",
     "NotSubmission",
-    "OfficeResponse",
+    "InvitationResponse",
     "RawDocument",
     "RawEmail",
     "SafeDocument",

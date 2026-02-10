@@ -17,7 +17,7 @@ from invitation_triage.models import (
     ActionExtractionResult,
     DocumentClassification,
     FinalDraft,
-    OfficeResponse,
+    InvitationResponse,
     SafeDocument,
     Submission,
     SubmissionResponse,
@@ -99,7 +99,7 @@ async def extract_actions(
     document: SafeDocument,
     classification: DocumentClassification,
     source: TriagedDecision | Submission,
-    office_response: OfficeResponse | SubmissionResponse,
+    office_response: InvitationResponse | SubmissionResponse,
     final_draft: str,
 ) -> ActionExtractionResult:
     """
@@ -109,7 +109,7 @@ async def extract_actions(
         document: The original document
         classification: Document classification
         source: Original TriagedDecision or Submission for context
-        office_response: Office's response - OfficeResponse for invitations
+        office_response: Office's response - InvitationResponse for invitations
             (yes/yes_but/no + notes) or SubmissionResponse for submissions
             (freeform minister response)
         final_draft: Final draft text (original or redrafted)
@@ -196,7 +196,9 @@ Return a list of Action objects.
         extra={
             "document_id": document.document_id,
             "document_type": classification.document_type,
-            "office_decision": office_response.decision,
+            "office_decision": office_response.decision
+            if isinstance(office_response, InvitationResponse)
+            else "minister_response",
         },
     )
 

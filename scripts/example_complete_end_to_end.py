@@ -5,7 +5,7 @@ Demonstrates the full workflow from document ingestion to action extraction:
 1. Document arrives (email or file)
 2. Extract/Classify/Triage
 3. System generates draft response
-4. Office responds (OfficeResponse for invitations, SubmissionResponse for submissions)
+4. Office responds (InvitationResponse for invitations, SubmissionResponse for submissions)
 5. Redraft (LLM for invitations) or generate reply (template for submissions)
 6. Extract actions
 7. Save as JSON
@@ -25,9 +25,9 @@ from invitation_triage.document_classifier import classify_document
 from invitation_triage.invitation_extraction import extract_invitation
 from invitation_triage.invitation_redraft import redraft_invitation_response
 from invitation_triage.models import (
+    InvitationResponse,
     MinisterPersona,
     NotInvitation,
-    OfficeResponse,
     RawEmail,
     SafeEmail,
     SubmissionResponse,
@@ -194,9 +194,8 @@ sarah.chen@aisi.gov.uk
 
     if classification.document_type == "invitation":
         # Invitation: Office responds with yes/yes_but/no
-        office_response = OfficeResponse(
+        office_response = InvitationResponse(
             document_id=safe_doc.document_id,
-            document_type="invitation",
             decision="yes_but",
             notes="Can only attend from 7pm onwards due to Cabinet committee",
         )
@@ -223,7 +222,7 @@ sarah.chen@aisi.gov.uk
     print("=" * 80)
 
     if classification.document_type == "invitation":
-        if isinstance(office_response, OfficeResponse) and office_response.decision in [
+        if isinstance(office_response, InvitationResponse) and office_response.decision in [
             "yes_but",
             "no",
         ]:
@@ -320,7 +319,7 @@ sarah.chen@aisi.gov.uk
 
     print("\n System Summary:")
     print(f"  - Document Type: {classification.document_type}")
-    if isinstance(office_response, OfficeResponse):
+    if isinstance(office_response, InvitationResponse):
         print(f"  - Office Decision: {office_response.decision}")
     else:
         print(f"  - Minister's Response: {office_response.minister_response[:60]}...")

@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 class SubmissionResponse(BaseModel):
     """Private Office's record of the minister's response to a submission.
 
-    Unlike OfficeResponse (used for invitations), this captures the minister's
+    Unlike InvitationResponse (used for invitations), this captures the minister's
     freeform response verbatim without categorising it into yes/no/yes_but.
     """
 

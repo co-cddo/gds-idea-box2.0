@@ -4,19 +4,18 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-class OfficeResponse(BaseModel):
-    """Private Office's response on behalf of the minister to a document."""
+class InvitationResponse(BaseModel):
+    """Private Office's response on behalf of the minister to an invitation."""
 
     document_id: str = Field(
-        description="Links back to the source document (invitation or submission)"
+        description="Links back to the source invitation"
     )
-    document_type: Literal["invitation", "submission"]
 
     decision: Literal["yes", "yes_but", "no"] = Field(
         description="Minister's decision: "
-        "'yes' = approve/accept as recommended, "
-        "'yes_but' = approve/accept with modifications, "
-        "'no' = decline/reject"
+        "'yes' = accept as recommended, "
+        "'yes_but' = accept with modifications, "
+        "'no' = decline"
     )
 
     notes: str | None = Field(
