@@ -125,7 +125,7 @@ TEXT:
             logger.debug(
                 f"Submission extracted: {output.policy_area} from {output.responsible_deputy_director}",
                 extra={
-                    "submission_id": output.submission_id,
+                    "document_id": output.document_id,
                     "policy_area": output.policy_area,
                     "urgency": output.urgency_assessment,
                 },

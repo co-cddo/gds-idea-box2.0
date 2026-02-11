@@ -15,8 +15,8 @@ class TriagedDecision(BaseModel):
     minister's priorities, and calendar availability.
     """
 
-    email_id: str = Field(
-        description="Email ID linking back to the original invitation"
+    document_id: str = Field(
+        description="Document ID linking back to the source document"
     )
 
     decision: Literal["accept", "decline", "delegate", "request_more_info", "defer"] = (

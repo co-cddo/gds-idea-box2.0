@@ -22,13 +22,9 @@ class Submission(BaseModel):
     """Structured ministerial submission extracted from document text."""
 
     # Metadata
-    submission_id: str = Field(
-        default_factory=lambda: f"SUB-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
-        description="Unique identifier for this submission (auto-generated)",
-    )
-    source_id: str | None = Field(
-        default=None,
-        description="Optional identifier linking to source email_id or file_id from upstream system",
+    document_id: str = Field(
+        description="Unique identifier linking back to the source document "
+        "(same document_id that flows through the entire pipeline)",
     )
 
     # Core fields extracted from document

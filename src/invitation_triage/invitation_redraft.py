@@ -105,7 +105,7 @@ Return only the redrafted text, nothing else.
     logger.info(
         "Redrafting invitation response",
         extra={
-            "email_id": source.email_id,
+            "document_id": source.document_id,
             "notes_preview": office_notes[:100],
         },
     )
@@ -118,7 +118,7 @@ Return only the redrafted text, nothing else.
 
         logger.info(
             f"Invitation redraft complete: {len(redrafted)} characters",
-            extra={"email_id": source.email_id, "length": len(redrafted)},
+            extra={"document_id": source.document_id, "length": len(redrafted)},
         )
 
         return redrafted
@@ -126,22 +126,22 @@ Return only the redrafted text, nothing else.
     except (ModelRetry, UnexpectedModelBehavior) as e:
         logger.error(
             f"LLM failed to redraft invitation response: {str(e)}",
-            extra={"email_id": source.email_id},
+            extra={"document_id": source.document_id},
             exc_info=True,
         )
         raise ExtractionError(
             f"LLM failed to redraft invitation response: {str(e)}",
-            email_id=source.email_id,
+            document_id=source.document_id,
             cause=e,
         ) from e
     except Exception as e:
         logger.error(
             f"Unexpected error during invitation redraft: {str(e)}",
-            extra={"email_id": source.email_id},
+            extra={"document_id": source.document_id},
             exc_info=True,
         )
         raise ExtractionError(
             f"Unexpected error during invitation redraft: {str(e)}",
-            email_id=source.email_id,
+            document_id=source.document_id,
             cause=e,
         ) from e

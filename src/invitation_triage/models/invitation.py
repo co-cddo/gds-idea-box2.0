@@ -16,10 +16,10 @@ class EventType(str, Enum):
 
 
 class NotInvitation(BaseModel):
-    """Email that is not an invitation requiring triage."""
+    """Document that is not an invitation requiring triage."""
 
-    email_id: str = Field(
-        description="Unique identifier linking back to the source email"
+    document_id: str = Field(
+        description="Unique identifier linking back to the source document"
     )
     reason: str = Field(
         min_length=10,
@@ -29,10 +29,10 @@ class NotInvitation(BaseModel):
 
 
 class Invitation(BaseModel):
-    """Email that is an invitation requiring ministerial triage."""
+    """Document that is an invitation requiring ministerial triage."""
 
-    email_id: str = Field(
-        description="Unique identifier linking back to the source email"
+    document_id: str = Field(
+        description="Unique identifier linking back to the source document"
     )
 
     event_type: EventType = Field(description="Type of event being invited to")

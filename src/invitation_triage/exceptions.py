@@ -8,12 +8,15 @@ class TriageBaseException(Exception):
 
 
 class ExtractionError(TriageBaseException):
-    """Error during invitation extraction from email."""
+    """Error during document extraction."""
 
     def __init__(
-        self, message: str, email_id: str | None = None, cause: Exception | None = None
+        self,
+        message: str,
+        document_id: str | None = None,
+        cause: Exception | None = None,
     ):
-        self.email_id = email_id
+        self.document_id = document_id
         self.cause = cause
         super().__init__(message)
 
@@ -24,10 +27,10 @@ class TriageError(TriageBaseException):
     def __init__(
         self,
         message: str,
-        invitation_id: str | None = None,
+        document_id: str | None = None,
         cause: Exception | None = None,
     ):
-        self.invitation_id = invitation_id
+        self.document_id = document_id
         self.cause = cause
         super().__init__(message)
 

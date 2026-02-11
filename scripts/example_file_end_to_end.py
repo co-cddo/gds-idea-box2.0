@@ -184,7 +184,7 @@ async def main():
         else:
             submission = result
             print("\n✅ SUBMISSION EXTRACTED")
-            print(f"   Submission ID: {submission.submission_id}")
+            print(f"   Document ID: {submission.document_id}")
             print(f"   Policy Area: {submission.policy_area}")
             print(f"   Responsible Official: {submission.responsible_deputy_director}")
             print(f"   Urgency: {submission.urgency_assessment}")

@@ -91,7 +91,7 @@ class Action(BaseModel):
     )
 
     # Linking back to source
-    source_document_id: str = Field(
+    document_id: str = Field(
         description="Links back to the source document that generated this action"
     )
     source_document_type: Literal["invitation", "submission"]

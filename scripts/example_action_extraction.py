@@ -75,7 +75,7 @@ This is an important opportunity to engage with leading AI researchers.
 Best regards"""
 
     triaged_1 = TriagedDecision(
-        email_id="invite-001",
+        document_id="invite-001",
         decision="accept",
         priority="high",
         reason="AI safety aligns with priorities",
@@ -162,7 +162,7 @@ Best regards"""
 
     # Mock Submission
     submission_2 = Submission(
-        submission_id="SUB-2026-001",
+        document_id="SUB-2026-001",
         policy_area="AI Safety and International Collaboration",
         responsible_deputy_director="Jane Smith, Deputy Director - AI Policy",
         summary="Request for £3M funding for AI Safety Institute",
@@ -173,7 +173,7 @@ Best regards"""
 
     # Minister's freeform response
     submission_response_2 = SubmissionResponse(
-        submission_id="SUB-2026-001",
+        document_id="SUB-2026-001",
         minister_response="Approve £2M only, not £3M. Request revised project scope.",
     )
 

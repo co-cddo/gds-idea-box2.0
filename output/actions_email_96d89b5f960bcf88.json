@@ -1,0 +1,68 @@
+{
+  "document_id": "email_96d89b5f960bcf88",
+  "document_type": "invitation",
+  "office_decision": "yes_but",
+  "final_draft": {
+    "document_id": "email_96d89b5f960bcf88",
+    "content": "Dear Colleagues at the UK AI Safety Institute,\n\nThank you for the invitation to the reception celebrating the launch of your latest research findings on AI model evaluation and safety benchmarking. The Minister recognizes the exceptional importance of this work, which sits at the heart of his strategic priorities for AI safety and governance.\n\nThe Minister would be pleased to attend, though I should note he has a Cabinet committee commitment earlier that evening and would only be able to join from 7pm onwards. If this timing works for your event schedule, please confirm and we will ensure his attendance. Should this prove too late given the programme, we would be happy to arrange an alternative briefing session or send a senior representative from the Private Office.\n\nPlease let us know if attendance from 7pm would be suitable. The Minister looks forward to hearing about this groundbreaking research.\n\nOffice of Minister for Science, Innovation and Technology",
+    "was_modified": true,
+    "office_notes": "Can only attend from 7pm onwards due to Cabinet committee",
+    "created_at": "2026-02-11T11:01:38.410739"
+  },
+  "actions": [
+    {
+      "action_id": "act_001",
+      "description": "Send conditional acceptance email to UK AI Safety Institute confirming Minister can attend from 7pm onwards and requesting confirmation if this timing is suitable",
+      "action_type": "correspondence",
+      "draft_content": "Dear Colleagues at the UK AI Safety Institute,\n\nThank you for the invitation to the reception celebrating the launch of your latest research findings on AI model evaluation and safety benchmarking. The Minister recognizes the exceptional importance of this work, which sits at the heart of his strategic priorities for AI safety and governance.\n\nThe Minister would be pleased to attend, though I should note he has a Cabinet committee commitment earlier that evening and would only be able to join from 7pm onwards. If this timing works for your event schedule, please confirm and we will ensure his attendance. Should this prove too late given the programme, we would be happy to arrange an alternative briefing session or send a senior representative from the Private Office.\n\nPlease let us know if attendance from 7pm would be suitable. The Minister looks forward to hearing about this groundbreaking research.\n\nOffice of Minister for Science, Innovation and Technology",
+      "deadline": "ASAP",
+      "urgency": "routine",
+      "owner": "Private Office",
+      "status": "pending",
+      "document_id": "email_96d89b5f960bcf88",
+      "source_document_type": "invitation",
+      "created_at": "2025-03-07T00:00:00Z"
+    },
+    {
+      "action_id": "act_002",
+      "description": "Add AI Safety Institute reception to Minister's calendar - 15 February 2026, from 7pm onwards (pending confirmation from organizers)",
+      "action_type": "calendar",
+      "draft_content": null,
+      "deadline": "Before 15 February 2026",
+      "urgency": "routine",
+      "owner": "Private Office",
+      "status": "pending",
+      "document_id": "email_96d89b5f960bcf88",
+      "source_document_type": "invitation",
+      "created_at": "2025-03-07T00:00:00Z"
+    },
+    {
+      "action_id": "act_003",
+      "description": "Prepare briefing materials on UK AI Safety Institute's latest research findings on AI model evaluation and safety benchmarking for the reception",
+      "action_type": "briefing",
+      "draft_content": null,
+      "deadline": "Before 15 February 2026",
+      "urgency": "routine",
+      "owner": "AI Policy Team",
+      "status": "pending",
+      "document_id": "email_96d89b5f960bcf88",
+      "source_document_type": "invitation",
+      "created_at": "2025-03-07T00:00:00Z"
+    },
+    {
+      "action_id": "act_004",
+      "description": "Follow up with UK AI Safety Institute to confirm whether 7pm arrival time is acceptable for the reception, and finalize attendance arrangements",
+      "action_type": "notification",
+      "draft_content": null,
+      "deadline": "Within 5 days",
+      "urgency": "routine",
+      "owner": "Private Office",
+      "status": "pending",
+      "document_id": "email_96d89b5f960bcf88",
+      "source_document_type": "invitation",
+      "created_at": "2025-03-07T00:00:00Z"
+    }
+  ],
+  "summary": "Decision: approved/accepted with modifications: Can only attend from 7pm onwards due to Cabinet committee. 4 action(s) extracted.",
+  "created_at": "2026-02-11T11:01:38.411017"
+}

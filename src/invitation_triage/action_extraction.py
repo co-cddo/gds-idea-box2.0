@@ -223,7 +223,7 @@ Return a list of Action objects.
 
         # Fill in source document details for each action
         for action in actions:
-            action.source_document_id = document.document_id
+            action.document_id = document.document_id
             action.source_document_type = classification.document_type
 
         # Generate summary

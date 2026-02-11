@@ -25,6 +25,8 @@ def test_create_raw_email_directly():
     )
 
     assert email.email_id == "test123"
+    assert email.document_id.startswith("email_")
+    assert len(email.document_id) == 22  # "email_" (6) + 16 hex chars
     assert email.subject == "Test Subject"
     assert email.body == "Test body content"
     assert email.received_date == datetime(2026, 1, 15, 10, 30)
@@ -44,6 +46,8 @@ def test_raw_email_from_dict_with_email_id():
     email = RawEmail.from_dict(data)
 
     assert email.email_id == "provided_id"
+    assert email.document_id.startswith("email_")
+    assert len(email.document_id) == 22
     assert email.subject == "Meeting Request"
     assert isinstance(email.received_date, datetime)
 
@@ -60,6 +64,8 @@ def test_raw_email_from_dict_generates_id():
 
     assert email.email_id is not None
     assert len(email.email_id) == 16  # Our hash length
+    assert email.document_id.startswith("email_")
+    assert len(email.document_id) == 22
 
 
 def test_raw_email_from_dict_parses_date_string():
@@ -142,6 +148,8 @@ def test_safe_email_extract_email_addresses():
 
     safe = SafeEmail.from_raw_email(raw)
 
+    assert safe.document_id == raw.document_id
+    assert safe.document_id.startswith("email_")
     assert len(safe.pii_extracted["emails"]) == 2
     assert "john.doe@example.com" in safe.pii_extracted["emails"]
     assert "jane@test.org" in safe.pii_extracted["emails"]
@@ -524,8 +532,9 @@ def test_safe_email_to_document_no_attachments():
     safe_email = SafeEmail.from_raw_email(raw_email)
     safe_doc = safe_email.to_document()
 
-    # Check SafeDocument fields
-    assert safe_doc.document_id == "test-123"
+    # Check SafeDocument gets document_id from SafeEmail (not email_id)
+    assert safe_doc.document_id == safe_email.document_id
+    assert safe_doc.document_id.startswith("email_")
     assert safe_doc.source_type == "email"
     assert safe_doc.filename == "email_test-123"
     assert "Subject: Meeting" in safe_doc.safe_text
@@ -570,6 +579,10 @@ def test_safe_email_to_document_with_attachments():
 
     safe_email = SafeEmail.from_raw_email(raw_email)
     safe_doc = safe_email.to_document()
+
+    # Check SafeDocument gets document_id from SafeEmail
+    assert safe_doc.document_id == safe_email.document_id
+    assert safe_doc.document_id.startswith("email_")
 
     # Check document contains email body
     assert "Subject: Report and Data" in safe_doc.safe_text

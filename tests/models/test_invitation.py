@@ -30,19 +30,19 @@ def test_event_type_enum_values():
 def test_not_invitation_creation():
     """Test creating a NotInvitation."""
     not_invite = NotInvitation(
-        email_id="test123", reason="This is just an informational update"
+        document_id="test123", reason="This is just an informational update"
     )
 
-    assert not_invite.email_id == "test123"
+    assert not_invite.document_id == "test123"
     assert "informational" in not_invite.reason
 
 
 def test_not_invitation_from_dict():
     """Test creating NotInvitation from dict (JSON)."""
-    data = {"email_id": "abc123", "reason": "Thank you note, not an invitation"}
+    data = {"document_id": "abc123", "reason": "Thank you note, not an invitation"}
 
     not_invite = NotInvitation(**data)
-    assert not_invite.email_id == "abc123"
+    assert not_invite.document_id == "abc123"
 
 
 # ============================================================================
@@ -53,7 +53,7 @@ def test_not_invitation_from_dict():
 def test_invitation_creation_all_fields():
     """Test creating an Invitation with all fields."""
     invite = Invitation(
-        email_id="test123",
+        document_id="test123",
         event_type=EventType.RECEPTION,
         host_org="The Royal Society",
         purpose="AI safety research launch",
@@ -66,7 +66,7 @@ def test_invitation_creation_all_fields():
         overall_confidence=0.95,
     )
 
-    assert invite.email_id == "test123"
+    assert invite.document_id == "test123"
     assert invite.event_type == EventType.RECEPTION
     assert invite.host_org == "The Royal Society"
     assert len(invite.topics) == 2
@@ -76,7 +76,7 @@ def test_invitation_creation_all_fields():
 def test_invitation_optional_fields():
     """Test that optional fields can be omitted."""
     invite = Invitation(
-        email_id="test123",
+        document_id="test123",
         event_type=EventType.MEETING,
         host_org="DSIT",
         purpose="Budget discussion",
@@ -94,7 +94,7 @@ def test_invitation_optional_fields():
 def test_invitation_multiple_proposed_times():
     """Test invitation with multiple time options."""
     invite = Invitation(
-        email_id="test123",
+        document_id="test123",
         event_type=EventType.PANEL,
         host_org="Cambridge University",
         purpose="Quantum tech panel",
@@ -116,7 +116,7 @@ def test_invitation_confidence_validation():
 
     # Valid confidence
     invite = Invitation(
-        email_id="test",
+        document_id="test",
         event_type=EventType.OTHER,
         host_org="Test Org",
         purpose="Test event purpose",
@@ -132,7 +132,7 @@ def test_invitation_confidence_validation():
     # Invalid confidence (too high)
     with pytest.raises(ValidationError):
         Invitation(
-            email_id="test",
+            document_id="test",
             event_type=EventType.OTHER,
             host_org="Test Org",
             purpose="Test event purpose",
@@ -148,7 +148,7 @@ def test_invitation_confidence_validation():
 def test_invitation_from_dict():
     """Test creating Invitation from dict (simulating JSON parsing)."""
     data = {
-        "email_id": "abc123",
+        "document_id": "abc123",
         "event_type": "speech",
         "host_org": "Tech Conference 2026",
         "purpose": "Keynote on AI policy",
@@ -167,7 +167,7 @@ def test_invitation_from_dict():
 def test_invitation_empty_topics_list():
     """Test that topics can be an empty list."""
     invite = Invitation(
-        email_id="test",
+        document_id="test",
         event_type=EventType.OTHER,
         host_org="Unknown",
         purpose="General meeting",

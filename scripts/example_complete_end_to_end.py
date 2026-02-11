@@ -210,7 +210,7 @@ sarah.chen@aisi.gov.uk
     else:
         # Submission: Minister gives freeform response
         office_response = SubmissionResponse(
-            submission_id=source.submission_id,
+            document_id=source.document_id,
             minister_response="Approve but reduce to £2M. Need revised scope.",
         )
 

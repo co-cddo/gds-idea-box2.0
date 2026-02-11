@@ -53,13 +53,13 @@ def generate_submission_reply(
     logger.info(
         f"Generated submission reply: {len(reply_text)} characters",
         extra={
-            "submission_id": submission.submission_id,
+            "document_id": submission.document_id,
             "policy_area": submission.policy_area,
         },
     )
 
     return SubmissionReply(
-        submission_id=submission.submission_id,
+        document_id=submission.document_id,
         policy_area=submission.policy_area,
         official_recommendation=submission.official_recommendation,
         minister_response=response.minister_response,

@@ -10,6 +10,7 @@ from invitation_triage.models.document import (
     DocumentClassification,
     RawDocument,
     SafeDocument,
+    generate_document_id,
 )
 from invitation_triage.models.email import RawEmail, SafeEmail
 from invitation_triage.models.invitation import EventType, Invitation, NotInvitation
@@ -27,6 +28,7 @@ __all__ = [
     "DocumentClassification",
     "EventType",
     "FinalDraft",
+    "generate_document_id",
     "Invitation",
     "MinisterPersona",
     "NotInvitation",

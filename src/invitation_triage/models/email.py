@@ -4,16 +4,28 @@ from typing import Any
 
 import pandas as pd
 from dateutil import parser
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
-from invitation_triage.models.document import RawDocument, SafeDocument
+from invitation_triage.models.document import (
+    RawDocument,
+    SafeDocument,
+    generate_document_id,
+)
 from invitation_triage.pii_redaction import PIIRedactor
 
 
 class RawEmail(BaseModel):
     """Raw email as ingested from CSV or other source."""
 
-    email_id: str
+    email_id: str = Field(
+        description="Source system email identifier "
+        "(e.g., Outlook message ID, Gmail ID, or auto-generated hash)"
+    )
+    document_id: str = Field(
+        default="",
+        description="App-wide tracking ID (email_{hash}). "
+        "Auto-generated from content if not provided.",
+    )
     subject: str
     body: str
     received_date: datetime
@@ -23,6 +35,16 @@ class RawEmail(BaseModel):
         description="Email attachments as RawDocuments "
         "(empty for current MVP test data)",
     )
+
+    @model_validator(mode="after")
+    def set_document_id(self) -> "RawEmail":
+        """Generate document_id from content hash if not explicitly provided."""
+        if not self.document_id:
+            self.document_id = generate_document_id(
+                f"{self.subject}{self.body}{self.received_date}",
+                prefix="email",
+            )
+        return self
 
     @classmethod
     def _generate_id(
@@ -101,7 +123,12 @@ class RawEmail(BaseModel):
 class SafeEmail(BaseModel):
     """Email with PII removed and stored separately for secure handling."""
 
-    email_id: str
+    email_id: str = Field(
+        description="Source system email identifier"
+    )
+    document_id: str = Field(
+        description="App-wide tracking ID (email_{hash})"
+    )
     subject: str  # PII-redacted
     body: str  # PII-redacted
     received_date: datetime
@@ -152,6 +179,7 @@ class SafeEmail(BaseModel):
 
         return cls(
             email_id=raw_email.email_id,
+            document_id=raw_email.document_id,
             subject=safe_subject,
             body=safe_body,
             received_date=raw_email.received_date,
@@ -179,7 +207,7 @@ class SafeEmail(BaseModel):
         # (shared PIIRedactor ensured consistent numbering)
 
         return SafeDocument(
-            document_id=self.email_id,
+            document_id=self.document_id,
             filename=f"email_{self.email_id}",
             source_type="email",
             safe_text=combined_text,

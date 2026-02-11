@@ -21,7 +21,7 @@ async def main():
     )
     # Invitation 1: High-profile AI safety reception
     invitation_1 = Invitation(
-        email_id="test_001",
+        document_id="test_001",
         event_type="reception",
         host_org="UK AI Safety Institute",
         purpose="Launch reception for latest AI safety research findings",
@@ -39,7 +39,7 @@ async def main():
 
     # Invitation 2: Informal drinks
     invitation_2 = Invitation(
-        email_id="test_002",
+        document_id="test_002",
         event_type="reception",
         host_org="Matt and David",
         purpose="Catch up over drinks",

@@ -56,7 +56,7 @@ Best regards"""
 
     # Create mock source for context (would normally come from triage)
     mock_decision = TriagedDecision(
-        email_id="test-001",
+        document_id="test-001",
         decision="accept",
         priority="high",
         reason="AI safety aligns with minister's priorities",
@@ -84,7 +84,7 @@ Best regards"""
     print("=" * 80)
 
     mock_submission = Submission(
-        submission_id="SUB-TEST-001",
+        document_id="SUB-TEST-001",
         policy_area="AI Safety and International Collaboration",
         responsible_deputy_director="Jane Smith, Deputy Director - AI Policy",
         summary="Request for £3M additional funding for AI Safety Institute",
@@ -94,7 +94,7 @@ Best regards"""
     )
 
     submission_response_2 = SubmissionResponse(
-        submission_id="SUB-TEST-001",
+        document_id="SUB-TEST-001",
         minister_response="Approve £2M only, not £3M. Request revised project scope.",
     )
 
@@ -119,7 +119,7 @@ Best regards"""
     print("=" * 80)
 
     mock_submission_3 = Submission(
-        submission_id="SUB-TEST-002",
+        document_id="SUB-TEST-002",
         policy_area="AI Safety and International Collaboration",
         responsible_deputy_director="Jane Smith, Deputy Director - AI Policy",
         summary="Request for £3M additional funding for AI Safety Institute",
@@ -129,7 +129,7 @@ Best regards"""
     )
 
     submission_response_3 = SubmissionResponse(
-        submission_id="SUB-TEST-002",
+        document_id="SUB-TEST-002",
         minister_response="Need more detail on international partner commitments before approving. "
         "Please provide a breakdown of partner contributions and timelines.",
     )

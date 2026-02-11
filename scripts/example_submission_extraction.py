@@ -94,7 +94,7 @@ DSIT
             print(f"Suggested Category: {result.suggested_category}")
     else:
         print("\n✅ SUBMISSION DETECTED")
-        print(f"\nSubmission ID: {result.submission_id}")
+        print(f"\nDocument ID: {result.document_id}")
         print(f"Policy Area: {result.policy_area}")
         print(f"Responsible Official: {result.responsible_deputy_director}")
         print(f"Urgency: {result.urgency_assessment}")
@@ -187,7 +187,7 @@ DSIT
         print(f"Reason: {result2.reason}")
     else:
         print("\n✅ SUBMISSION DETECTED")
-        print(f"\nSubmission ID: {result2.submission_id}")
+        print(f"\nDocument ID: {result2.document_id}")
         print(f"Policy Area: {result2.policy_area}")
         print(f"Responsible Official: {result2.responsible_deputy_director}")
         print(f"Urgency: {result2.urgency_assessment}")

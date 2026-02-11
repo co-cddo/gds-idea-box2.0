@@ -17,7 +17,7 @@ class SubmissionResponse(BaseModel):
     freeform response verbatim without categorising it into yes/no/yes_but.
     """
 
-    submission_id: str = Field(description="Links back to the source Submission")
+    document_id: str = Field(description="Links back to the source document")
 
     minister_response: str = Field(
         min_length=1,
@@ -44,7 +44,7 @@ class SubmissionReply(BaseModel):
     Contains the official recommendation and minister's response verbatim.
     """
 
-    submission_id: str = Field(description="Links back to the source Submission")
+    document_id: str = Field(description="Links back to the source document")
 
     policy_area: str = Field(description="Policy area from the original submission")
 

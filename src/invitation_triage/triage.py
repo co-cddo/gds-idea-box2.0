@@ -216,7 +216,7 @@ async def triage_invitation(
     logger.info(
         f"Triaging invitation from {invitation.host_org}",
         extra={
-            "email_id": invitation.email_id,
+            "email_id": invitation.document_id,
             "host_org": invitation.host_org,
             "event_type": invitation.event_type,
             "minister": persona.name,
@@ -235,14 +235,14 @@ async def triage_invitation(
         logger.info(
             f"Triage complete: {decision.decision} (priority: {decision.priority})",
             extra={
-                "email_id": invitation.email_id,
+                "email_id": invitation.document_id,
                 "decision": decision.decision,
                 "priority": decision.priority,
             },
         )
         logger.debug(
             f"Reason: {decision.reason}",
-            extra={"email_id": invitation.email_id, "reason": decision.reason},
+            extra={"email_id": invitation.document_id, "reason": decision.reason},
         )
 
         return decision
@@ -250,28 +250,28 @@ async def triage_invitation(
         # Re-raise calendar errors as-is (already domain-specific)
         logger.error(
             "Calendar error during triage",
-            extra={"email_id": invitation.email_id},
+            extra={"email_id": invitation.document_id},
         )
         raise
     except (ModelRetry, UnexpectedModelBehavior) as e:
         logger.error(
             f"LLM failed during triage: {str(e)}",
-            extra={"email_id": invitation.email_id},
+            extra={"email_id": invitation.document_id},
             exc_info=True,
         )
         raise TriageError(
             f"LLM failed to triage invitation: {str(e)}",
-            invitation_id=invitation.email_id,
+            document_id=invitation.document_id,
             cause=e,
         ) from e
     except Exception as e:
         logger.error(
             f"Unexpected triage error: {str(e)}",
-            extra={"email_id": invitation.email_id},
+            extra={"email_id": invitation.document_id},
             exc_info=True,
         )
         raise TriageError(
             f"Unexpected error during invitation triage: {str(e)}",
-            invitation_id=invitation.email_id,
+            document_id=invitation.document_id,
             cause=e,
         ) from e

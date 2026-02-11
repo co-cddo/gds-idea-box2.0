@@ -7,11 +7,29 @@ from pydantic import BaseModel, Field
 from invitation_triage.pii_redaction import PIIRedactor
 
 
+def generate_document_id(content: str, prefix: str = "doc") -> str:
+    """Generate a deterministic document ID from content hash.
+
+    Creates a stable, prefixed identifier by hashing the input content.
+    The same content always produces the same ID, enabling deduplication.
+
+    Args:
+        content: String content to hash (e.g. email subject+body, file text)
+        prefix: Type prefix indicating document origin
+            ('email' for emails, 'file' for uploaded files)
+
+    Returns:
+        Prefixed 16-char hex hash, e.g. 'email_a1b2c3d4e5f6g7h8'
+    """
+    hash_str = hashlib.sha256(content.encode()).hexdigest()[:16]
+    return f"{prefix}_{hash_str}"
+
+
 class RawDocument(BaseModel):
     """Raw Document type file before PII extraction."""
 
     document_id: str = Field(
-        description="Unique identifier generated from content hash"
+        description="Unique identifier generated from content hash (file_{hash})"
     )
     filename: str = Field(description="Original filename")
     source_type: Literal["pdf", "docx", "txt"] = Field(description="File type")
@@ -26,9 +44,8 @@ class RawDocument(BaseModel):
 
     @classmethod
     def _generate_document_id(cls, text: str, filename: str) -> str:
-        """Generate a stable 16-character ID from document content."""
-        content = f"{filename}{text}"
-        return hashlib.sha256(content.encode()).hexdigest()[:16]
+        """Generate a stable document ID from file content."""
+        return generate_document_id(f"{filename}{text}", prefix="file")
 
 
 class SafeDocument(BaseModel):
