@@ -169,9 +169,6 @@ Best regards"""
         official_recommendation="Approve £3M from contingency reserve",
         urgency_assessment="urgent",
         decision_deadline="7 February 2026",
-        draft_response="I approve the £3M funding from contingency reserve as recommended. "
-        "Please proceed with Treasury notifications by the 7 February deadline "
-        "and ensure contracts are signed by 15 February.",
     )
 
     # Minister's freeform response

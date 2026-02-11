@@ -91,7 +91,6 @@ Best regards"""
         official_recommendation="Approve £3M from contingency reserve",
         urgency_assessment="urgent",
         decision_deadline="7 February 2026",
-        draft_response="I approve the £3M funding from contingency reserve as recommended.",
     )
 
     submission_response_2 = SubmissionResponse(
@@ -127,7 +126,6 @@ Best regards"""
         official_recommendation="Approve £3M from contingency reserve",
         urgency_assessment="urgent",
         decision_deadline="7 February 2026",
-        draft_response="I approve the £3M funding from contingency reserve as recommended.",
     )
 
     submission_response_3 = SubmissionResponse(

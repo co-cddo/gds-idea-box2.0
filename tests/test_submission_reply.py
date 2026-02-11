@@ -26,9 +26,6 @@ def sample_submission():
         official_recommendation="Approve £3M from contingency reserve",
         urgency_assessment="urgent",
         decision_deadline="7 February 2026",
-        draft_response=(
-            "I approve the £3M funding from contingency reserve as recommended."
-        ),
     )
 
 
@@ -263,9 +260,6 @@ def test_generate_reply_with_different_submission():
             "Extend programme by 2 years with £5M additional funding"
         ),
         urgency_assessment="routine",
-        draft_response=(
-            "I approve the extension of the quantum programme as recommended."
-        ),
     )
 
     response = SubmissionResponse(

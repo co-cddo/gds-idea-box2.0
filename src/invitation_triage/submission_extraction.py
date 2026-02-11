@@ -51,23 +51,8 @@ Typical submissions include these elements (but not all may be present):
 - Related items or precedents
 - Urgency assessment (urgent/routine/for_information)
 
-DRAFT RESPONSE GENERATION:
-In addition to extracting structured data, you must generate a brief draft response memo/email back to the submitting official.
-
-The draft response should:
-- Be professional and concise (1-2 sentences)
-- Provide a clear position on the recommendation
-- Reference key specifics (amounts, dates) where relevant
-- Be ready to send with minimal edits
-
-Example draft responses:
-- APPROVE: "I approve the £3M funding transfer as recommended. Please proceed with Treasury notifications by the 7 February deadline."
-- CONDITIONAL: "I approve £2M initially rather than the full £3M requested. Please revise the project scope and resubmit a revised plan."
-- REQUEST MORE INFO: "Before deciding, I need further detail on international partner commitments. Please provide an update and resubmit."
-- NOTE: "Noted. Please maintain current approach and provide the next quarterly update in April."
-
 For NotSubmission, provide a brief reason and suggest what category it might be.
-For Submission, extract all relevant details accurately AND generate the appropriate brief draft response.
+For Submission, extract all relevant details accurately.
 """
 
 

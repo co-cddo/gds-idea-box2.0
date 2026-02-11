@@ -175,14 +175,18 @@ sarah.chen@aisi.gov.uk
         print(f"  - Reasoning: {triaged.reason[:100]}...")
 
         original_draft = triaged.draft_response
+
+        print("\n System Generated Draft:")
+        print("-" * 80)
+        print(original_draft[:200] + "...")
+        print("-" * 80)
     else:
         source = extracted
-        original_draft = extracted.draft_response
 
-    print("\n System Generated Draft:")
-    print("-" * 80)
-    print(original_draft[:200] + "...")
-    print("-" * 80)
+        print("\n Submission Extracted:")
+        print(f"  - Policy Area: {extracted.policy_area}")
+        print(f"  - Recommendation: {extracted.official_recommendation}")
+        print("  (No system-generated draft; reply is generated after minister responds)")
 
     # ========================================================================
     # STEP 7: OFFICE RESPONDS
