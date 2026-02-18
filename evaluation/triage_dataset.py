@@ -5,7 +5,7 @@ These test cases use the actual minister persona and reflect realistic conflict
 assessment based on the triage prompt's logic: strategic value vs calendar priority.
 """
 
-from invitation_triage.models import (
+from box2.triage.models import (
     EventType,
     Invitation,
 )

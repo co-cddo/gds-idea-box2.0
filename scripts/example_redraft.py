@@ -12,9 +12,9 @@ Usage:
 import asyncio
 import logging
 
-from invitation_triage.invitation_redraft import redraft_invitation_response
-from invitation_triage.models import Submission, SubmissionResponse, TriagedDecision
-from invitation_triage.submission_reply import generate_submission_reply
+from box2.triage.invitation_redraft import redraft_invitation_response
+from box2.triage.models import Submission, SubmissionResponse, TriagedDecision
+from box2.triage.submission_reply import generate_submission_reply
 
 
 async def main():

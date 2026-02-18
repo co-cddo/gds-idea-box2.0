@@ -5,13 +5,13 @@ from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
-from invitation_triage.calendar import (
+from box2.triage.calendar import (
     MockCalendar,
     get_calendar_events,
 )
-from invitation_triage.config import model
-from invitation_triage.exceptions import CalendarError, TriageError
-from invitation_triage.models import (
+from box2.triage.config import model
+from box2.triage.exceptions import CalendarError, TriageError
+from box2.triage.models import (
     CalendarEvent,
     Invitation,
     MinisterPersona,

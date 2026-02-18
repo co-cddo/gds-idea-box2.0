@@ -1,22 +1,22 @@
-from invitation_triage.models.action import (
+from box2.triage.models.action import (
     Action,
     ActionExtractionResult,
     FinalDraft,
     InvitationResponse,
 )
-from invitation_triage.models.calendar import CalendarEvent
-from invitation_triage.models.decision import TriagedDecision
-from invitation_triage.models.document import (
+from box2.triage.models.calendar import CalendarEvent
+from box2.triage.models.decision import TriagedDecision
+from box2.triage.models.document import (
     DocumentClassification,
     RawDocument,
     SafeDocument,
     generate_document_id,
 )
-from invitation_triage.models.email import RawEmail, SafeEmail
-from invitation_triage.models.invitation import EventType, Invitation, NotInvitation
-from invitation_triage.models.persona import MinisterPersona
-from invitation_triage.models.submission import NotSubmission, Submission
-from invitation_triage.models.submission_reply import (
+from box2.triage.models.email import RawEmail, SafeEmail
+from box2.triage.models.invitation import EventType, Invitation, NotInvitation
+from box2.triage.models.persona import MinisterPersona
+from box2.triage.models.submission import NotSubmission, Submission
+from box2.triage.models.submission_reply import (
     SubmissionReply,
     SubmissionResponse,
 )

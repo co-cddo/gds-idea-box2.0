@@ -9,9 +9,9 @@ import asyncio
 import logging
 from datetime import datetime
 
-from invitation_triage.document_classifier import classify_document
+from box2.triage.document_classifier import classify_document
 
-from invitation_triage.models import SafeDocument
+from box2.triage.models import SafeDocument
 
 
 async def main():

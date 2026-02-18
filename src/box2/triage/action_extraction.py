@@ -10,9 +10,9 @@ import logging
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
-from invitation_triage.config import model
-from invitation_triage.exceptions import ExtractionError
-from invitation_triage.models import (
+from box2.triage.config import model
+from box2.triage.exceptions import ExtractionError
+from box2.triage.models import (
     Action,
     ActionExtractionResult,
     DocumentClassification,

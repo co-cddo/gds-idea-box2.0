@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from invitation_triage.pii_redaction import PIIRedactor
+from box2.triage.pii_redaction import PIIRedactor
 
 
 def generate_document_id(content: str, prefix: str = "doc") -> str:

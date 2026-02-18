@@ -8,8 +8,8 @@ Usage:
 import asyncio
 import logging
 
-from invitation_triage.models import Invitation, MinisterPersona
-from invitation_triage.triage import triage_invitation
+from box2.triage.models import Invitation, MinisterPersona
+from box2.triage.triage import triage_invitation
 
 
 async def main():

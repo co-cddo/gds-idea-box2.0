@@ -9,8 +9,8 @@ import asyncio
 import logging
 from datetime import datetime
 
-from invitation_triage.models import NotSubmission, SafeDocument
-from invitation_triage.submission_extraction import extract_submission
+from box2.triage.models import NotSubmission, SafeDocument
+from box2.triage.submission_extraction import extract_submission
 
 
 async def main():

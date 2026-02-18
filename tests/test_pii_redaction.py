@@ -4,7 +4,7 @@ Tests for PIIRedactor class.
 
 import pytest
 
-from invitation_triage.pii_redaction import PIIRedactor
+from box2.triage.pii_redaction import PIIRedactor
 
 
 # ============================================================================

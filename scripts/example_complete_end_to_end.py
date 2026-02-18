@@ -20,11 +20,11 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from invitation_triage.action_extraction import extract_actions
-from invitation_triage.document_classifier import classify_document
-from invitation_triage.invitation_extraction import extract_invitation
-from invitation_triage.invitation_redraft import redraft_invitation_response
-from invitation_triage.models import (
+from box2.triage.action_extraction import extract_actions
+from box2.triage.document_classifier import classify_document
+from box2.triage.invitation_extraction import extract_invitation
+from box2.triage.invitation_redraft import redraft_invitation_response
+from box2.triage.models import (
     InvitationResponse,
     MinisterPersona,
     NotInvitation,
@@ -32,9 +32,9 @@ from invitation_triage.models import (
     SafeEmail,
     SubmissionResponse,
 )
-from invitation_triage.submission_extraction import extract_submission
-from invitation_triage.submission_reply import generate_submission_reply
-from invitation_triage.triage import triage_invitation
+from box2.triage.submission_extraction import extract_submission
+from box2.triage.submission_reply import generate_submission_reply
+from box2.triage.triage import triage_invitation
 
 
 async def main():

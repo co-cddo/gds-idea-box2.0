@@ -1,7 +1,7 @@
 [project]
-name = "invitation-triage"
+name = "box2"
 version = "0.1.0"
-description = "Add your description here"
+description = "GDS IDEA Box 2.0 - AI tools for private office workflows"
 readme = "README.md"
 authors = [
     { name = "David Gillespie", email = "david.gillespie@digital.cabinet-office.gov.uk" }
@@ -22,6 +22,9 @@ dependencies = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/box2"]
 
 [dependency-groups]
 dev = [

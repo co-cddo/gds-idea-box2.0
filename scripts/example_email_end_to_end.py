@@ -15,14 +15,14 @@ import asyncio
 import logging
 from datetime import datetime
 
-from invitation_triage.invitation_extraction import extract_invitation
-from invitation_triage.models import (
+from box2.triage.invitation_extraction import extract_invitation
+from box2.triage.models import (
     MinisterPersona,
     NotInvitation,
     RawEmail,
     SafeEmail,
 )
-from invitation_triage.triage import triage_invitation
+from box2.triage.triage import triage_invitation
 
 
 async def main():

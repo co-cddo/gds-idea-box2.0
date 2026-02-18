@@ -22,17 +22,17 @@ import asyncio
 import logging
 import sys
 
-from invitation_triage.document_classifier import classify_document
-from invitation_triage.file_parser import extract_text_from_file
-from invitation_triage.invitation_extraction import extract_invitation
-from invitation_triage.models import (
+from box2.triage.document_classifier import classify_document
+from box2.triage.file_parser import extract_text_from_file
+from box2.triage.invitation_extraction import extract_invitation
+from box2.triage.models import (
     MinisterPersona,
     NotInvitation,
     NotSubmission,
     SafeDocument,
 )
-from invitation_triage.submission_extraction import extract_submission
-from invitation_triage.triage import triage_invitation
+from box2.triage.submission_extraction import extract_submission
+from box2.triage.triage import triage_invitation
 
 
 async def main():

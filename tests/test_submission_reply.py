@@ -7,8 +7,8 @@ Tests the template-based reply generator and associated models.
 import pytest
 from pydantic import ValidationError
 
-from invitation_triage.models import Submission, SubmissionReply, SubmissionResponse
-from invitation_triage.submission_reply import generate_submission_reply
+from box2.triage.models import Submission, SubmissionReply, SubmissionResponse
+from box2.triage.submission_reply import generate_submission_reply
 
 # ============================================================================
 # Fixtures

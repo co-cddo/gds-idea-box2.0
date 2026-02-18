@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from invitation_triage.calendar import MockCalendar, get_calendar_events
-from invitation_triage.exceptions import CalendarError
-from invitation_triage.models import CalendarEvent
+from box2.triage.calendar import MockCalendar, get_calendar_events
+from box2.triage.exceptions import CalendarError
+from box2.triage.models import CalendarEvent
 
 # ============================================================================
 # Fixtures

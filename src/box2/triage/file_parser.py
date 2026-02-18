@@ -8,7 +8,7 @@ import os
 import tempfile
 from datetime import datetime
 
-from invitation_triage.models.document import RawDocument
+from box2.triage.models.document import RawDocument
 
 
 def extract_text_from_pdf(file_path: str) -> tuple[str, dict]:

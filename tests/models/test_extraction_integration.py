@@ -9,9 +9,9 @@ import pandas as pd
 import pytest
 from fuzzywuzzy import fuzz
 
-from invitation_triage.invitation_extraction import extract_invitation
-from invitation_triage.models import Invitation, SafeDocument
-from invitation_triage.models.document import generate_document_id
+from box2.triage.invitation_extraction import extract_invitation
+from box2.triage.models import Invitation, SafeDocument
+from box2.triage.models.document import generate_document_id
 from tests.test_emails_dataset import TEST_EMAILS
 
 # ============================================================================

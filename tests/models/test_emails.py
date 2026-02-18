@@ -7,7 +7,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from invitation_triage.models import RawEmail, SafeEmail
+from box2.triage.models import RawEmail, SafeEmail
 
 # ============================================================================
 # RawEmail Tests
@@ -447,7 +447,7 @@ def test_safe_email_with_no_attachments():
 
 def test_safe_email_with_attachments():
     """Test SafeEmail processes attachments with shared PIIRedactor."""
-    from invitation_triage.models.document import RawDocument
+    from box2.triage.models.document import RawDocument
 
     # Create an attachment
     attachment = RawDocument(
@@ -485,7 +485,7 @@ def test_safe_email_with_attachments():
 
 def test_safe_email_attachment_pii_numbering_consistent():
     """Test that PII numbering is consistent across email body and attachments."""
-    from invitation_triage.models.document import RawDocument
+    from box2.triage.models.document import RawDocument
 
     # Email has john@example.com
     # Attachment has john@example.com again (should get same [EMAIL_0] placeholder)
@@ -546,7 +546,7 @@ def test_safe_email_to_document_no_attachments():
 
 def test_safe_email_to_document_with_attachments():
     """Test converting SafeEmail with attachments to unified SafeDocument."""
-    from invitation_triage.models.document import RawDocument
+    from box2.triage.models.document import RawDocument
 
     attachment1 = RawDocument(
         document_id="att-1",

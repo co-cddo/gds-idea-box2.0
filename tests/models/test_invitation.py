@@ -4,7 +4,7 @@
 Tests for invitation models.
 """
 
-from invitation_triage.models import EventType, Invitation, NotInvitation
+from box2.triage.models import EventType, Invitation, NotInvitation
 
 # ============================================================================
 # EventType Tests

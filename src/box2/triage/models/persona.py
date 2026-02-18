@@ -2,7 +2,7 @@ import json
 
 from pydantic import BaseModel, Field
 
-from invitation_triage.exceptions import PersonaError
+from box2.triage.exceptions import PersonaError
 
 
 class MinisterPersona(BaseModel):

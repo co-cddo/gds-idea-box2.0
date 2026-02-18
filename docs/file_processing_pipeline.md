@@ -61,7 +61,7 @@ SafeDocument(
 
 ## File Extraction Functions
 
-Located in `src/invitation_triage/file_extraction.py`:
+Located in `src/box2.triage/file_extraction.py`:
 
 ```python
 extract_text_from_file(file_path, file_type=None) -> RawDocument
@@ -80,9 +80,9 @@ Main function that:
 ## Usage Example
 
 ```python
-from invitation_triage.file_extraction import extract_text_from_file
-from invitation_triage.models.document import SafeDocument
-from invitation_triage.document_classifier import classify_document
+from box2.triage.file_extraction import extract_text_from_file
+from box2.triage.models.document import SafeDocument
+from box2.triage.document_classifier import classify_document
 
 # 1. Extract text from file
 raw_document = extract_text_from_file("document.pdf")

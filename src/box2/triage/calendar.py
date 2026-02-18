@@ -9,8 +9,8 @@ import logging
 from datetime import datetime, timedelta
 from typing import Protocol
 
-from invitation_triage.exceptions import CalendarError
-from invitation_triage.models import CalendarEvent
+from box2.triage.exceptions import CalendarError
+from box2.triage.models import CalendarEvent
 
 logger = logging.getLogger(__name__)
 

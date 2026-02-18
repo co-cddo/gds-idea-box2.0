@@ -7,8 +7,8 @@ Use pytest tests/models/test_triage_integration.py --tb=short to avoid replicati
 
 import pytest
 
-from invitation_triage.models import MinisterPersona
-from invitation_triage.triage import triage_invitation
+from box2.triage.models import MinisterPersona
+from box2.triage.triage import triage_invitation
 from tests.test_triage_dataset import TEST_PERSONA, TRIAGE_TEST_CASES
 
 

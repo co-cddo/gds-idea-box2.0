@@ -13,9 +13,9 @@ import json
 import logging
 from datetime import datetime
 
-from invitation_triage.action_extraction import extract_actions
-from invitation_triage.invitation_redraft import redraft_invitation_response
-from invitation_triage.models import (
+from box2.triage.action_extraction import extract_actions
+from box2.triage.invitation_redraft import redraft_invitation_response
+from box2.triage.models import (
     DocumentClassification,
     InvitationResponse,
     SafeDocument,
@@ -23,7 +23,7 @@ from invitation_triage.models import (
     SubmissionResponse,
     TriagedDecision,
 )
-from invitation_triage.submission_reply import generate_submission_reply
+from box2.triage.submission_reply import generate_submission_reply
 
 
 async def main():

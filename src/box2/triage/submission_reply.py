@@ -10,8 +10,8 @@ No LLM is used - the output is deterministic string formatting.
 
 import logging
 
-from invitation_triage.models import Submission
-from invitation_triage.models.submission_reply import (
+from box2.triage.models import Submission
+from box2.triage.models.submission_reply import (
     SubmissionReply,
     SubmissionResponse,
 )

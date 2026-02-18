@@ -6,12 +6,12 @@ import pandas as pd
 from dateutil import parser
 from pydantic import BaseModel, Field, model_validator
 
-from invitation_triage.models.document import (
+from box2.triage.models.document import (
     RawDocument,
     SafeDocument,
     generate_document_id,
 )
-from invitation_triage.pii_redaction import PIIRedactor
+from box2.triage.pii_redaction import PIIRedactor
 
 
 class RawEmail(BaseModel):

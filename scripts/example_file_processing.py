@@ -16,8 +16,8 @@ Example:
 
 import sys
 
-from invitation_triage.file_parser import extract_text_from_file
-from invitation_triage.models.document import SafeDocument
+from box2.triage.file_parser import extract_text_from_file
+from box2.triage.models.document import SafeDocument
 
 
 def main():
