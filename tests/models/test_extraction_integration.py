@@ -14,6 +14,8 @@ from box2.triage.models import Invitation, SafeDocument
 from box2.triage.models.document import generate_document_id
 from tests.test_emails_dataset import TEST_EMAILS
 
+pytestmark = [pytest.mark.integration, pytest.mark.anyio]
+
 # ============================================================================
 # Helper Functions
 # ============================================================================
@@ -87,7 +89,6 @@ def create_safe_document_from_test(test_case: dict) -> SafeDocument:
 # ============================================================================
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize("test_case", TEST_EMAILS, ids=lambda x: x["email_id"])
 async def test_classification_accuracy(test_case):
     """Test that each email is correctly classified as invitation or not."""
@@ -108,7 +109,6 @@ async def test_classification_accuracy(test_case):
 # ============================================================================
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize(
     "test_case",
     [tc for tc in TEST_EMAILS if tc["is_invitation"]],

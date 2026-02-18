@@ -11,6 +11,8 @@ from box2.triage.models import MinisterPersona
 from box2.triage.triage import triage_invitation
 from tests.test_triage_dataset import TEST_PERSONA, TRIAGE_TEST_CASES
 
+pytestmark = [pytest.mark.integration, pytest.mark.anyio]
+
 
 @pytest.fixture
 def minister_persona() -> MinisterPersona:
@@ -23,7 +25,6 @@ def minister_persona() -> MinisterPersona:
 # ============================================================================
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize("test_case", TRIAGE_TEST_CASES, ids=lambda x: x["test_id"])
 async def test_triage_decision(test_case, minister_persona):
     """Test that each invitation receives the correct decision."""
@@ -39,7 +40,6 @@ async def test_triage_decision(test_case, minister_persona):
     )
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize("test_case", TRIAGE_TEST_CASES, ids=lambda x: x["test_id"])
 async def test_triage_priority(test_case, minister_persona):
     """Test that each invitation receives the correct priority level."""
@@ -55,7 +55,6 @@ async def test_triage_priority(test_case, minister_persona):
     )
 
 
-@pytest.mark.anyio
 @pytest.mark.parametrize(
     "test_case",
     [

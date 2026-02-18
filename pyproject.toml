@@ -46,6 +46,9 @@ addopts = [
     "--strict-config",
     "-ra",
 ]
+markers = [
+    "integration: tests that require AWS credentials and call live LLM",
+]
 
 [tool.coverage.run]
 source = ["src"]
