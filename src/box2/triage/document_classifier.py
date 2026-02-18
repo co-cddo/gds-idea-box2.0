@@ -5,7 +5,7 @@ from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 
 from box2.triage.config import model
 from box2.triage.exceptions import ClassificationError
-from box2.triage.models import SafeDocument, DocumentClassification
+from box2.triage.models import DocumentClassification, SafeDocument
 
 logger = logging.getLogger(__name__)
 

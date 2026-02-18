@@ -229,17 +229,13 @@ Return a list of Action objects.
         # Generate summary
         action_summary = f"{len(actions)} action(s) extracted"
         if isinstance(office_response, SubmissionResponse):
-            decision_text = (
-                f"Minister's response: {office_response.minister_response}"
-            )
+            decision_text = f"Minister's response: {office_response.minister_response}"
             office_decision_value = "yes"  # Default for ActionExtractionResult
         elif office_response.decision == "yes":
             decision_text = "approved/accepted as recommended"
             office_decision_value = office_response.decision
         elif office_response.decision == "yes_but":
-            decision_text = (
-                f"approved/accepted with modifications: {office_response.notes}"
-            )
+            decision_text = f"approved/accepted with modifications: {office_response.notes}"
             office_decision_value = office_response.decision
         else:  # no
             decision_text = f"declined/rejected: {office_response.notes}"

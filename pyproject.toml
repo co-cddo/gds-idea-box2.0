@@ -76,6 +76,7 @@ exclude_lines = [
 
 [tool.ruff]
 target-version = "py312"
+line-length = 120
 
 # Exclude files or directories
 exclude = [
@@ -91,6 +92,9 @@ exclude = [
 # Enable specific rule sets by their prefix
 # E (Pycodestyle errors), F (Pyflakes), I (isort), B (Bugbear), UP (Pyupgrade), etc.
 select = ["E", "F", "I", "B", "UP", "N", "A", "PT"]
+# E501 disabled: ruff format handles code line length; remaining violations are
+# string literals (LLM prompts, test data) that shouldn't be wrapped.
+ignore = ["E501"]
 
 # Configure the 'isort' rule set (I)
 [tool.ruff.lint.isort]

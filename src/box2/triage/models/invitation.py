@@ -18,9 +18,7 @@ class EventType(str, Enum):
 class NotInvitation(BaseModel):
     """Document that is not an invitation requiring triage."""
 
-    document_id: str = Field(
-        description="Unique identifier linking back to the source document"
-    )
+    document_id: str = Field(description="Unique identifier linking back to the source document")
     reason: str = Field(
         min_length=10,
         description="Brief explanation of why this is not an invitation "
@@ -31,45 +29,34 @@ class NotInvitation(BaseModel):
 class Invitation(BaseModel):
     """Document that is an invitation requiring ministerial triage."""
 
-    document_id: str = Field(
-        description="Unique identifier linking back to the source document"
-    )
+    document_id: str = Field(description="Unique identifier linking back to the source document")
 
     event_type: EventType = Field(description="Type of event being invited to")
 
     host_org: str = Field(description="Organization or individual hosting the event")
 
-    purpose: str = Field(
-        min_length=10, description="Stated purpose or description of the event"
-    )
+    purpose: str = Field(min_length=10, description="Stated purpose or description of the event")
 
     event_summary: str = Field(
         min_length=10,
         description="Concise 2-3 sentence summary of the event for quick review",
     )
 
-    topics: list[str] = Field(
-        description="Relevant policy topics from the minister's portfolio (DSIT/DESNZ taxonomy)"
-    )
+    topics: list[str] = Field(description="Relevant policy topics from the minister's portfolio (DSIT/DESNZ taxonomy)")
 
     proposed_times: list[str] = Field(
-        description="Proposed date/time options as raw text "
-        "(e.g., '15th February 2026, 6:00 PM', 'week of March 4')"
+        description="Proposed date/time options as raw text (e.g., '15th February 2026, 6:00 PM', 'week of March 4')"
     )
 
-    is_time_flexible: bool = Field(
-        description="Whether multiple time options are offered or flexibility is mentioned"
-    )
+    is_time_flexible: bool = Field(description="Whether multiple time options are offered or flexibility is mentioned")
 
     location: str = Field(
-        description="Event location as stated in email "
-        "(e.g., 'The Royal Society, London' or 'Virtual via Zoom')"
+        description="Event location as stated in email (e.g., 'The Royal Society, London' or 'Virtual via Zoom')"
     )
 
     deadline_to_respond: str | None = Field(
         default=None,
-        description="Deadline for responding if mentioned "
-        "(as raw text, e.g., '5th February 2026')",
+        description="Deadline for responding if mentioned (as raw text, e.g., '5th February 2026')",
     )
 
     overall_confidence: float | None = Field(

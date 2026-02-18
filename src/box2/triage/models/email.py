@@ -18,13 +18,11 @@ class RawEmail(BaseModel):
     """Raw email as ingested from CSV or other source."""
 
     email_id: str = Field(
-        description="Source system email identifier "
-        "(e.g., Outlook message ID, Gmail ID, or auto-generated hash)"
+        description="Source system email identifier (e.g., Outlook message ID, Gmail ID, or auto-generated hash)"
     )
     document_id: str = Field(
         default="",
-        description="App-wide tracking ID (email_{hash}). "
-        "Auto-generated from content if not provided.",
+        description="App-wide tracking ID (email_{hash}). Auto-generated from content if not provided.",
     )
     subject: str
     body: str
@@ -32,8 +30,7 @@ class RawEmail(BaseModel):
     has_attachments: bool = False
     attachments: list[RawDocument] = Field(
         default_factory=list,
-        description="Email attachments as RawDocuments "
-        "(empty for current MVP test data)",
+        description="Email attachments as RawDocuments (empty for current MVP test data)",
     )
 
     @model_validator(mode="after")
@@ -47,9 +44,7 @@ class RawEmail(BaseModel):
         return self
 
     @classmethod
-    def _generate_id(
-        cls, subject: str, body: str, received_date: str | datetime
-    ) -> str:
+    def _generate_id(cls, subject: str, body: str, received_date: str | datetime) -> str:
         """Generate a stable 16-character ID from email content."""
         received_str = str(received_date)
         content = f"{subject}{body}{received_str}"
@@ -62,9 +57,7 @@ class RawEmail(BaseModel):
 
         Expected columns: Subject, Body, Received date and time, Has attachments
         """
-        email_id = cls._generate_id(
-            row["Subject"], row["Body"], row["Received date and time"]
-        )
+        email_id = cls._generate_id(row["Subject"], row["Body"], row["Received date and time"])
 
         return cls(
             email_id=email_id,
@@ -123,12 +116,8 @@ class RawEmail(BaseModel):
 class SafeEmail(BaseModel):
     """Email with PII removed and stored separately for secure handling."""
 
-    email_id: str = Field(
-        description="Source system email identifier"
-    )
-    document_id: str = Field(
-        description="App-wide tracking ID (email_{hash})"
-    )
+    email_id: str = Field(description="Source system email identifier")
+    document_id: str = Field(description="App-wide tracking ID (email_{hash})")
     subject: str  # PII-redacted
     body: str  # PII-redacted
     received_date: datetime

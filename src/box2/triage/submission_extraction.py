@@ -72,9 +72,7 @@ async def extract_submission(safe_doc: SafeDocument) -> Submission | NotSubmissi
         SubmissionExtractionError: If extraction fails due to LLM errors, validation errors, or unexpected issues
     """
 
-    agent = Agent(
-        model=model, output_type=Submission | NotSubmission, deps_type=SafeDocument
-    )
+    agent = Agent(model=model, output_type=Submission | NotSubmission, deps_type=SafeDocument)
 
     @agent.system_prompt
     def get_system_prompt(ctx):
@@ -101,9 +99,7 @@ TEXT:
     )
 
     try:
-        result = await agent.run(
-            "Extract submission details from this document.", deps=safe_doc
-        )
+        result = await agent.run("Extract submission details from this document.", deps=safe_doc)
         output = result.output
 
         # Log result type

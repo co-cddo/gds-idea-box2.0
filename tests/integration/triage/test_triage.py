@@ -35,8 +35,7 @@ async def test_triage_decision(test_case, minister_persona):
     result = await triage_invitation(invitation, minister_persona)
 
     assert result.decision.lower() == expected_decision.lower(), (
-        f"Decision mismatch: expected {expected_decision}, got {result.decision}\n"
-        f"LLM Reasoning: {result.reason}"
+        f"Decision mismatch: expected {expected_decision}, got {result.decision}\nLLM Reasoning: {result.reason}"
     )
 
 
@@ -50,18 +49,13 @@ async def test_triage_priority(test_case, minister_persona):
     result = await triage_invitation(invitation, minister_persona)
 
     assert result.priority.lower() == expected_priority.lower(), (
-        f"Priority mismatch: expected {expected_priority}, got {result.priority}\n"
-        f"LLM Reasoning: {result.reason}"
+        f"Priority mismatch: expected {expected_priority}, got {result.priority}\nLLM Reasoning: {result.reason}"
     )
 
 
 @pytest.mark.parametrize(
     "test_case",
-    [
-        tc
-        for tc in TRIAGE_TEST_CASES
-        if tc["expected"].get("should_mention_calendar", False)
-    ],
+    [tc for tc in TRIAGE_TEST_CASES if tc["expected"].get("should_mention_calendar", False)],
     ids=lambda x: x["test_id"],
 )
 async def test_triage_calendar_consideration(test_case, minister_persona):
@@ -83,11 +77,6 @@ async def test_triage_calendar_consideration(test_case, minister_persona):
         "meeting",
     ]
 
-    mentions_calendar = any(
-        keyword in result.reason.lower() for keyword in calendar_keywords
-    )
+    mentions_calendar = any(keyword in result.reason.lower() for keyword in calendar_keywords)
 
-    assert mentions_calendar, (
-        f"Calendar conflicts exist but not mentioned in reasoning\n"
-        f"LLM Reasoning: {result.reason}"
-    )
+    assert mentions_calendar, f"Calendar conflicts exist but not mentioned in reasoning\nLLM Reasoning: {result.reason}"

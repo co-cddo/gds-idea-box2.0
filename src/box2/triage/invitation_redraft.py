@@ -111,9 +111,7 @@ Return only the redrafted text, nothing else.
     )
 
     try:
-        result = await agent.run(
-            "Redraft this response based on the office notes.", deps=None
-        )
+        result = await agent.run("Redraft this response based on the office notes.", deps=None)
         redrafted = result.output
 
         logger.info(

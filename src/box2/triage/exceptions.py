@@ -1,13 +1,13 @@
 """Custom exceptions for invitation triage system."""
 
 
-class TriageBaseException(Exception):
+class TriageBaseError(Exception):
     """Base exception for invitation triage system."""
 
     pass
 
 
-class ExtractionError(TriageBaseException):
+class ExtractionError(TriageBaseError):
     """Error during document extraction."""
 
     def __init__(
@@ -21,7 +21,7 @@ class ExtractionError(TriageBaseException):
         super().__init__(message)
 
 
-class TriageError(TriageBaseException):
+class TriageError(TriageBaseError):
     """Error during invitation triage decision-making."""
 
     def __init__(
@@ -35,7 +35,7 @@ class TriageError(TriageBaseException):
         super().__init__(message)
 
 
-class CalendarError(TriageBaseException):
+class CalendarError(TriageBaseError):
     """Error during calendar operations."""
 
     def __init__(self, message: str, cause: Exception | None = None):
@@ -43,7 +43,7 @@ class CalendarError(TriageBaseException):
         super().__init__(message)
 
 
-class PersonaError(TriageBaseException):
+class PersonaError(TriageBaseError):
     """Error loading or validating minister persona."""
 
     def __init__(
@@ -57,7 +57,7 @@ class PersonaError(TriageBaseException):
         super().__init__(message)
 
 
-class SubmissionExtractionError(TriageBaseException):
+class SubmissionExtractionError(TriageBaseError):
     """Error during submission extraction from text."""
 
     def __init__(
@@ -71,7 +71,7 @@ class SubmissionExtractionError(TriageBaseException):
         super().__init__(message)
 
 
-class ClassificationError(TriageBaseException):
+class ClassificationError(TriageBaseError):
     """Error during document classification."""
 
     def __init__(

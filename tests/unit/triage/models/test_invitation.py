@@ -29,9 +29,7 @@ def test_event_type_enum_values():
 
 def test_not_invitation_creation():
     """Test creating a NotInvitation."""
-    not_invite = NotInvitation(
-        document_id="test123", reason="This is just an informational update"
-    )
+    not_invite = NotInvitation(document_id="test123", reason="This is just an informational update")
 
     assert not_invite.document_id == "test123"
     assert "informational" in not_invite.reason

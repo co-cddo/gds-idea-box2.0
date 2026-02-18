@@ -49,10 +49,7 @@ def inject_persona_and_instructions(ctx: RunContext[TriageDeps]) -> str:
 
     # Format the responsibilities for clear reading
     responsibilities_text = "\n".join(
-        [
-            f"- **{dept}**: {', '.join(topics)}"
-            for dept, topics in p.responsibilities.items()
-        ]
+        [f"- **{dept}**: {', '.join(topics)}" for dept, topics in p.responsibilities.items()]
     )
 
     # Format the invitation details
@@ -149,9 +146,7 @@ Sign off: "Office of {p.name}"
 
 
 @triage_agent.tool
-async def check_calendar(
-    ctx: RunContext[TriageDeps], start_datetime: str, end_datetime: str
-) -> list[CalendarEvent]:
+async def check_calendar(ctx: RunContext[TriageDeps], start_datetime: str, end_datetime: str) -> list[CalendarEvent]:
     """
     Check the Minister's calendar for events in a time range.
 
@@ -181,12 +176,9 @@ async def check_calendar(
         start = datetime.fromisoformat(start_datetime.replace(" ", "T"))
         end = datetime.fromisoformat(end_datetime.replace(" ", "T"))
     except (ValueError, AttributeError) as e:
-        logger.error(
-            f"Invalid datetime format: start='{start_datetime}', end='{end_datetime}'"
-        )
+        logger.error(f"Invalid datetime format: start='{start_datetime}', end='{end_datetime}'")
         raise CalendarError(
-            f"Invalid datetime format. Expected 'YYYY-MM-DD HH:MM', "
-            f"got start='{start_datetime}', end='{end_datetime}'",
+            f"Invalid datetime format. Expected 'YYYY-MM-DD HH:MM', got start='{start_datetime}', end='{end_datetime}'",
             cause=e,
         ) from e
 
@@ -196,9 +188,7 @@ async def check_calendar(
     return events
 
 
-async def triage_invitation(
-    invitation: Invitation, persona: MinisterPersona
-) -> TriagedDecision:
+async def triage_invitation(invitation: Invitation, persona: MinisterPersona) -> TriagedDecision:
     """
     Triage an invitation with calendar checking.
 

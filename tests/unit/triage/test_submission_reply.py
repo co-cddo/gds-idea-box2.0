@@ -107,8 +107,7 @@ def test_submission_reply_creation():
         policy_area="AI Safety",
         official_recommendation="Approve £3M",
         minister_response="Approve £2M only",
-        reply_text="RE: AI Safety\n\nOfficial Recommendation:\nApprove £3M\n\n"
-        "Minister's Response:\nApprove £2M only",
+        reply_text="RE: AI Safety\n\nOfficial Recommendation:\nApprove £3M\n\nMinister's Response:\nApprove £2M only",
     )
 
     assert reply.document_id == "email_sub001abc"
@@ -135,18 +134,14 @@ def test_submission_reply_short_text_rejected():
 # ============================================================================
 
 
-def test_generate_reply_contains_official_recommendation_verbatim(
-    sample_submission, approval_response
-):
+def test_generate_reply_contains_official_recommendation_verbatim(sample_submission, approval_response):
     """Test that the official recommendation appears verbatim in reply."""
     reply = generate_submission_reply(sample_submission, approval_response)
 
     assert sample_submission.official_recommendation in reply.reply_text
 
 
-def test_generate_reply_contains_minister_response_verbatim(
-    sample_submission, approval_response
-):
+def test_generate_reply_contains_minister_response_verbatim(sample_submission, approval_response):
     """Test that the minister's response appears verbatim in reply."""
     reply = generate_submission_reply(sample_submission, approval_response)
 
@@ -239,9 +234,7 @@ def test_generate_reply_with_special_characters(sample_submission):
     """Test reply generation with special characters in minister response."""
     response = SubmissionResponse(
         document_id="email_test001abcdef",
-        minister_response=(
-            "Approve £2M (not £3M) - see note re: 'revised scope' & timeline"
-        ),
+        minister_response=("Approve £2M (not £3M) - see note re: 'revised scope' & timeline"),
     )
 
     reply = generate_submission_reply(sample_submission, response)
@@ -256,9 +249,7 @@ def test_generate_reply_with_different_submission():
         policy_area="Quantum Technologies - National Programme",
         responsible_deputy_director="Bob Wilson, Deputy Director - Quantum",
         summary="Request for programme extension and additional funding",
-        official_recommendation=(
-            "Extend programme by 2 years with £5M additional funding"
-        ),
+        official_recommendation=("Extend programme by 2 years with £5M additional funding"),
         urgency_assessment="routine",
     )
 

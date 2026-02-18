@@ -15,26 +15,20 @@ class TriagedDecision(BaseModel):
     minister's priorities, and calendar availability.
     """
 
-    document_id: str = Field(
-        description="Document ID linking back to the source document"
+    document_id: str = Field(description="Document ID linking back to the source document")
+
+    decision: Literal["accept", "decline", "delegate", "request_more_info", "defer"] = Field(
+        description="Recommended action for this invitation"
     )
 
-    decision: Literal["accept", "decline", "delegate", "request_more_info", "defer"] = (
-        Field(description="Recommended action for this invitation")
-    )
-
-    priority: Literal["high", "medium", "low"] = Field(
-        description="Priority level of this invitation for the minister"
-    )
+    priority: Literal["high", "medium", "low"] = Field(description="Priority level of this invitation for the minister")
 
     reason: str = Field(
         min_length=10,
         description="Short explanation for the decision (1-2 sentences)",
     )
 
-    draft_response: str = Field(
-        min_length=20, description="Draft email response ready to send or adapt"
-    )
+    draft_response: str = Field(min_length=20, description="Draft email response ready to send or adapt")
 
     affected_events: list[str] = Field(
         default_factory=list,

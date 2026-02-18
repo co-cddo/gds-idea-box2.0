@@ -31,7 +31,7 @@ def normalise_date(date_str: Any) -> str | None:
         if dt.year == 1:
             dt = dt.replace(year=2026)
         return dt.strftime("%Y-%m-%d")
-    except:
+    except (ValueError, TypeError, OverflowError):
         return None
 
 
@@ -44,9 +44,7 @@ def fuzzy_match(expected: str | None, actual: str | None, threshold: int = 85) -
     return fuzz.partial_ratio(str(expected).lower(), str(actual).lower()) >= threshold
 
 
-def topics_recall_sufficient(
-    expected: list[str], actual: list[str], threshold: float = 0.5
-) -> bool:
+def topics_recall_sufficient(expected: list[str], actual: list[str], threshold: float = 0.5) -> bool:
     """Check if the recall of extracted topics meets the required threshold."""
     if not expected:
         return True
@@ -123,11 +121,7 @@ async def test_invitation_field_integrity(test_case):
 
     # 1. Event Type Strict Match
     if test_case.get("expected_event_type"):
-        actual_type = (
-            result.event_type.value
-            if hasattr(result.event_type, "value")
-            else str(result.event_type)
-        )
+        actual_type = result.event_type.value if hasattr(result.event_type, "value") else str(result.event_type)
         assert actual_type == test_case["expected_event_type"], (
             f"Event type mismatch: expected {test_case['expected_event_type']}, got {actual_type}"
         )
@@ -150,9 +144,7 @@ async def test_invitation_field_integrity(test_case):
                     actual_date = parsed
                     break
 
-        assert actual_date == expected_date, (
-            f"Date mismatch: expected {expected_date}, got {actual_date}"
-        )
+        assert actual_date == expected_date, f"Date mismatch: expected {expected_date}, got {actual_date}"
 
     # 4. Location Fuzzy Match
     if test_case.get("expected_location"):
@@ -162,6 +154,6 @@ async def test_invitation_field_integrity(test_case):
 
     # 5. Topic Recall (50% threshold)
     if test_case.get("expected_topics"):
-        assert topics_recall_sufficient(
-            test_case["expected_topics"], result.topics or []
-        ), f"Topic recall below 50% for {test_case['email_id']}"
+        assert topics_recall_sufficient(test_case["expected_topics"], result.topics or []), (
+            f"Topic recall below 50% for {test_case['email_id']}"
+        )

@@ -690,13 +690,13 @@ def create_test_dataframe() -> pd.DataFrame:
 def get_invitations_only() -> pd.DataFrame:
     """Return only emails that should be classified as invitations."""
     df = create_test_dataframe()
-    return df[df["is_invitation"] == True].copy()
+    return df[df["is_invitation"]].copy()
 
 
 def get_non_invitations_only() -> pd.DataFrame:
     """Return only emails that should be classified as non-invitations."""
     df = create_test_dataframe()
-    return df[df["is_invitation"] == False].copy()
+    return df[~df["is_invitation"]].copy()
 
 
 def get_emails_with_dates() -> pd.DataFrame:

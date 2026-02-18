@@ -58,9 +58,7 @@ async def extract_invitation(safe_doc: SafeDocument) -> Invitation | NotInvitati
         ExtractionError: If extraction fails due to LLM errors, validation errors, or unexpected issues
     """
 
-    agent = Agent(
-        model=model, output_type=Invitation | NotInvitation, deps_type=SafeDocument
-    )
+    agent = Agent(model=model, output_type=Invitation | NotInvitation, deps_type=SafeDocument)
 
     @agent.system_prompt
     def get_system_prompt(ctx: RunContext[SafeDocument]) -> str:
@@ -86,9 +84,7 @@ TEXT:
     )
 
     try:
-        result = await agent.run(
-            "Extract invitation details from this document.", deps=safe_doc
-        )
+        result = await agent.run("Extract invitation details from this document.", deps=safe_doc)
         output = result.output
 
         # Log result type

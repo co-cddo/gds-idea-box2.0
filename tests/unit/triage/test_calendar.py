@@ -116,18 +116,16 @@ def test_event_priorities_are_valid(calendar):
     template = calendar._template
     valid_priorities = {"high", "medium", "low"}
 
-    for day, events in template.items():
+    for _day, events in template.items():
         for event in events:
-            assert event["priority"] in valid_priorities, (
-                f"Invalid priority: {event['priority']}"
-            )
+            assert event["priority"] in valid_priorities, f"Invalid priority: {event['priority']}"
 
 
 def test_events_have_locations(calendar):
     """All events should have location specified."""
     template = calendar._template
 
-    for day, events in template.items():
+    for _day, events in template.items():
         for event in events:
             assert event["location"] is not None
             assert len(event["location"]) > 0
@@ -338,9 +336,7 @@ def test_event_end_time_after_start_time(calendar, cycle_start):
     events = calendar.get_events(cycle_start, cycle_start)
 
     for event in events:
-        assert event.end_time > event.start_time, (
-            f"Event {event.title} has invalid time range"
-        )
+        assert event.end_time > event.start_time, f"Event {event.title} has invalid time range"
 
 
 def test_events_are_chronologically_ordered(calendar, cycle_start):
@@ -348,9 +344,7 @@ def test_events_are_chronologically_ordered(calendar, cycle_start):
     events = calendar.get_events(cycle_start, cycle_start)
 
     for i in range(len(events) - 1):
-        assert events[i].start_time <= events[i + 1].start_time, (
-            "Events should be chronologically ordered"
-        )
+        assert events[i].start_time <= events[i + 1].start_time, "Events should be chronologically ordered"
 
 
 # ============================================================================
@@ -463,11 +457,7 @@ def test_check_availability_for_invitation(calendar):
     events = calendar.get_events(invitation_date, invitation_date)
 
     # Check if any events conflict
-    conflicts = [
-        event
-        for event in events
-        if (event.start_time < invitation_end and event.end_time > invitation_start)
-    ]
+    conflicts = [event for event in events if (event.start_time < invitation_end and event.end_time > invitation_start)]
 
     # There should be a conflict (ARIA meeting at 15:15 is close but no overlap)
     # No events between 13:00-15:15 on this day
@@ -493,7 +483,7 @@ def test_get_week_overview(calendar):
     assert len(events_by_day) == 5
 
     # Each day should have multiple events
-    for day, day_events in events_by_day.items():
+    for _day, day_events in events_by_day.items():
         assert len(day_events) > 0
 
 

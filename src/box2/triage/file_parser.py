@@ -119,8 +119,7 @@ def extract_text_from_file(
 
         if file_type is None:
             raise ValueError(
-                "Cannot determine file type. Provide file_type parameter "
-                "or use standard file extension in filename"
+                "Cannot determine file type. Provide file_type parameter or use standard file extension in filename"
             )
 
         # Write binary data to temp file
@@ -152,8 +151,7 @@ def extract_text_from_file(
             file_type = type_mapping.get(ext)
             if file_type is None:
                 raise ValueError(
-                    f"Cannot infer file type from extension '{ext}'. "
-                    f"Supported extensions: {list(type_mapping.keys())}"
+                    f"Cannot infer file type from extension '{ext}'. Supported extensions: {list(type_mapping.keys())}"
                 )
 
         # Extract text based on file type
@@ -164,9 +162,7 @@ def extract_text_from_file(
         elif file_type == "txt":
             text, metadata = extract_text_from_txt(file_path)
         else:
-            raise ValueError(
-                f"Unsupported file type: {file_type}. Supported types: pdf, docx, txt"
-            )
+            raise ValueError(f"Unsupported file type: {file_type}. Supported types: pdf, docx, txt")
 
         # Generate document ID
         document_id = RawDocument._generate_document_id(text, filename)

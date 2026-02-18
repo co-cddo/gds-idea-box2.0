@@ -28,19 +28,13 @@ def generate_document_id(content: str, prefix: str = "doc") -> str:
 class RawDocument(BaseModel):
     """Raw Document type file before PII extraction."""
 
-    document_id: str = Field(
-        description="Unique identifier generated from content hash (file_{hash})"
-    )
+    document_id: str = Field(description="Unique identifier generated from content hash (file_{hash})")
     filename: str = Field(description="Original filename")
     source_type: Literal["pdf", "docx", "txt"] = Field(description="File type")
     raw_text: str = Field(description="Extracted text content from file")
-    document_timestamp: datetime = Field(
-        default_factory=datetime.now, description="When this file was processed"
-    )
+    document_timestamp: datetime = Field(default_factory=datetime.now, description="When this file was processed")
     file_size: int | None = Field(default=None, description="File size in bytes")
-    metadata: dict = Field(
-        default_factory=dict, description="Additional metadata (page_count, etc.)"
-    )
+    metadata: dict = Field(default_factory=dict, description="Additional metadata (page_count, etc.)")
 
     @classmethod
     def _generate_document_id(cls, text: str, filename: str) -> str:
@@ -56,12 +50,8 @@ class SafeDocument(BaseModel):
     source_type: str
     safe_text: str = Field(description="PII-redacted text content")
     document_timestamp: datetime
-    pii_extracted: dict[str, list[str]] = Field(
-        description="Extracted PII (emails, phone numbers)"
-    )
-    links_extracted: list[dict[str, str]] = Field(
-        description="Extracted links with placeholders"
-    )
+    pii_extracted: dict[str, list[str]] = Field(description="Extracted PII (emails, phone numbers)")
+    links_extracted: list[dict[str, str]] = Field(description="Extracted links with placeholders")
     file_size: int | None = None
     metadata: dict = Field(default_factory=dict)
 
@@ -103,9 +93,7 @@ class DocumentClassification(BaseModel):
     appropriate extraction and processing pipelines.
     """
 
-    document_id: str = Field(
-        description="Links back to the SafeDocument that was classified"
-    )
+    document_id: str = Field(description="Links back to the SafeDocument that was classified")
 
     document_type: Literal["invitation", "submission", "other"] = Field(
         description="Classified document type. "

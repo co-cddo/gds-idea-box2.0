@@ -12,14 +12,11 @@ class MinisterPersona(BaseModel):
 
     role: str = Field(description="Official role/position")
 
-    priorities: list[str] = Field(
-        description="Top policy priorities for decision-making"
-    )
+    priorities: list[str] = Field(description="Top policy priorities for decision-making")
 
     responsibilities: dict[str, list[str]] = Field(
         description=(
-            "Policy areas and topics by department (e.g., DSIT, DESNZ). "
-            "Used both for context and categorization."
+            "Policy areas and topics by department (e.g., DSIT, DESNZ). Used both for context and categorization."
         )
     )
 

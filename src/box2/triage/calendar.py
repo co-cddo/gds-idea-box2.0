@@ -18,9 +18,7 @@ logger = logging.getLogger(__name__)
 class CalendarProvider(Protocol):
     """Protocol defining the calendar interface."""
 
-    def get_events(
-        self, start_date: datetime, end_date: datetime
-    ) -> list[CalendarEvent]:
+    def get_events(self, start_date: datetime, end_date: datetime) -> list[CalendarEvent]:
         """
         Get all events in the specified date range.
 
@@ -53,9 +51,7 @@ class MockCalendar:
         """Initialize with the two-week template schedule."""
         self._template = self._build_template()
 
-    def get_events(
-        self, start_date: datetime, end_date: datetime
-    ) -> list[CalendarEvent]:
+    def get_events(self, start_date: datetime, end_date: datetime) -> list[CalendarEvent]:
         """
         Get mock events in the date range.
 
@@ -104,12 +100,8 @@ class MockCalendar:
             end_time = datetime.strptime(template["end_time"], "%Y-%m-%d %H:%M")
 
             # Replace date components while keeping time
-            event_start = date.replace(
-                hour=start_time.hour, minute=start_time.minute, second=0, microsecond=0
-            )
-            event_end = date.replace(
-                hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0
-            )
+            event_start = date.replace(hour=start_time.hour, minute=start_time.minute, second=0, microsecond=0)
+            event_end = date.replace(hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0)
 
             events.append(
                 CalendarEvent(
@@ -651,10 +643,7 @@ def get_calendar_events(
     # Validate date range
     if start_date > end_date:
         logger.error(f"Invalid date range: start ({start_date}) > end ({end_date})")
-        raise CalendarError(
-            f"Invalid date range: start_date ({start_date}) "
-            f"must be <= end_date ({end_date})"
-        )
+        raise CalendarError(f"Invalid date range: start_date ({start_date}) must be <= end_date ({end_date})")
 
     if provider is None:
         provider = MockCalendar()

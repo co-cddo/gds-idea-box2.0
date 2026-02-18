@@ -48,13 +48,9 @@ class SubmissionReply(BaseModel):
 
     policy_area: str = Field(description="Policy area from the original submission")
 
-    official_recommendation: str = Field(
-        description="The official recommendation from the submission, verbatim"
-    )
+    official_recommendation: str = Field(description="The official recommendation from the submission, verbatim")
 
-    minister_response: str = Field(
-        description="The minister's response, verbatim from SubmissionResponse"
-    )
+    minister_response: str = Field(description="The minister's response, verbatim from SubmissionResponse")
 
     reply_text: str = Field(
         min_length=20,

@@ -7,9 +7,7 @@ from pydantic import BaseModel, Field
 class InvitationResponse(BaseModel):
     """Private Office's response on behalf of the minister to an invitation."""
 
-    document_id: str = Field(
-        description="Links back to the source invitation"
-    )
+    document_id: str = Field(description="Links back to the source invitation")
 
     decision: Literal["yes", "yes_but", "no"] = Field(
         description="Minister's decision: "
@@ -63,26 +61,21 @@ class Action(BaseModel):
     # For correspondence actions - include the final draft
     draft_content: str | None = Field(
         default=None,
-        description="Final draft text for correspondence actions. "
-        "Should be ready to send with minimal edits.",
+        description="Final draft text for correspondence actions. Should be ready to send with minimal edits.",
     )
 
     # Timing and priority
     deadline: str | None = Field(
         default=None,
-        description="Deadline as stated in raw text "
-        "(e.g., 'By 5th February 2026', 'Before the event', 'ASAP')",
+        description="Deadline as stated in raw text (e.g., 'By 5th February 2026', 'Before the event', 'ASAP')",
     )
 
-    urgency: Literal["urgent", "routine", "low"] = Field(
-        default="routine", description="How urgent this action is"
-    )
+    urgency: Literal["urgent", "routine", "low"] = Field(default="routine", description="How urgent this action is")
 
     # Ownership
     owner: str | None = Field(
         default=None,
-        description="Who should do this action "
-        "(e.g., 'Private Office', 'AI Policy Team', 'Minister')",
+        description="Who should do this action (e.g., 'Private Office', 'AI Policy Team', 'Minister')",
     )
 
     # Status tracking
@@ -91,15 +84,11 @@ class Action(BaseModel):
     )
 
     # Linking back to source
-    document_id: str = Field(
-        description="Links back to the source document that generated this action"
-    )
+    document_id: str = Field(description="Links back to the source document that generated this action")
     source_document_type: Literal["invitation", "submission"]
 
     # Audit trail
-    created_at: datetime = Field(
-        default_factory=datetime.now, description="When this action was created"
-    )
+    created_at: datetime = Field(default_factory=datetime.now, description="When this action was created")
 
 
 class FinalDraft(BaseModel):
@@ -119,9 +108,7 @@ class FinalDraft(BaseModel):
         description="Office notes that informed the redraft (if was_modified=True)",
     )
 
-    created_at: datetime = Field(
-        default_factory=datetime.now, description="When this draft was finalized"
-    )
+    created_at: datetime = Field(default_factory=datetime.now, description="When this draft was finalized")
 
 
 class ActionExtractionResult(BaseModel):
@@ -134,13 +121,9 @@ class ActionExtractionResult(BaseModel):
         description="The office's decision on behalf of the minister"
     )
 
-    final_draft: FinalDraft = Field(
-        description="Final approved draft (original or redrafted)"
-    )
+    final_draft: FinalDraft = Field(description="Final approved draft (original or redrafted)")
 
-    actions: list[Action] = Field(
-        description="List of actionable items extracted from the decision"
-    )
+    actions: list[Action] = Field(description="List of actionable items extracted from the decision")
 
     summary: str = Field(
         min_length=20,
