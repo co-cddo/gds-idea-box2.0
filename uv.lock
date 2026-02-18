@@ -286,40 +286,40 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
-    { name = "fuzzywuzzy" },
     { name = "pandas" },
     { name = "pydantic-ai" },
     { name = "pypdf" },
-    { name = "pytest-check" },
     { name = "python-dateutil" },
     { name = "python-docx" },
-    { name = "python-levenshtein" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "fuzzywuzzy" },
     { name = "ipython" },
     { name = "pytest" },
+    { name = "pytest-check" },
+    { name = "python-levenshtein" },
     { name = "ruff" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "boto3", specifier = ">=1.40.63" },
-    { name = "fuzzywuzzy", specifier = ">=0.18.0" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pydantic-ai", specifier = ">=1.9.1" },
     { name = "pypdf", specifier = ">=5.3.0" },
-    { name = "pytest-check", specifier = ">=2.6.2" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "python-docx", specifier = ">=1.1.2" },
-    { name = "python-levenshtein", specifier = ">=0.27.3" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "fuzzywuzzy", specifier = ">=0.18.0" },
     { name = "ipython", specifier = ">=9.6.0" },
     { name = "pytest", specifier = ">=9.0.2" },
+    { name = "pytest-check", specifier = ">=2.6.2" },
+    { name = "python-levenshtein", specifier = ">=0.27.3" },
     { name = "ruff", specifier = ">=0.14.14" },
 ]
 

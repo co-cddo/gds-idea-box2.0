@@ -11,14 +11,11 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "boto3>=1.40.63",
-    "fuzzywuzzy>=0.18.0",
     "pandas>=2.3.3",
     "pydantic-ai>=1.9.1",
     "pypdf>=5.3.0",
-    "pytest-check>=2.6.2",
     "python-dateutil>=2.9.0.post0",
     "python-docx>=1.1.2",
-    "python-levenshtein>=0.27.3",
 ]
 
 [build-system]
@@ -30,8 +27,11 @@ packages = ["src/box2"]
 
 [dependency-groups]
 dev = [
+    "fuzzywuzzy>=0.18.0",
     "ipython>=9.6.0",
     "pytest>=9.0.2",
+    "pytest-check>=2.6.2",
+    "python-levenshtein>=0.27.3",
     "ruff>=0.14.14",
 ]
 
