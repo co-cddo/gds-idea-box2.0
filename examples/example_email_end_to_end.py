@@ -8,7 +8,7 @@ This script demonstrates the full pipeline for email invitations:
 4. Invitation → Triaged decision with calendar checking (LLM)
 
 Usage:
-    uv run python scripts/example_email_end_to_end.py
+    uv run python examples/example_email_end_to_end.py
 """
 
 import asyncio
@@ -93,7 +93,7 @@ Tech UK
     print("COMPLETE END-TO-END INVITATION TRIAGE TEST")
     print("=" * 80)
 
-    persona = MinisterPersona.from_json_file("data/example_science_minister.json")
+    persona = MinisterPersona.from_json_file("src/box2/triage/data/example_science_minister.json")
     print(f"\n👤 MINISTER: {persona.name}")
     print(f"   Role: {persona.role}")
     print(f"   Top Priority: {persona.priorities[0]}")

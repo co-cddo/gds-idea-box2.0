@@ -2,7 +2,7 @@
 Test of submission extraction from text.
 
 Usage:
-    uv run python scripts/example_submission_extraction.py
+    uv run python examples/example_submission_extraction.py
 """
 
 import asyncio

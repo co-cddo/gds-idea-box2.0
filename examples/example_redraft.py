@@ -6,7 +6,7 @@ Shows how:
 - Submission replies are generated formulaically from minister's response
 
 Usage:
-    uv run python scripts/example_redraft.py
+    uv run python examples/example_redraft.py
 """
 
 import asyncio

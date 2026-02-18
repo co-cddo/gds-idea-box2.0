@@ -11,11 +11,11 @@ This script demonstrates the full pipeline for file uploads:
    - other → Not yet supported
 
 Usage:
-    uv run python scripts/example_file_end_to_end.py <file_path>
+    uv run python examples/example_file_end_to_end.py <file_path>
 
 Example:
-    uv run python scripts/example_file_end_to_end.py data/example_invitation.pdf
-    uv run python scripts/example_file_end_to_end.py data/example_submission.docx
+    uv run python examples/example_file_end_to_end.py data/example_invitation.pdf
+    uv run python examples/example_file_end_to_end.py data/example_submission.docx
 """
 
 import asyncio
@@ -45,9 +45,9 @@ async def main():
 
     # Check for file path argument
     if len(sys.argv) < 2:
-        print("Usage: uv run python scripts/example_file_end_to_end.py <file_path>")
+        print("Usage: uv run python examples/example_file_end_to_end.py <file_path>")
         print("\nExample:")
-        print("  uv run python scripts/example_file_end_to_end.py data/invitation.pdf")
+        print("  uv run python examples/example_file_end_to_end.py data/invitation.pdf")
         sys.exit(1)
 
     file_path = sys.argv[1]
@@ -132,7 +132,7 @@ async def main():
             # Try to load persona
             try:
                 persona = MinisterPersona.from_json_file(
-                    "data/example_science_minister.json"
+                    "src/box2/triage/data/example_science_minister.json"
                 )
                 print(f"\n👤 MINISTER: {persona.name}")
                 print(f"   Role: {persona.role}")
@@ -163,7 +163,7 @@ async def main():
                 print("-" * 80)
 
             except FileNotFoundError:
-                print("\n⚠️  No persona file found (data/example_science_minister.json)")
+                print("\n⚠️  No persona file found (src/box2/triage/data/example_science_minister.json)")
                 print("   → Skipping triage step")
 
     elif classification.document_type == "submission":

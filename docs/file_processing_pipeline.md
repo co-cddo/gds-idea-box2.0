@@ -105,7 +105,7 @@ elif classification.document_type == "invitation":
 Run the demo:
 
 ```bash
-uv run python scripts/example_file_processing.py data/example_test.txt
+uv run python examples/example_file_processing.py examples/data/example_test.txt
 ```
 
 The script demonstrates:

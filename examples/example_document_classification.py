@@ -2,7 +2,7 @@
 Test of document classification.
 
 Usage:
-    uv run python scripts/example_document_classification.py
+    uv run python examples/example_document_classification.py
 """
 
 import asyncio

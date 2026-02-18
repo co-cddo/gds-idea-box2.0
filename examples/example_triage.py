@@ -2,7 +2,7 @@
 End-to-end test of invitation triage.
 
 Usage:
-    uv run python scripts/example_triage.py
+    uv run python examples/example_triage.py
 """
 
 import asyncio
@@ -52,7 +52,7 @@ async def main():
     )
 
     # Load minister persona
-    persona = MinisterPersona.from_json_file("data/example_science_minister.json")
+    persona = MinisterPersona.from_json_file("src/box2/triage/data/example_science_minister.json")
 
     # Test both invitations
     invitations = [invitation_1, invitation_2]

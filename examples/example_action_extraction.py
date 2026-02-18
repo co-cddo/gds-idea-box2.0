@@ -5,7 +5,7 @@ Shows the full workflow from office response to extracted actions,
 using LLM redraft for invitations and template replies for submissions.
 
 Usage:
-    uv run python scripts/example_action_extraction.py
+    uv run python examples/example_action_extraction.py
 """
 
 import asyncio

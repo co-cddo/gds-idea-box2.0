@@ -8,10 +8,10 @@ Shows the complete flow:
 4. Ready for classification
 
 Usage:
-    uv run python scripts/example_file_processing.py <file_path>
+    uv run python examples/example_file_processing.py <file_path>
 
 Example:
-    uv run python scripts/example_file_processing.py data/example_submission.pdf
+    uv run python examples/example_file_processing.py data/example_submission.pdf
 """
 
 import sys
@@ -25,9 +25,9 @@ def main():
 
     # Check for file path argument
     if len(sys.argv) < 2:
-        print("Usage: uv run python scripts/example_file_processing.py <file_path>")
+        print("Usage: uv run python examples/example_file_processing.py <file_path>")
         print("\nExample:")
-        print("  uv run python scripts/example_file_processing.py data/example.pdf")
+        print("  uv run python examples/example_file_processing.py data/example.pdf")
         sys.exit(1)
 
     file_path = sys.argv[1]

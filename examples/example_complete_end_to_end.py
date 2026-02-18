@@ -11,7 +11,7 @@ Demonstrates the full workflow from document ingestion to action extraction:
 7. Save as JSON
 
 Usage:
-    uv run python scripts/example_complete_end_to_end.py
+    uv run python examples/example_complete_end_to_end.py
 """
 
 import asyncio
@@ -163,7 +163,7 @@ sarah.chen@aisi.gov.uk
         print("STEP 6: TRIAGE AGAINST MINISTER'S PRIORITIES")
         print("=" * 80)
 
-        persona = MinisterPersona.from_json_file("data/example_science_minister.json")
+        persona = MinisterPersona.from_json_file("src/box2/triage/data/example_science_minister.json")
         print(f"\n Minister: {persona.name}")
 
         triaged = await triage_invitation(extracted, persona)
