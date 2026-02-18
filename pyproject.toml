@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "GDS IDEA Box 2.0 - AI tools for private office workflows"
 readme = "README.md"
 authors = [
+    { name = "Alex Pop", email = "alexandra.pop@digital.cabinet-office.gov.uk" },
+    { name = "Jose Orjales", email = "jose.orjales@digital.cabinet-office.gov.uk" },
     { name = "David Gillespie", email = "david.gillespie@digital.cabinet-office.gov.uk" }
 ]
 requires-python = ">=3.11"
@@ -70,7 +72,6 @@ exclude_lines = [
 
 
 [tool.ruff]
-# Target Python version (e.g., Python 3.10)
 target-version = "py312"
 
 # Exclude files or directories
