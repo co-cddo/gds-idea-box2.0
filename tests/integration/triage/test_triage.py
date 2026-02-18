@@ -2,14 +2,14 @@
 Integration tests for invitation triage using ground truth dataset.
 Validates triage accuracy: decision classification and priority assignment.
 
-Use pytest tests/models/test_triage_integration.py --tb=short to avoid replication of the code and show only output text
+Use pytest tests/integration/triage/test_triage.py --tb=short to avoid replication of the code and show only output text
 """
 
 import pytest
 
 from box2.triage.models import MinisterPersona
 from box2.triage.triage import triage_invitation
-from tests.test_triage_dataset import TEST_PERSONA, TRIAGE_TEST_CASES
+from tests.unit.triage.test_triage_dataset import TEST_PERSONA, TRIAGE_TEST_CASES
 
 pytestmark = [pytest.mark.integration, pytest.mark.anyio]
 

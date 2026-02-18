@@ -12,7 +12,7 @@ from fuzzywuzzy import fuzz
 from box2.triage.invitation_extraction import extract_invitation
 from box2.triage.models import Invitation, SafeDocument
 from box2.triage.models.document import generate_document_id
-from tests.test_emails_dataset import TEST_EMAILS
+from tests.unit.triage.test_emails_dataset import TEST_EMAILS
 
 pytestmark = [pytest.mark.integration, pytest.mark.anyio]
 
