@@ -1,0 +1,48 @@
+{
+    "name": "Minister for Science, Innovation and Technology",
+    "role": "Parliamentary Under-Secretary of State",
+    "priorities": [
+        "AI safety and governance",
+        "Quantum technology commercialization",
+        "Science and research investment",
+        "Nuclear innovation and deployment",
+        "University research ecosystem strengthening"
+    ],
+    "responsibilities": {
+        "dsit": [
+            "ai_and_digital",
+            "quantum_technologies",
+            "engineering_biology",
+            "life_sciences",
+            "research_and_development",
+            "science_research_ecosystem",
+            "international_science",
+            "horizon_europe",
+            "tech_innovation",
+            "universities_talent",
+            "oxford_cambridge_corridor"
+        ],
+        "desnz": [
+            "nuclear_energy",
+            "fusion_technology",
+            "climate_innovation",
+            "energy_innovation",
+            "ai_in_energy"
+        ],
+        "cross_cutting": [
+            "public_engagement",
+            "international_partnerships",
+            "industry_collaboration",
+            "skills_workforce",
+            "regional_development"
+        ]
+    },
+    "preferences": [
+        "No corporate hospitality or gifts",
+        "Prefer meetings Monday to Wednesday",
+        "Avoid events requiring overnight travel unless strategically critical",
+        "Prioritize events with international delegations or key stakeholders",
+        "Prefer morning meetings over evening receptions",
+        "Limit Friday commitments for constituency work"
+    ]
+}
