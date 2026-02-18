@@ -16,20 +16,26 @@ uv sync
 
 ### Running tests
 
-```bash
-uv run pytest                      # unit tests (integration tests auto-skip without AWS creds)
-uv run pytest -m "not integration" # unit tests only (what CI runs)
-uv run pytest -m integration       # integration tests only (requires AWS)
+Tests are split into two directories:
+
+```
+tests/
+  unit/           # fast, no external dependencies
+  integration/    # calls live LLM via AWS Bedrock
 ```
 
-Integration tests call live LLM endpoints via AWS Bedrock. They require:
+```bash
+uv run pytest tests/unit/          # unit tests only (what CI runs)
+uv run pytest tests/integration/   # integration tests only (requires AWS)
+uv run pytest                      # everything (integration auto-skips without creds)
+```
+
+Integration tests require AWS credentials. Without them they are automatically skipped:
 
 ```bash
 export AWS_PROFILE=bedrock-dev
-uv run pytest -m integration
+uv run pytest tests/integration/
 ```
-
-Without `AWS_PROFILE` set, integration tests are automatically skipped with a message.
 
 ### Linting and formatting
 
@@ -44,19 +50,17 @@ uv run ruff check --fix src/ tests/  # auto-fix
 The `examples/` directory contains runnable scripts demonstrating each pipeline stage:
 
 ```bash
-uv run python examples/example_email_end_to_end.py
-uv run python examples/example_triage.py
+AWS_PROFILE=bedrock-dev uv run python examples/example_email_end_to_end.py
+AWS_PROFILE=bedrock-dev uv run python examples/example_triage.py
 ```
-
-These require AWS credentials (`AWS_PROFILE=bedrock-dev`).
 
 ## Project structure
 
 ```
 src/box2/
-  triage/               # Triage module
-    models/             # Pydantic models (Invitation, Submission, etc.)
-    config.py           # AWS Bedrock / LLM configuration
+  triage/                        # triage module
+    models/                      # Pydantic models (Invitation, Submission, etc.)
+    config.py                    # AWS Bedrock / LLM configuration
     document_classifier.py
     invitation_extraction.py
     submission_extraction.py
@@ -66,7 +70,9 @@ src/box2/
     submission_reply.py
     pii_redaction.py
     file_parser.py
-tests/                  # Unit + integration tests
-examples/               # Runnable example scripts
-evaluation/             # Evaluation notebooks and datasets
+tests/
+  unit/triage/                   # unit tests mirroring src/box2/triage/
+  integration/triage/            # LLM integration tests
+examples/                        # runnable example scripts
+evaluation/                      # evaluation notebooks and datasets
 ```

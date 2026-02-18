@@ -37,7 +37,7 @@ jobs:
       - run: uv sync --python ${{ matrix.python-version }}
 
       - name: Run unit tests
-        run: uv run pytest -m "not integration" -v
+        run: uv run pytest tests/unit/ -v
 
   version-check:
     runs-on: ubuntu-latest
