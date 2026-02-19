@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [main]
+    tags: ["v*"]
 
 permissions:
   contents: write
@@ -13,17 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version from pyproject.toml
-        id: version
+      - name: Create GitHub release
         run: |
-          VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Create tag and release
-        run: |
-          gh release create "${{ steps.version.outputs.tag }}" \
-            --title "${{ steps.version.outputs.tag }}" \
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
             --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

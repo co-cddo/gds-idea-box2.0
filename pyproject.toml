@@ -1,6 +1,6 @@
 [project]
 name = "box2"
-version = "0.1.1"
+dynamic = ["version"]
 description = "GDS IDEA Box 2.0 - AI tools for private office workflows"
 readme = "README.md"
 authors = [
@@ -21,8 +21,11 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/box2"]
