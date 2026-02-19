@@ -27,6 +27,9 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "vcs"
 
+[tool.hatch.build.hooks.vcs]
+version-file = "src/box2/_version.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/box2"]
 
@@ -92,6 +95,7 @@ exclude = [
     ".pytest_cache",
     ".venv",
     "venv",
+    "src/box2/_version.py",
 ]
 
 [tool.ruff.lint]
