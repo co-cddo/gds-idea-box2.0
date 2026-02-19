@@ -114,9 +114,7 @@ Tech UK
         print("\n🔒 Step 1: Redacting PII...")
         safe_email = SafeEmail.from_raw_email(raw_email)
         print(f"   - Emails extracted: {len(safe_email.pii_extracted['emails'])}")
-        print(
-            f"   - Phone numbers extracted: {len(safe_email.pii_extracted['phone_numbers'])}"
-        )
+        print(f"   - Phone numbers extracted: {len(safe_email.pii_extracted['phone_numbers'])}")
         print(f"   - Links extracted: {len(safe_email.links_extracted)}")
 
         # Step 1b: Convert to SafeDocument
@@ -144,9 +142,7 @@ Tech UK
         invitation = result
         print(f"   Event Type: {invitation.event_type}")
         print(f"   Host: {invitation.host_org}")
-        print(
-            f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}"
-        )
+        print(f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}")
         print(f"   Time: {', '.join(invitation.proposed_times)}")
         print(f"   Location: {invitation.location}")
 
@@ -165,17 +161,17 @@ Tech UK
         print(f"\n🎯 DECISION: {triaged.decision.upper()}")
         print(f"   Priority: {triaged.priority.upper()}")
 
-        print(f"\n💭 REASONING:")
+        print("\n💭 REASONING:")
         print(f"   {triaged.reason}")
 
         if triaged.affected_events:
-            print(f"\n📅 CALENDAR CONFLICTS:")
+            print("\n📅 CALENDAR CONFLICTS:")
             for event in triaged.affected_events:
                 print(f"   - {event}")
         else:
             print("\n📅 No calendar conflicts found")
 
-        print(f"\n✉️  DRAFT RESPONSE:")
+        print("\n✉️  DRAFT RESPONSE:")
         print("-" * 80)
         print(triaged.draft_response)
         print("-" * 80)

@@ -66,9 +66,7 @@ async def main():
         print("\n📧 INVITATION TO TRIAGE:")
         print(f"   Host: {invitation.host_org}")
         print(f"   Event: {invitation.event_type}")
-        print(
-            f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}"
-        )
+        print(f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}")
         print(f"   Time: {', '.join(invitation.proposed_times)}")
         print(f"   Location: {invitation.location}")
 

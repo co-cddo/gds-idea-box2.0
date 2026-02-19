@@ -82,9 +82,7 @@ async def main():
     print("\n🔒 Step 2: Redacting PII...")
     safe_doc = SafeDocument.from_raw_document(raw_document)
     print(f"   ✓ Emails extracted: {len(safe_doc.pii_extracted['emails'])}")
-    print(
-        f"   ✓ Phone numbers extracted: {len(safe_doc.pii_extracted['phone_numbers'])}"
-    )
+    print(f"   ✓ Phone numbers extracted: {len(safe_doc.pii_extracted['phone_numbers'])}")
     print(f"   ✓ Links extracted: {len(safe_doc.links_extracted)}")
 
     # ====================================================================
@@ -119,9 +117,7 @@ async def main():
             print("\n✅ INVITATION EXTRACTED")
             print(f"   Event Type: {invitation.event_type}")
             print(f"   Host: {invitation.host_org}")
-            print(
-                f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}"
-            )
+            print(f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}")
             print(f"   Time: {', '.join(invitation.proposed_times)}")
             print(f"   Location: {invitation.location}")
 
@@ -131,9 +127,7 @@ async def main():
 
             # Try to load persona
             try:
-                persona = MinisterPersona.from_json_file(
-                    "src/box2/triage/data/example_science_minister.json"
-                )
+                persona = MinisterPersona.from_json_file("src/box2/triage/data/example_science_minister.json")
                 print(f"\n👤 MINISTER: {persona.name}")
                 print(f"   Role: {persona.role}")
 
@@ -147,17 +141,17 @@ async def main():
                 print(f"\n🎯 DECISION: {triaged.decision.upper()}")
                 print(f"   Priority: {triaged.priority.upper()}")
 
-                print(f"\n💭 REASONING:")
+                print("\n💭 REASONING:")
                 print(f"   {triaged.reason}")
 
                 if triaged.affected_events:
-                    print(f"\n📅 CALENDAR CONFLICTS:")
+                    print("\n📅 CALENDAR CONFLICTS:")
                     for event in triaged.affected_events:
                         print(f"   - {event}")
                 else:
                     print("\n📅 No calendar conflicts found")
 
-                print(f"\n✉️  DRAFT RESPONSE:")
+                print("\n✉️  DRAFT RESPONSE:")
                 print("-" * 80)
                 print(triaged.draft_response)
                 print("-" * 80)
@@ -192,30 +186,28 @@ async def main():
             if submission.decision_deadline:
                 print(f"   Decision Deadline: {submission.decision_deadline}")
 
-            print(f"\n📝 OFFICIAL RECOMMENDATION:")
+            print("\n📝 OFFICIAL RECOMMENDATION:")
             print(f"   {submission.official_recommendation}")
 
             if submission.required_decisions:
-                print(f"\n✅ REQUIRED DECISIONS:")
+                print("\n✅ REQUIRED DECISIONS:")
                 for decision in submission.required_decisions:
                     print(f"   - {decision}")
 
             if submission.key_dates:
-                print(f"\n📅 KEY DATES:")
+                print("\n📅 KEY DATES:")
                 for date in submission.key_dates:
                     print(f"   - {date}")
 
             if submission.related_items:
-                print(f"\n🔗 RELATED ITEMS:")
+                print("\n🔗 RELATED ITEMS:")
                 for item in submission.related_items:
                     print(f"   - {item}")
 
-            print(f"\n📄 SUMMARY:")
+            print("\n📄 SUMMARY:")
             print(f"   {submission.summary}")
 
-            print(
-                "\n💡 NOTE: Submissions contain official recommendations"
-            )
+            print("\n💡 NOTE: Submissions contain official recommendations")
             print("   → Reply is generated after minister responds (template-based, no LLM)")
 
     elif classification.document_type == "other":

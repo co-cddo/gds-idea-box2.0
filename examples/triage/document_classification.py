@@ -10,7 +10,6 @@ import logging
 from datetime import datetime
 
 from box2.triage.document_classifier import classify_document
-
 from box2.triage.models import SafeDocument
 
 
@@ -244,18 +243,10 @@ Head of Stakeholder Engagement
     print("\n\n" + "=" * 80)
     print("TEST SUMMARY")
     print("=" * 80)
-    print(
-        f"\nTest 1 (Invitation):     {result1.document_type} (confidence: {result1.confidence:.2f})"
-    )
-    print(
-        f"Test 2 (Submission):     {result2.document_type} (confidence: {result2.confidence:.2f})"
-    )
-    print(
-        f"Test 3 (Other):          {result3.document_type} (confidence: {result3.confidence:.2f})"
-    )
-    print(
-        f"Test 4 (Ambiguous):      {result4.document_type} (confidence: {result4.confidence:.2f})"
-    )
+    print(f"\nTest 1 (Invitation):     {result1.document_type} (confidence: {result1.confidence:.2f})")
+    print(f"Test 2 (Submission):     {result2.document_type} (confidence: {result2.confidence:.2f})")
+    print(f"Test 3 (Other):          {result3.document_type} (confidence: {result3.confidence:.2f})")
+    print(f"Test 4 (Ambiguous):      {result4.document_type} (confidence: {result4.confidence:.2f})")
 
     print("\n" + "=" * 80)
     print("ALL TESTS COMPLETE")
