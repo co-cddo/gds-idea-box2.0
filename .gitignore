@@ -218,3 +218,6 @@ __marimo__/
 
 # Runtime output
 output/
+
+# Auto-generated version file (hatch-vcs)
+src/box2/_version.py
