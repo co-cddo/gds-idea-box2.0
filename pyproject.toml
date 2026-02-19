@@ -1,6 +1,6 @@
 [project]
 name = "box2"
-version = "0.1.0"
+version = "0.1.1"
 description = "GDS IDEA Box 2.0 - AI tools for private office workflows"
 readme = "README.md"
 authors = [
@@ -14,7 +14,7 @@ dependencies = [
     "boto3>=1.40.63",
     "httpx>=0.28.0",
     "pandas>=2.3.3",
-    "pydantic-ai>=1.9.1",
+    "pydantic-ai>=1.56.0",
     "pypdf>=5.3.0",
     "python-dateutil>=2.9.0.post0",
     "python-docx>=1.1.2",
