@@ -332,6 +332,12 @@ dependencies = [
     { name = "python-docx" },
 ]
 
+[package.optional-dependencies]
+receiver = [
+    { name = "fastapi" },
+    { name = "uvicorn" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "fuzzywuzzy" },
@@ -347,12 +353,14 @@ dev = [
 requires-dist = [
     { name = "azure-identity", specifier = ">=1.20.0" },
     { name = "boto3", specifier = ">=1.40.63" },
+    { name = "fastapi", marker = "extra == 'receiver'", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pydantic-ai", specifier = ">=1.56.0" },
     { name = "pypdf", specifier = ">=5.3.0" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "python-docx", specifier = ">=1.1.2" },
+    { name = "uvicorn", marker = "extra == 'receiver'", specifier = ">=0.34.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -763,6 +771,22 @@ wheels = [
 [package.optional-dependencies]
 lua = [
     { name = "lupa" },
+]
+
+[[package]]
+name = "fastapi"
+version = "0.129.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "annotated-doc" },
+    { name = "pydantic" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
+    { name = "typing-inspection" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/48/47/75f6bea02e797abff1bca968d5997793898032d9923c1935ae2efdece642/fastapi-0.129.0.tar.gz", hash = "sha256:61315cebd2e65df5f97ec298c888f9de30430dd0612d59d6480beafbc10655af", size = 375450 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/dd/d0ee25348ac58245ee9f90b6f3cbb666bf01f69be7e0911f9851bddbda16/fastapi-0.129.0-py3-none-any.whl", hash = "sha256:b4946880e48f462692b31c083be0432275cbfb6e2274566b1be91479cc1a84ec", size = 102950 },
 ]
 
 [[package]]
