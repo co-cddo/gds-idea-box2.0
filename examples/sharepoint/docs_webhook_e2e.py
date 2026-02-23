@@ -11,7 +11,7 @@ Exercises the full file-upload notification loop — all in one process:
   8. Downloads the file locally
   9. Cleans up (deletes test file, subscription, and tunnel)
 
-Unlike the list E2E (webhook_e2e.py), drive notifications only tell you
+Unlike the list E2E (lists_webhook_e2e.py), drive notifications only tell you
 "something changed in this drive" — they don't identify the specific file.
 The delta query (get_changed_files / get_latest_changed_file) is what
 discovers which files actually changed.
