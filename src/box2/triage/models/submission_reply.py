@@ -19,7 +19,7 @@ class SubmissionResponse(BaseModel):
 
     document_id: str = Field(description="Links back to the source document")
 
-    minister_response: str = Field(
+    minister_comment: str = Field(
         min_length=1,
         description="The minister's response verbatim as recorded by Private Office "
         "(e.g., 'Approve but only £2M, not £3M', 'Need more detail on risks', "
@@ -50,7 +50,7 @@ class SubmissionReply(BaseModel):
 
     official_recommendation: str = Field(description="The official recommendation from the submission, verbatim")
 
-    minister_response: str = Field(description="The minister's response, verbatim from SubmissionResponse")
+    minister_comment: str = Field(description="The minister's comment, verbatim from SubmissionResponse")
 
     reply_text: str = Field(
         min_length=20,
