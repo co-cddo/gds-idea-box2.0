@@ -17,7 +17,7 @@ class TriagedDecision(BaseModel):
 
     document_id: str = Field(description="Document ID linking back to the source document")
 
-    decision: Literal["accept", "decline", "delegate", "request_more_info", "defer"] = Field(
+    minister_decision: Literal["accept", "decline"] = Field(
         description="Recommended action for this invitation"
     )
 
