@@ -1,6 +1,12 @@
+from dateutil import parser as date_parser
+
+from datetime import datetime, date
+
 from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator
+from typing import Literal
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class EventType(str, Enum):
@@ -25,10 +31,13 @@ class NotInvitation(BaseModel):
         "(e.g., 'informational update', 'thank you note', 'forwarded document')",
     )
 
+Urgency = Literal["urgent", "not_urgent"]
 
 class Invitation(BaseModel):
     """Document that is an invitation requiring ministerial triage."""
 
+    event_title: str = Field(description="Name of the event")
+    
     document_id: str = Field(description="Unique identifier linking back to the source document")
 
     event_type: EventType = Field(description="Type of event being invited to")
@@ -59,6 +68,11 @@ class Invitation(BaseModel):
         description="Deadline for responding if mentioned (as raw text, e.g., '5th February 2026')",
     )
 
+    urgency: Urgency = Field(
+        default="not_urgent",
+        description="Urgency of responding: 'urgent' if the response deadline is within 7 days (inclusive), else 'not_urgent'.",
+    )
+
     overall_confidence: float | None = Field(
         default=None,
         ge=0.0,
@@ -74,3 +88,30 @@ class Invitation(BaseModel):
         if not v or len(v) == 0:
             raise ValueError("proposed_times must contain at least one time option")
         return v
+
+    @staticmethod
+    def _parse_deadline(text: str) -> date | None:
+        """
+        Best-effort parse of raw deadline text to a date.
+        Returns None if unparseable.
+        """
+        try:
+            dt = date_parser.parse(text, dayfirst=True, fuzzy=True)
+            return dt.date()
+        except Exception:
+            return None
+
+    @model_validator(mode="after")
+    def set_urgency_from_deadline(self) -> "Invitation":
+        if not self.deadline_to_respond:
+            self.urgency = "not_urgent"
+            return self
+
+        deadline_date = self._parse_deadline(self.deadline_to_respond)
+        if not deadline_date:
+            self.urgency = "not_urgent"
+            return self
+
+        days_until = (deadline_date - date.today()).days
+        self.urgency = "urgent" if days_until <= 7 else "not_urgent"
+        return self
