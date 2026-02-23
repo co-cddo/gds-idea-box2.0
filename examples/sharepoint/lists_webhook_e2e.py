@@ -16,7 +16,7 @@ Prerequisites:
   4. AWS credentials available (for STS assume-role)
 
 Usage:
-    AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/webhook_e2e.py
+    AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/lists_webhook_e2e.py
 
 Set these environment variables before running (or add to .env):
     export NGROK_AUTH_TOKEN=<ngrok-auth-token>
