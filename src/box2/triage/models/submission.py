@@ -73,7 +73,7 @@ class Submission(BaseModel):
     )
 
     # Urgency and context
-    urgency_assessment: str = Field(
+    urgency: str = Field(
         description="Urgency level indicated in the document (typically 'urgent', 'routine', or 'for_information')",
     )
     related_items: list[str] = Field(
