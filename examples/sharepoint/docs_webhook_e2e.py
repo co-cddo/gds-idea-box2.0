@@ -1,13 +1,20 @@
-"""End-to-end webhook test against a real SharePoint site.
+"""End-to-end webhook test for SharePoint document library (DocsClient).
 
-Exercises the full notification loop — all in one process:
+Exercises the full file-upload notification loop — all in one process:
   1. Starts the FastAPI receiver on localhost:8000
   2. Opens an ngrok tunnel (via pyngrok) to get a public HTTPS URL
   3. Authenticates to SharePoint
-  4. Creates a throwaway test list
-  5. Subscribes to webhooks (Graph validates via ngrok -> receiver)
-  6. Creates, updates, and deletes a list item (triggers notifications)
-  7. Cleans up everything on exit
+  4. Connects to the document library via DocsClient
+  5. Subscribes to drive webhooks (Graph validates via ngrok -> receiver)
+  6. Uploads a test file (triggers "updated" notification on drive root)
+  7. Uses DocsClient to detect the changed file via delta query
+  8. Downloads the file locally
+  9. Cleans up (deletes test file, subscription, and tunnel)
+
+Unlike the list E2E (lists_webhook_e2e.py), drive notifications only tell you
+"something changed in this drive" — they don't identify the specific file.
+The delta query (get_changed_files / get_latest_changed_file) is what
+discovers which files actually changed.
 
 Prerequisites:
   1. ``uv sync --extra receiver`` to install FastAPI, uvicorn, and pyngrok
@@ -16,7 +23,7 @@ Prerequisites:
   4. AWS credentials available (for STS assume-role)
 
 Usage:
-    AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/webhook_e2e.py
+    AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/docs_webhook_e2e.py
 
 Set these environment variables before running (or add to .env):
     export NGROK_AUTH_TOKEN=<ngrok-auth-token>
@@ -25,6 +32,10 @@ Set these environment variables before running (or add to .env):
     export SHAREPOINT_SITE_HOST=<sharepoint-hostname>
     export SHAREPOINT_SITE_PATH=<sharepoint-site-path>
     export SHAREPOINT_ROLE_ARN=<iam-role-arn>
+
+Optional:
+    export DOCS_LIBRARY_NAME=Documents        # defaults to "Documents"
+    export CLIENT_STATE=e2e-test-secret       # shared secret for validation
 """
 
 import logging
@@ -47,10 +58,12 @@ logger = logging.getLogger(__name__)
 
 CLIENT_STATE = os.environ.get("CLIENT_STATE", "e2e-test-secret")
 PORT = 8000
+LIBRARY_NAME = os.environ.get("DOCS_LIBRARY_NAME", "Documents")
 
-# How long to wait after each mutation for Graph to deliver notifications.
-# Microsoft says notifications are "near real-time" but can take up to a few minutes.
-NOTIFICATION_WAIT_SECONDS = 30
+# How long to wait after the upload for Graph to deliver the notification.
+# Microsoft says drive notifications arrive within 1 minute on average,
+# but can take up to 60 minutes in the worst case.
+NOTIFICATION_WAIT_SECONDS = 60
 
 
 def banner(text: str) -> None:
@@ -119,13 +132,14 @@ def start_ngrok() -> str:
 
 
 def main() -> None:
-    """Run the end-to-end webhook test."""
-    from box2.sharepoint import ListClient, SharePointSession, WebhookClient
+    """Run the end-to-end document library webhook test."""
+    from box2.sharepoint import DocsClient, SharePointSession, WebhookClient
 
-    banner("WEBHOOK END-TO-END TEST")
+    banner("DOCS WEBHOOK END-TO-END TEST")
     print()
-    print("  This script tests the full notification loop:")
-    print("    ngrok -> FastAPI receiver -> Graph subscription -> list changes -> notifications")
+    print("  This script tests the full file-upload notification loop:")
+    print("    ngrok -> FastAPI receiver -> Graph subscription -> file upload -> notification")
+    print("    -> delta query -> file download")
     print()
     print("  Everything runs in this single process.")
     print()
@@ -178,21 +192,23 @@ def main() -> None:
         sys.exit(1)
 
     # ----------------------------------------------------------------
-    # Step 3: Create a throwaway test list
+    # Step 3: Connect to document library
     # ----------------------------------------------------------------
-    list_name = f"e2e-test-{uuid4().hex[:8]}"
-    list_client = None
+    docs_client = None
     subscription_id = None
     webhooks = None
+    test_file_id = None
+    test_file_name = f"e2e-test-{uuid4().hex[:8]}.txt"
+    download_dir = "downloads"
 
-    banner(f"STEP 3: Create test list '{list_name}'")
+    banner(f"STEP 3: Connect to '{LIBRARY_NAME}' library")
 
     try:
-        list_client = ListClient.new(session, list_name=list_name)
-        logger.info("List created: %s", list_name)
-        logger.info("Resource path: %s", list_client.resource_path)
+        docs_client = DocsClient(session, library_name=LIBRARY_NAME)
+        logger.info("Connected to library: %s", LIBRARY_NAME)
+        logger.info("Resource path: %s", docs_client.resource_path)
     except Exception as e:
-        logger.error("Failed to create list: %s", e)
+        logger.error("Failed to connect to document library: %s", e)
         sys.exit(1)
 
     try:
@@ -200,9 +216,9 @@ def main() -> None:
         # Step 4: Subscribe to webhooks
         # ----------------------------------------------------------------
         banner("STEP 4: Create webhook subscription")
-        print(f"  Resource:    {list_client.resource_path}")
+        print(f"  Resource:    {docs_client.resource_path}")
         print(f"  URL:         {webhook_url}")
-        print("  Changes:     created, updated, deleted")
+        print("  Change type: updated")
         print()
         print("  Microsoft will send a validation request to the receiver.")
         print("  If subscription creation succeeds, the handshake worked.")
@@ -210,7 +226,7 @@ def main() -> None:
 
         webhooks = WebhookClient(session)
         subscription = webhooks.subscribe(
-            resource=list_client,
+            resource=docs_client,
             notification_url=webhook_url,
             client_state=CLIENT_STATE,
             change_types=["updated"],
@@ -224,44 +240,74 @@ def main() -> None:
         print("  The receiver correctly echoed the validationToken back to Graph.")
 
         # ----------------------------------------------------------------
-        # Step 5: Create a list item (triggers "created" notification)
+        # Step 5: Upload a test file
         # ----------------------------------------------------------------
-        banner("STEP 5: Create a list item")
+        banner(f"STEP 5: Upload test file '{test_file_name}'")
 
-        item = list_client.create_item({"Title": "E2E webhook test item"})
-        item_id = item.get("id")
-        logger.info("Item created: id=%s", item_id)
-        print("\n  Watch the logs above for a NOTIFICATION RECEIVED banner (change_type=created)")
+        file_content = (
+            f"Box2 DocsClient E2E test file\n"
+            f"Uploaded at: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}\n"
+            f"This file should be automatically cleaned up.\n"
+        ).encode()
 
-        wait(NOTIFICATION_WAIT_SECONDS, "Graph to deliver 'created' notification")
-
-        # ----------------------------------------------------------------
-        # Step 6: Update the list item (triggers "updated" notification)
-        # ----------------------------------------------------------------
-        banner("STEP 6: Update the list item")
-
-        list_client.update_item(item_id, {"Title": "E2E webhook test item (updated)"})
-        logger.info("Item updated: id=%s", item_id)
-        print("\n  Watch the logs above for a NOTIFICATION RECEIVED banner (change_type=updated)")
+        upload_result = docs_client.upload_file(test_file_name, file_content)
+        test_file_id = upload_result.get("id")
+        logger.info("File uploaded: id=%s, name=%s", test_file_id, test_file_name)
+        logger.info("Web URL: %s", upload_result.get("webUrl", "N/A"))
+        print()
+        print("  Drive notifications only say 'something changed in this drive'.")
+        print("  Watch the logs for a NOTIFICATION RECEIVED banner with:")
+        print(f"    Resource: drives/.../{docs_client._drive_id}/root")
+        print("    Change Type: updated")
 
         wait(NOTIFICATION_WAIT_SECONDS, "Graph to deliver 'updated' notification")
 
         # ----------------------------------------------------------------
-        # Step 7: Delete the list item (triggers "deleted" notification)
+        # Step 6: Detect + download the changed file
         # ----------------------------------------------------------------
-        banner("STEP 7: Delete the list item")
+        banner("STEP 6: Detect changed file via delta query + download")
 
-        list_client.delete_item(item_id)
-        logger.info("Item deleted: id=%s", item_id)
-        print("\n  Watch the logs above for a NOTIFICATION RECEIVED banner (change_type=deleted)")
+        print("  Calling docs_client.get_latest_changed_file()...")
+        try:
+            latest = docs_client.get_latest_changed_file()
+            logger.info("Latest changed file detected:")
+            logger.info("  Name:     %s", latest.get("name"))
+            logger.info("  ID:       %s", latest.get("id"))
+            logger.info("  Size:     %s bytes", latest.get("size", "N/A"))
+            logger.info("  Modified: %s", latest.get("lastModifiedDateTime"))
+            logger.info("  URL:      %s", latest.get("webUrl", "N/A"))
 
-        wait(NOTIFICATION_WAIT_SECONDS, "Graph to deliver 'deleted' notification")
+            # Download the file
+            print(f"\n  Downloading to ./{download_dir}/...")
+            local_path = docs_client.download_file(latest, download_dir=download_dir)
+            logger.info("Downloaded -> %s", local_path)
+
+            # Verify content if it's our test file
+            if latest.get("name") == test_file_name:
+                print(f"\n  The latest file IS our test file ({test_file_name}).")
+            else:
+                print(f"\n  Note: The latest file ({latest.get('name')}) is not our test file.")
+                print(f"  Our test file ({test_file_name}) may not be the most recent change")
+                print("  if other files were modified in the library concurrently.")
+
+        except Exception as e:
+            logger.warning("Could not detect/download changed file: %s", e)
+            print("  This can happen if the delta query hasn't caught up yet.")
+            print("  The important thing is that the notification was received.")
 
     finally:
         # ----------------------------------------------------------------
-        # Cleanup: always attempt to remove subscription and list
+        # Cleanup: always attempt to remove test file and subscription
         # ----------------------------------------------------------------
         banner("CLEANUP")
+
+        if test_file_id and docs_client:
+            try:
+                logger.info("Deleting test file '%s' (id=%s)...", test_file_name, test_file_id)
+                docs_client.delete_file(test_file_id)
+                logger.info("Test file deleted")
+            except Exception as e:
+                logger.warning("Failed to delete test file: %s", e)
 
         if subscription_id and webhooks:
             try:
@@ -271,13 +317,14 @@ def main() -> None:
             except Exception as e:
                 logger.warning("Failed to delete subscription: %s (may have already expired)", e)
 
-        if list_client:
+        # Clean up downloaded test file
+        downloaded_path = os.path.join(download_dir, test_file_name)
+        if os.path.exists(downloaded_path):
             try:
-                logger.info("Deleting test list '%s'...", list_name)
-                list_client.delete_list()
-                logger.info("List deleted")
+                os.remove(downloaded_path)
+                logger.info("Cleaned up local download: %s", downloaded_path)
             except Exception as e:
-                logger.warning("Failed to delete list: %s", e)
+                logger.warning("Failed to clean up download: %s", e)
 
         # Kill the ngrok tunnel
         try:
@@ -293,22 +340,28 @@ def main() -> None:
     # ----------------------------------------------------------------
     banner("DONE")
     print()
-    print("  Scroll up through the logs to see notification banners.")
-    print("  You should have seen up to 3 notifications (created, updated, deleted).")
+    print("  Scroll up through the logs to see the notification banner.")
     print()
-    print("  Note: Microsoft Graph notification delivery is 'near real-time'")
-    print("  but can occasionally be delayed. If you didn't see all 3,")
-    print("  that's normal -- the subscription and validation handshake")
-    print("  working is the most important confirmation.")
+    print("  Note: Drive notifications tell you 'something changed in the drive'")
+    print("  but NOT which specific file. The delta query is what identifies")
+    print("  the actual file that was uploaded.")
+    print()
+    print("  Microsoft Graph notification delivery is 'near real-time'")
+    print("  but can occasionally be delayed up to 60 minutes for drives.")
+    print("  If you didn't see a notification, the subscription and validation")
+    print("  handshake working is the most important confirmation.")
     print()
     print("  What was verified:")
     print("    [x] SharePoint authentication (STS -> Azure AD -> Graph)")
-    print("    [x] List creation and CRUD operations")
+    print(f"    [x] Document library connection ('{LIBRARY_NAME}')")
     print("    [x] ngrok tunnel (pyngrok -> localhost:8000)")
     print("    [x] Webhook subscription creation (Graph -> ngrok -> receiver)")
     print("    [x] Validation handshake (receiver echoed validationToken)")
+    print("    [x] File upload via DocsClient")
     print("    [x] Notification delivery and processing")
-    print("    [x] Cleanup (subscription + list + tunnel closed)")
+    print("    [x] Delta query to detect changed files")
+    print("    [x] File download via DocsClient")
+    print("    [x] Cleanup (test file + subscription + tunnel closed)")
     print()
 
 

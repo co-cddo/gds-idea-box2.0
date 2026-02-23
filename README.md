@@ -1,6 +1,6 @@
 # Box 2.0
 
-AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — a **sharepoint** module for authenticated access to SharePoint via Microsoft Graph API, and a **receiver** module (FastAPI webhook endpoint) for processing Microsoft Graph change notifications.
+AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — a **sharepoint** module for authenticated access to SharePoint via Microsoft Graph API (lists and document libraries), and a **receiver** module (FastAPI webhook endpoint) for processing Microsoft Graph change notifications.
 
 ## Installation
 
@@ -68,7 +68,12 @@ AWS_PROFILE=bedrock-dev uv run python examples/triage/email_end_to_end.py
 AWS_PROFILE=bedrock-dev uv run python examples/triage/triage.py
 uv run python examples/sharepoint/auth.py
 uv run python examples/sharepoint/list_operations.py
+AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/lists_webhook_e2e.py
+AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/docs_webhook_e2e.py
+uv run python examples/sharepoint/run_receiver.py
 ```
+
+The webhook E2E scripts (`lists_webhook_e2e.py` and `docs_webhook_e2e.py`) run the full notification loop in a single process — they start a local FastAPI receiver, open an ngrok tunnel, create a subscription, trigger changes, and clean up. They require `NGROK_AUTH_TOKEN` in your `.env` file and AWS credentials. `run_receiver.py` starts just the receiver for manual testing.
 
 ## Versioning
 
@@ -106,6 +111,7 @@ src/box2/
   sharepoint/                    # SharePoint module
     session.py                   # Auth: AWS STS -> Azure AD -> Graph API
     list_client.py               # CRUD operations on SharePoint lists
+    docs_client.py               # Document library operations (drive files)
     webhook_client.py            # Microsoft Graph subscription management
     protocols.py                 # SubscribableResource protocol
     models.py                    # Subscription model
