@@ -1,18 +1,32 @@
 # Box 2.0
 
-AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — and a **sharepoint** module for authenticated access to SharePoint via Microsoft Graph API.
+AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — a **sharepoint** module for authenticated access to SharePoint via Microsoft Graph API, and a **receiver** module (FastAPI webhook endpoint) for processing Microsoft Graph change notifications.
 
-## Setup
+## Installation
+
+Install as a library dependency:
+
+```bash
+pip install box2
+```
+
+The receiver module (FastAPI webhook endpoint) is an optional extra:
+
+```bash
+pip install box2[receiver]
+```
+
+## Development setup
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 git clone git@github.com:co-cddo/gds-idea-box2.0.git
 cd gds-idea-box2.0
-uv sync
+uv sync --all-extras
 ```
 
-## Development
+`--all-extras` installs everything including optional dependencies (FastAPI, uvicorn, pyngrok). This is required for development — some tests depend on the optional extras.
 
 ### Running tests
 
@@ -92,11 +106,21 @@ src/box2/
   sharepoint/                    # SharePoint module
     session.py                   # Auth: AWS STS -> Azure AD -> Graph API
     list_client.py               # CRUD operations on SharePoint lists
+    webhook_client.py            # Microsoft Graph subscription management
+    protocols.py                 # SubscribableResource protocol
+    models.py                    # Subscription model
     exceptions.py                # SharePoint exception hierarchy
+  receiver/                      # Webhook receiver (optional: pip install box2[receiver])
+    app.py                       # FastAPI app factory
+    handlers.py                  # Notification processing and dispatch
+    models.py                    # Notification/NotificationPayload models
+    dedup.py                     # Deduplication store (protocol + in-memory impl)
+    config.py                    # ReceiverConfig
 tests/
   unit/
     triage/                      # unit tests for triage module
     sharepoint/                  # unit tests for SharePoint module
+    receiver/                    # unit tests for receiver module
   integration/
     triage/                      # LLM integration tests
     sharepoint/                  # SharePoint integration tests
