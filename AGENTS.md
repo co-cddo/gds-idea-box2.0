@@ -191,3 +191,147 @@ uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv ru
 - **Async throughout** -- all LLM-calling functions are `async`.
 - **Deterministic where possible** -- e.g., submission replies use templates, not LLMs.
 - **Version bump required** -- every PR must increment the version in `pyproject.toml`.
+
+## Receiver v2 Design Plan (pending implementation)
+
+The current receiver (`src/box2/receiver/`) is a minimal webhook endpoint with a placeholder
+`dispatch()`. The v2 design replaces this with a production-ready app factory that handles
+the full notification-to-handler pipeline.
+
+### Deployment target
+
+API Gateway → Lambda (Mangum wrapping FastAPI). The existing FastAPI app works unchanged
+with Mangum as the Lambda handler entry point.
+
+### Application workflow
+
+1. A file is uploaded to a **Files List** in SharePoint.
+2. Graph sends a webhook notification to the backend.
+3. The backend queries the list for recently changed items, identifies the new file, and
+   processes it (triage, extraction, etc.).
+4. The backend creates items in one of several **Processing Lists**.
+5. A human reviews and comments/edits the item in SharePoint.
+6. Graph sends a webhook notification to the backend.
+7. The backend detects the human edit, runs a workflow, and writes to an **Output List**.
+
+### Key design decisions
+
+- **Endpoint-per-subscription** — each subscription points at its own URL
+  (e.g. `/file_uploaded`, `/item_reviewed`). Graph does the routing.
+- **No delta tokens** — use a rolling time window (`lookback_minutes`, default 2) to
+  query recently changed items via `$filter=lastModifiedDateTime gt '{cutoff}'`.
+- **Self-write filtering** — the app only creates items in processing lists, never updates
+  them. Items where `lastModifiedBy.application.id` matches the service principal are
+  skipped. Configurable per route (`filter_self=True/False`).
+- **Item-level dedup** — key is `{list_id}:{item_id}:{lastModifiedDateTime}`. Prevents
+  the same edit from being processed twice when overlapping lookback windows span
+  consecutive notifications. Uses the same `DeduplicationStore` protocol.
+- **Record before calling handler** — the dedup record is written *before* the handler
+  runs, giving at-most-once semantics. This is required because handlers call LLMs and
+  cannot guarantee idempotency.
+- **DynamoDB dedup required for Lambda** — concurrent Lambda invocations share no memory.
+  `DynamoDedup` with conditional writes (`attribute_not_exists(pk)`) gives atomic
+  at-most-once semantics. `InMemoryDedup` is fine for local dev only.
+- **Configurable filter field** — `createdDateTime` for new-item detection (Files List),
+  `lastModifiedDateTime` for edit detection (Processing Lists).
+
+### App factory API
+
+```python
+from box2.receiver import create_app, ReceiverConfig, WebhookRoute
+
+config = ReceiverConfig(
+    client_state="my-shared-secret",
+    app_identity="<service-principal-app-id>",
+    lookback_minutes=2,
+)
+
+app = create_app(
+    config=config,
+    routes=[
+        WebhookRoute(
+            path="/file_uploaded",
+            list_client=files_list,
+            handler=process_new_file,
+            filter_self=False,
+            filter_field="createdDateTime",
+        ),
+        WebhookRoute(
+            path="/item_reviewed",
+            list_client=processing_list,
+            handler=process_human_edit,
+            filter_self=True,
+            filter_field="lastModifiedDateTime",
+        ),
+    ],
+)
+```
+
+### Per-request flow (handled by the factory for every route)
+
+```
+Notification arrives
+    │
+    ├─ Validation handshake? → echo token, return
+    │
+    ├─ Client state check → reject silently if wrong
+    │
+    ├─ Notification-level dedup → skip if duplicate notification
+    │
+    ▼
+Query list: items where {filter_field} > {now - lookback_minutes}, $expand=fields
+    │
+    ├─ filter_self=True? → drop items where lastModifiedBy.application.id == app_identity
+    │
+    ├─ Item-level dedup → drop items already processed (same item + same lastModifiedDateTime)
+    │
+    ▼
+For each remaining item:
+    ├─ Record in dedup store (before handler, to prevent concurrent processing)
+    └─ Call handler(item)
+```
+
+### Handler signature
+
+Handlers are called once per matching item. They receive a single item dict (the full
+Graph API response with fields expanded):
+
+```python
+async def process_human_edit(item: dict) -> None:
+    """Called once per item modified by a human."""
+    status = item["fields"]["Status"]
+    # ... run workflow, write to output list
+```
+
+### WebhookRoute dataclass
+
+```python
+@dataclass
+class WebhookRoute:
+    path: str                                       # URL path, e.g. "/file_uploaded"
+    list_client: ListClient                         # queries items after notification
+    handler: Callable[[dict], Awaitable[None]]      # called once per matching item
+    filter_self: bool = True                        # skip items modified by the app
+    filter_field: str = "lastModifiedDateTime"      # or "createdDateTime" for new items
+```
+
+### Files to modify/create
+
+- `src/box2/receiver/config.py` — add `app_identity: str`, `lookback_minutes: int = 2`
+- `src/box2/receiver/routes.py` (new) — `WebhookRoute` dataclass
+- `src/box2/receiver/app.py` — refactor `create_app()` to accept routes, generate
+  endpoints dynamically, implement the per-request flow above
+- `src/box2/receiver/handlers.py` — replace placeholder `dispatch()` with the item
+  query + filter + dedup + handler-call pipeline
+- `src/box2/receiver/dedup.py` — extend for item-level dedup (same protocol, different keys)
+- `src/box2/receiver/__init__.py` — export `WebhookRoute`
+- `examples/sharepoint/webhook_e2e.py` — update for new `create_app()` signature
+- `examples/sharepoint/run_receiver.py` — update similarly
+- Tests — update existing, add new for item filtering, dedup, routing
+
+### Not yet implemented (future work)
+
+- `DynamoDedup` — protocol-based, conditional writes for Lambda concurrency safety
+- Mangum adapter / Lambda handler entry point
+- Dead-letter / retry mechanism for failed handler invocations
+- Specific workflow handler implementations (triage, extraction, etc.)
