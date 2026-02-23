@@ -202,7 +202,7 @@ def main() -> None:
         banner("STEP 4: Create webhook subscription")
         print(f"  Resource:    {list_client.resource_path}")
         print(f"  URL:         {webhook_url}")
-        print(f"  Changes:     created, updated, deleted")
+        print("  Changes:     created, updated, deleted")
         print()
         print("  Microsoft will send a validation request to the receiver.")
         print("  If subscription creation succeeds, the handshake worked.")
@@ -213,7 +213,7 @@ def main() -> None:
             resource=list_client,
             notification_url=webhook_url,
             client_state=CLIENT_STATE,
-            change_types=["created", "updated", "deleted"],
+            change_types=["updated"],
             expiration_minutes=60,
         )
         subscription_id = subscription.id
