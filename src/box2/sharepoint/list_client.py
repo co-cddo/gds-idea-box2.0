@@ -106,6 +106,29 @@ class ListClient:
         logger.debug("Resolved list '%s' -> %s", self.list_name, list_id)
         return list_id
 
+    @property
+    def resource_path(self) -> str:
+        """Graph API resource path for webhook subscriptions.
+
+        Returns:
+            The resource path for this list, suitable for use with
+            ``WebhookClient.subscribe()``.
+        """
+        return f"/sites/{self._site_id}/lists/{self._list_id}"
+
+    @property
+    def supported_change_types(self) -> set[str]:
+        """Change types supported by SharePoint list subscriptions.
+
+        SharePoint lists only support ``"updated"`` notifications via the
+        Microsoft Graph API. Item creation and deletion are surfaced as
+        ``"updated"`` change notifications on the list resource.
+
+        Returns:
+            A set containing ``"updated"``.
+        """
+        return {"updated"}
+
     def get_items(
         self,
         select: list[str] | None = None,

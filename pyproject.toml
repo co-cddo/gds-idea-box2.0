@@ -20,6 +20,13 @@ dependencies = [
     "python-docx>=1.1.2",
 ]
 
+[project.optional-dependencies]
+receiver = [
+    "fastapi>=0.115.0",
+    "pyngrok>=7.2.0",
+    "uvicorn>=0.34.0",
+]
+
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
@@ -57,6 +64,7 @@ addopts = [
 ]
 markers = [
     "integration: tests that require AWS credentials and call live LLM",
+    "webhook: tests that require a public notification URL for Microsoft Graph webhooks",
 ]
 
 [tool.coverage.run]
