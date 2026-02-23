@@ -7,6 +7,7 @@ that will be wired to triage workflows later.
 """
 
 import logging
+from datetime import UTC, datetime
 
 from box2.receiver.config import ReceiverConfig
 from box2.receiver.dedup import DeduplicationStore
@@ -88,9 +89,16 @@ def dispatch(notification: Notification) -> None:
     Args:
         notification: The notification to dispatch.
     """
-    logger.info(
-        "Dispatching notification: subscription=%s, resource=%s, change_type=%s",
-        notification.subscription_id,
-        notification.resource,
-        notification.change_type,
+    received_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    banner = (
+        "\n"
+        "============================================================\n"
+        "  NOTIFICATION RECEIVED\n"
+        f"    Subscription:  {notification.subscription_id}\n"
+        f"    Resource:      {notification.resource}\n"
+        f"    Change Type:   {notification.change_type}\n"
+        f"    Tenant:        {notification.tenant_id}\n"
+        f"    Received At:   {received_at}\n"
+        "============================================================"
     )
+    logger.info(banner)
