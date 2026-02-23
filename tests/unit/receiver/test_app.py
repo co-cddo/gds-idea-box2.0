@@ -33,7 +33,7 @@ VALID_NOTIFICATION = {
 @pytest.fixture
 def config():
     """Create a ReceiverConfig for testing."""
-    return ReceiverConfig(client_state=CLIENT_STATE)
+    return ReceiverConfig(client_state=CLIENT_STATE, app_identity="test-app-id")
 
 
 @pytest.fixture
@@ -164,7 +164,15 @@ def test_config_requires_client_state():
     from pydantic import ValidationError
 
     with pytest.raises(ValidationError):
-        ReceiverConfig(client_state="")
+        ReceiverConfig(client_state="", app_identity="test-app-id")
+
+
+def test_config_requires_app_identity():
+    """ReceiverConfig should reject an empty app_identity."""
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        ReceiverConfig(client_state="secret", app_identity="")
 
 
 def test_config_requires_positive_dedup_window():
@@ -172,4 +180,4 @@ def test_config_requires_positive_dedup_window():
     from pydantic import ValidationError
 
     with pytest.raises(ValidationError):
-        ReceiverConfig(client_state="secret", dedup_window_seconds=0)
+        ReceiverConfig(client_state="secret", app_identity="test-app-id", dedup_window_seconds=0)

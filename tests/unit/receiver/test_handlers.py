@@ -11,7 +11,7 @@ from box2.receiver.models import Notification, NotificationPayload
 # Fixtures
 # ============================================================================
 
-CONFIG = ReceiverConfig(client_state="test-secret")
+CONFIG = ReceiverConfig(client_state="test-secret", app_identity="test-app-id")
 
 VALID_NOTIFICATION = {
     "subscriptionId": "sub-abc-123",
