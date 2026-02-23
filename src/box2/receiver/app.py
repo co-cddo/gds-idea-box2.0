@@ -116,18 +116,22 @@ def _register_route(
         get_dedup_store: Dependency provider for DeduplicationStore.
     """
 
-    @app.post(route.path)
+    # Capture route in a closure variable to avoid late-binding issues
+    # in the for-loop. A default parameter (e.g. _route=route) would be
+    # treated by FastAPI as a request body field, causing 422 errors.
+    bound_route = route
+
+    @app.post(bound_route.path)
     async def webhook_endpoint(
         request: Request,
         receiver_config: Annotated[ReceiverConfig, Depends(get_config)],
         store: Annotated[DeduplicationStore, Depends(get_dedup_store)],
-        _route: WebhookRoute = route,
     ) -> Response:
         """Handle Microsoft Graph webhook notifications for a route."""
         # Validation handshake
         validation_token = request.query_params.get("validationToken")
         if validation_token:
-            logger.info("Validation handshake on %s — echoing token", _route.path)
+            logger.info("Validation handshake on %s — echoing token", bound_route.path)
             return PlainTextResponse(content=validation_token, status_code=200)
 
         # Parse notification payload
@@ -136,8 +140,8 @@ def _register_route(
             return JSONResponse(content={"status": "no data"}, status_code=400)
 
         payload = NotificationPayload.model_validate(body)
-        dispatched = await dispatch_route(_route, payload, receiver_config, store)
-        logger.info("Route %s: processed, %d item(s) dispatched", _route.path, dispatched)
+        dispatched = await dispatch_route(bound_route, payload, receiver_config, store)
+        logger.info("Route %s: processed, %d item(s) dispatched", bound_route.path, dispatched)
 
         return JSONResponse(content={"status": "accepted"}, status_code=202)
 
