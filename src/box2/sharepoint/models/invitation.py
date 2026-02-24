@@ -27,9 +27,9 @@ class SharepointInvitation(BaseModel):
 
     host_organisation: str = Field(description="Organization or individual hosting the event")
 
-    purpose: str = Field( description="Stated purpose or description of the event")
+    purpose: str = Field(description="Stated purpose or description of the event")
 
-    event_summary: str = Field(
+    event_summary: str = Field(min_length=20,
         description="Concise summary of the event for quick review",
     )
 

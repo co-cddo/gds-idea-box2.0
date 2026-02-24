@@ -46,7 +46,7 @@ class SharepointSubmission(BaseModel):
         description="Specific decisions that the minister must make "
         "(e.g., 'Approve £3M from contingency reserve', 'Choose between Option A and B')",
     )
-    official_recommendation: str = Field(
+    official_recommendation: str = Field(min_length=5,
         description="The official recommendation from the submission author "
         "(e.g., 'Approve £3M from contingency reserve', 'Note the report; maintain current approach')",
     )

@@ -22,30 +22,30 @@ class SharepointPQs(BaseModel):
 
     datetabled: datetime = Field(description="The date the invitation was tabled")
 
-    dateforanswer: datetime = Field(description="The date the invitation was tabled")
+    date_for_answer: datetime = Field(description="The date the invitation was tabled")
 
 
-    askingmemberid: str = Field(
+    asking_member_id: str = Field(
         description="ID of member of parliament asking the PQ"
     )
 
-    answeringbodyname: str = Field(
+    answering_body_name: str = Field(
         description="Name of department answering the PQ"
     )
 
-    askingmembername: str = Field(
+    asking_member_name: str = Field(
         description="name of member of parliament asking the PQ"
     )
 
-    ai_expansive_answer: str = Field(
+    ai_expansive_answer: str = Field(min_length=55,
         description="Detailed LLM draft response"
     )
 
-    ai_generic_answer: str = Field(
+    ai_generic_answer: str = Field(min_length=55,
         description="Generic LLM draft response"
     )
 
-    url : list[str] = Field(
+    url : list[str] = Field(min_length=15,
         default_factory=list,
         description="List of links used by LLM for draft response"
     )
@@ -58,7 +58,7 @@ class SharepointPQs(BaseModel):
         description="Urgency for the minister to review draft response. Urgent responses <=2 days before dateforAnswer"
     )
 
-    minister_comment: str = Field(
+    minister_comment: str = Field(min_length=55,
         description="Minister's additional feedback for his decision to approve/request redraft"
     )
 
