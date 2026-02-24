@@ -28,7 +28,9 @@ class NotInvitation(BaseModel):
         "(e.g., 'informational update', 'thank you note', 'forwarded document')",
     )
 
+
 Urgency = Literal["urgent", "not_urgent"]
+
 
 class Invitation(BaseModel):
     """Document that is an invitation requiring ministerial triage."""

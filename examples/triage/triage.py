@@ -74,7 +74,6 @@ async def main():
         print(f"   Location: {invitation.location}")
         print(f"   Urgency to Respond: {invitation.urgency}")
 
-
         if i == 1:
             print("\n👤 MINISTER:")
             print(f"   {persona.name}")
