@@ -34,8 +34,8 @@ async def test_triage_decision(test_case, minister_persona):
 
     result = await triage_invitation(invitation, minister_persona)
 
-    assert result.minister_decision.lower() == expected_decision.lower(), (
-        f"Decision mismatch: expected {expected_decision}, got {result.minister_decision}\nLLM Reasoning: {result.reason}"
+    assert result.decision.lower() == expected_decision.lower(), (
+        f"Decision mismatch: expected {expected_decision}, got {result.decision}\nLLM Reasoning: {result.reason}"
     )
 
 

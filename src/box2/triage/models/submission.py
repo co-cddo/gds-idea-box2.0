@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -17,6 +19,7 @@ class NotSubmission(BaseModel):
         "(e.g., 'invitation', 'correspondence', 'briefing')",
     )
 
+Urgency = Literal["urgent", "routine"]
 
 class Submission(BaseModel):
     """Structured ministerial submission extracted from document text."""
@@ -75,8 +78,8 @@ class Submission(BaseModel):
     )
 
     # Urgency and context
-    urgency: str = Field(
-        description="Urgency level indicated in the document (typically 'urgent', 'routine', or 'for_information')",
+    urgency: Urgency = Field(
+        description="Urgency level indicated in the document",
     )
     related_items: list[str] = Field(
         default_factory=list,

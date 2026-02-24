@@ -224,11 +224,11 @@ async def triage_invitation(invitation: Invitation, persona: MinisterPersona) ->
         decision = result.output
 
         logger.info(
-            f"Triage complete: {decision.minister_decision} (priority: {decision.priority})",
+            f"Triage complete: {decision.decision} (priority: {decision.priority})",
             extra={
                 "title": invitation.title,
                 "email_id": invitation.document_id,
-                "minister_decision": decision.minister_decision,
+                "decision": decision.decision,
                 "priority": decision.priority,
             },
         )

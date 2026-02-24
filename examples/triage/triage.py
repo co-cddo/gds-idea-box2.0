@@ -85,7 +85,7 @@ async def main():
         triaged = await triage_invitation(invitation, persona)
 
         # Display results
-        print("\n📋 DECISION:", triaged.minister_decision.upper())
+        print("\n📋 DECISION:", triaged.decision.upper())
         print("🎯 PRIORITY:", triaged.priority.upper())
 
         print("\n💭 REASONING:")
