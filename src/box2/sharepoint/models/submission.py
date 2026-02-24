@@ -8,9 +8,7 @@ class SharepointSubmission(BaseModel):
     """Schema for the Sharepoint submission list"""
 
     # Metadata
-    document_id: str = Field(
-        description="Unique identifier linking back to the source document "
-    )
+    document_id: str = Field(description="Unique identifier linking back to the source document ")
 
     policy_area: str = Field(
         description="Primary policy area covered by this submission "
@@ -45,7 +43,8 @@ class SharepointSubmission(BaseModel):
         description="Specific decisions that the minister must make "
         "(e.g., 'Approve £3M from contingency reserve', 'Choose between Option A and B')",
     )
-    official_recommendation: str = Field(min_length=5,
+    official_recommendation: str = Field(
+        min_length=5,
         description="The official recommendation from the submission author "
         "(e.g., 'Approve £3M from contingency reserve', 'Note the report; maintain current approach')",
     )
@@ -68,6 +67,5 @@ class SharepointSubmission(BaseModel):
     )
 
     minister_comment: str | None = Field(
-        default=None,
-        description="Ministers recommendation on how submission should be handled"
+        default=None, description="Ministers recommendation on how submission should be handled"
     )
