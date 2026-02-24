@@ -24,7 +24,7 @@ Official Recommendation:
 {official_recommendation}
 
 Minister's Response:
-{minister_response}"""
+{minister_comment}"""
 
 
 def generate_submission_reply(
@@ -47,7 +47,7 @@ def generate_submission_reply(
     reply_text = SUBMISSION_REPLY_TEMPLATE.format(
         policy_area=submission.policy_area,
         official_recommendation=submission.official_recommendation,
-        minister_response=response.minister_response,
+        minister_comment=response.minister_comment,
     )
 
     logger.info(
@@ -64,6 +64,6 @@ def generate_submission_reply(
         document_id=submission.document_id,
         policy_area=submission.policy_area,
         official_recommendation=submission.official_recommendation,
-        minister_response=response.minister_response,
+        minister_comment=response.minister_comment,
         reply_text=reply_text,
     )

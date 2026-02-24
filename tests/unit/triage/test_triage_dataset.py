@@ -66,6 +66,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_001",
         "description": "AI Safety Summit - conflicting high priority with strategic priority but justified deferral",
         "invitation": Invitation(
+            title= "AI Safety Institute",
             document_id="inv_001",
             event_type=EventType.MEETING,
             host_org="UK AI Safety Institute",
@@ -93,6 +94,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_002",
         "description": "University research meeting conflicts with high-priority internal session",
         "invitation": Invitation(
+            title="University Funding",
             document_id="inv_002",
             event_type=EventType.MEETING,
             host_org="Russell Group Universities",
@@ -120,6 +122,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_003",
         "description": "Quantum technology meeting fits perfectly in available Thursday slot",
         "invitation": Invitation(
+            title="Quantum Commercialization Review",
             document_id="inv_003",
             event_type=EventType.MEETING,
             host_org="UK Quantum Technology Hub Network",
@@ -147,6 +150,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_004",
         "description": "Evening reception violates morning preference - delegate",
         "invitation": Invitation(
+            title="Networking Reception for Digital Innovation",
             document_id="inv_004",
             event_type=EventType.RECEPTION,
             host_org="TechUK",
@@ -174,6 +178,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_005",
         "description": "Quantum breakthrough briefing - worth rescheduling comms meeting",
         "invitation": Invitation(
+            title="Briefing on quantum breakthrough",
             document_id="inv_005",
             event_type=EventType.MEETING,
             host_org="National Quantum Computing Centre",
@@ -201,6 +206,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_006",
         "description": "Nuclear innovation roundtable fits Friday morning perfectly",
         "invitation": Invitation(
+            title="Reactor deployment discussion",
             document_id="inv_006",
             event_type=EventType.MEETING,
             host_org="UK Nuclear Innovation Group",
@@ -228,6 +234,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_007",
         "description": "Friday afternoon panel violates constituency work preference",
         "invitation": Invitation(
+            title="Public engagement panel",
             document_id="inv_007",
             event_type=EventType.PANEL,
             host_org="Science Communication Forum",
@@ -255,6 +262,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_008",
         "description": "AI governance roundtable with multiple times - Monday afternoon works",
         "invitation": Invitation(
+            title="AI governance framework roudtable",
             document_id="inv_008",
             event_type=EventType.MEETING,
             host_org="Alan Turing Institute",
@@ -286,6 +294,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_009",
         "description": "Insufficient detail to assess strategic value",
         "invitation": Invitation(
+            title="Innovation Opportunities Discussion",
             document_id="inv_009",
             event_type=EventType.MEETING,
             host_org="Innovation Consultancy Ltd",
@@ -314,6 +323,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_010",
         "description": "Conference requires overnight travel - not strategically critical enough",
         "invitation": Invitation(
+            title="Edinburgh tech conference speaker",
             document_id="inv_010",
             event_type=EventType.CONFERENCE,
             host_org="European Tech Innovation Summit",
@@ -341,6 +351,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_011",
         "description": "Corporate hospitality event violates gift/hospitality preference",
         "invitation": Invitation(
+            title="Dinner discussion on companies partnership opportunities",
             document_id="inv_011",
             event_type=EventType.RECEPTION,
             host_org="Major Tech Corporation",
@@ -368,6 +379,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_012",
         "description": "Science and research investment roundtable - top priority, good timing",
         "invitation": Invitation(
+            title="Discussion on UK research investment strategy",
             document_id="inv_012",
             event_type=EventType.MEETING,
             host_org="Campaign for Science and Engineering (CaSE)",
@@ -395,6 +407,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_013",
         "description": "International AI delegation - priority preference justifies rescheduling",
         "invitation": Invitation(
+            title="US government delegation visit to UK to discuss AI safety",
             document_id="inv_013",
             event_type=EventType.MEETING,
             host_org="US Department of Commerce",
@@ -422,6 +435,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_014",
         "description": "Regional tech event - appropriate for junior minister delegation",
         "invitation": Invitation(
+            title="Manchester start up hub tour",
             document_id="inv_014",
             event_type=EventType.SITE_VISIT,
             host_org="Manchester Digital",
@@ -449,6 +463,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_015",
         "description": "University research ecosystem discussion - perfect fit on Monday",
         "invitation": Invitation(
+            title="Discussion with university leaders on strengthening research ecosystems",
             document_id="inv_015",
             event_type=EventType.MEETING,
             host_org="Universities UK",

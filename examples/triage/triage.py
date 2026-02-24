@@ -21,7 +21,7 @@ async def main():
     )
     # Invitation 1: High-profile AI safety reception
     invitation_1 = Invitation(
-        event_title="AI safety research findings",
+        title="AI safety research findings",
         document_id="test_001",
         event_type="reception",
         host_org="UK AI Safety Institute",
@@ -40,7 +40,7 @@ async def main():
 
     # Invitation 2: Informal drinks
     invitation_2 = Invitation(
-        event_title="Simmons Bar informal drinks",
+        title="Simmons Bar informal drinks",
         document_id="test_002",
         event_type="reception",
         host_org="Matt and David",
@@ -66,7 +66,7 @@ async def main():
 
         # Display invitation
         print("\n📧 INVITATION TO TRIAGE:")
-        print(f"   Event Title: {invitation.event_title}")
+        print(f"   Event Title: {invitation.title}")
         print(f"   Host: {invitation.host_org}")
         print(f"   Event: {invitation.event_type}")
         print(f"   Topics: {', '.join(invitation.topics) if invitation.topics else 'None'}")
@@ -86,7 +86,7 @@ async def main():
         triaged = await triage_invitation(invitation, persona)
 
         # Display results
-        print("\n📋 DECISION:", triaged.decision.upper())
+        print("\n📋 DECISION:", triaged.minister_decision.upper())
         print("🎯 PRIORITY:", triaged.priority.upper())
 
         print("\n💭 REASONING:")

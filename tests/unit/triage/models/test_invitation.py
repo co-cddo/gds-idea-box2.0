@@ -51,6 +51,7 @@ def test_not_invitation_from_dict():
 def test_invitation_creation_all_fields():
     """Test creating an Invitation with all fields."""
     invite = Invitation(
+        title="AI safety research findings",
         document_id="test123",
         event_type=EventType.RECEPTION,
         host_org="The Royal Society",
@@ -64,6 +65,7 @@ def test_invitation_creation_all_fields():
         overall_confidence=0.95,
     )
 
+    assert invite.title == "AI safety research findings"
     assert invite.document_id == "test123"
     assert invite.event_type == EventType.RECEPTION
     assert invite.host_org == "The Royal Society"
@@ -74,6 +76,7 @@ def test_invitation_creation_all_fields():
 def test_invitation_optional_fields():
     """Test that optional fields can be omitted."""
     invite = Invitation(
+        title="Budget Discussion",
         document_id="test123",
         event_type=EventType.MEETING,
         host_org="DSIT",
@@ -92,6 +95,7 @@ def test_invitation_optional_fields():
 def test_invitation_multiple_proposed_times():
     """Test invitation with multiple time options."""
     invite = Invitation(
+        title="Quantum tech panel",
         document_id="test123",
         event_type=EventType.PANEL,
         host_org="Cambridge University",
@@ -114,6 +118,7 @@ def test_invitation_confidence_validation():
 
     # Valid confidence
     invite = Invitation(
+        title="test",
         document_id="test",
         event_type=EventType.OTHER,
         host_org="Test Org",
@@ -130,6 +135,7 @@ def test_invitation_confidence_validation():
     # Invalid confidence (too high)
     with pytest.raises(ValidationError):
         Invitation(
+            title="test",
             document_id="test",
             event_type=EventType.OTHER,
             host_org="Test Org",
@@ -146,6 +152,7 @@ def test_invitation_confidence_validation():
 def test_invitation_from_dict():
     """Test creating Invitation from dict (simulating JSON parsing)."""
     data = {
+        "title" : "Keynote on AI Policy",
         "document_id": "abc123",
         "event_type": "speech",
         "host_org": "Tech Conference 2026",
@@ -165,6 +172,7 @@ def test_invitation_from_dict():
 def test_invitation_empty_topics_list():
     """Test that topics can be an empty list."""
     invite = Invitation(
+        title="test",
         document_id="test",
         event_type=EventType.OTHER,
         host_org="Unknown",
