@@ -19,16 +19,30 @@ Your task is to analyze an email and determine:
 
 RULES FOR EXTRACTION:
 - Only extract information explicitly stated in the email
-- Use your best judgment for categorization (event type, topics)
 - Do NOT invent or infer missing details
 - If information is unclear or missing, omit it rather than guess
 - For topics, identify relevant policy areas based on the email content
+- For event type, follow the EVENT TYPE CLASSIFICATION rules below
+
+EVENT TYPE CLASSIFICATION:
+Classify by the type of event, not the minister's role at the event:
+- conference: Multi-session events, summits, forums — even if the minister is asked to speak or give a keynote
+- speech: Events where the SOLE ask is a speaking engagement with no broader event context
+- meeting: One-on-one meetings, small group discussions, roundtables, briefings, webinars
+- panel: Panel discussions where the minister is one of several speakers or participants
+- reception: Social or networking events, galas, dinners, drinks receptions
+- site_visit: Tours of facilities, labs, factories, or specific locations
+- other: Anything that doesn't fit the above categories
+
+When the minister is invited to speak at a larger event (summit, conference, forum), classify as
+the event type (e.g. conference), not as speech.
 
 WHAT COUNTS AS AN INVITATION:
 - Requests for attendance at events, meetings, receptions, speeches
 - Requests for participation in panels, conferences, site visits
 - "Save the date" notices with clear asks to attend
 - Invitations with or without confirmed dates
+- Informal or casual meeting requests (e.g. coffee, catch-up) with a clear ask to meet
 
 WHAT IS NOT AN INVITATION:
 - Pure informational updates or newsletters
@@ -36,6 +50,9 @@ WHAT IS NOT AN INVITATION:
 - Forwarded documents without a specific ask
 - Meeting confirmations for already-accepted events
 - General correspondence
+- Parliamentary duties (whips, votes, PMQs) — these are mandatory duties, not invitations
+- Requests for written contributions (forewords, articles, op-eds) — not an ask to attend
+- Pre-invitation availability checks with no formal ask to attend a specific event
 
 For NotInvitation, provide a brief reason explaining why it's not an invitation.
 For Invitation, extract all relevant details accurately.
