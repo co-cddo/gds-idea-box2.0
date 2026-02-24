@@ -27,7 +27,13 @@ Usage::
 
 from box2.receiver.app import create_app
 from box2.receiver.config import ReceiverConfig
-from box2.receiver.dedup import DeduplicationStore, InMemoryDedup
+from box2.receiver.dedup import (
+    DeduplicationStore,
+    DynamoDedup,
+    InMemoryDedup,
+    build_item_dedup_key,
+    build_notification_dedup_key,
+)
 from box2.receiver.models import Notification, NotificationPayload
 from box2.receiver.routes import WebhookRoute
 
@@ -36,7 +42,10 @@ __all__ = [
     "ReceiverConfig",
     "WebhookRoute",
     "DeduplicationStore",
+    "DynamoDedup",
     "InMemoryDedup",
+    "build_notification_dedup_key",
+    "build_item_dedup_key",
     "Notification",
     "NotificationPayload",
 ]
