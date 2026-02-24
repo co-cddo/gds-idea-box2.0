@@ -19,12 +19,13 @@ from box2.triage.submission_reply import generate_submission_reply
 def sample_submission():
     """Provide a sample Submission for testing."""
     return Submission(
+        title="AI Safety",
         document_id="email_test001abcdef",
         policy_area="AI Safety and International Collaboration",
         responsible_deputy_director="Jane Smith, Deputy Director - AI Policy",
         summary="Request for £3M additional funding for AI Safety Institute",
         official_recommendation="Approve £3M from contingency reserve",
-        urgency_assessment="urgent",
+        urgency="urgent",
         decision_deadline="7 February 2026",
     )
 
@@ -33,8 +34,9 @@ def sample_submission():
 def approval_response():
     """Minister approves with reduced amount."""
     return SubmissionResponse(
+        title="Test title",
         document_id="email_test001abcdef",
-        minister_response="Approve £2M only, not £3M. Request revised project scope.",
+        minister_comment="Approve £2M only, not £3M. Request revised project scope.",
     )
 
 
@@ -42,8 +44,9 @@ def approval_response():
 def rejection_response():
     """Minister rejects the submission."""
     return SubmissionResponse(
+        title="Test title",
         document_id="email_test001abcdef",
-        minister_response="Rejected - not a priority right now. Revisit in Q3.",
+        minister_comment="Rejected - not a priority right now. Revisit in Q3.",
     )
 
 
@@ -51,8 +54,9 @@ def rejection_response():
 def info_request_response():
     """Minister requests more information."""
     return SubmissionResponse(
+        title="Test title",
         document_id="email_test001abcdef",
-        minister_response="Need more detail on international partner commitments "
+        minister_comment="Need more detail on international partner commitments "
         "before approving. Provide breakdown of contributions.",
     )
 
@@ -65,12 +69,13 @@ def info_request_response():
 def test_submission_response_creation():
     """Test creating a SubmissionResponse with required fields."""
     response = SubmissionResponse(
+        title="Test title",
         document_id="email_sub001abc",
-        minister_response="Approved as recommended",
+        minister_comment="Approved as recommended",
     )
 
     assert response.document_id == "email_sub001abc"
-    assert response.minister_response == "Approved as recommended"
+    assert response.minister_comment == "Approved as recommended"
     assert response.responded_by == "Private Office"
     assert response.responded_at is not None
 
@@ -78,8 +83,9 @@ def test_submission_response_creation():
 def test_submission_response_custom_responder():
     """Test SubmissionResponse with custom responded_by."""
     response = SubmissionResponse(
+        title="Test title",
         document_id="email_sub001abc",
-        minister_response="Approved",
+        minister_comment="Approved",
         responded_by="PPS - John Davies",
     )
 
@@ -90,8 +96,9 @@ def test_submission_response_empty_minister_response_rejected():
     """Test that empty minister_response is rejected by validation."""
     with pytest.raises(ValidationError):
         SubmissionResponse(
+            title="Test title",
             document_id="email_sub001abc",
-            minister_response="",
+            minister_comment="",
         )
 
 
@@ -103,17 +110,18 @@ def test_submission_response_empty_minister_response_rejected():
 def test_submission_reply_creation():
     """Test creating a SubmissionReply with all fields."""
     reply = SubmissionReply(
+        title="AI Safety",
         document_id="email_sub001abc",
         policy_area="AI Safety",
         official_recommendation="Approve £3M",
-        minister_response="Approve £2M only",
+        minister_comment="Approve £2M only",
         reply_text="RE: AI Safety\n\nOfficial Recommendation:\nApprove £3M\n\nMinister's Response:\nApprove £2M only",
     )
 
     assert reply.document_id == "email_sub001abc"
     assert reply.policy_area == "AI Safety"
     assert reply.official_recommendation == "Approve £3M"
-    assert reply.minister_response == "Approve £2M only"
+    assert reply.minister_comment == "Approve £2M only"
     assert reply.created_at is not None
 
 
@@ -121,10 +129,11 @@ def test_submission_reply_short_text_rejected():
     """Test that reply_text below min_length is rejected."""
     with pytest.raises(ValidationError):
         SubmissionReply(
+            title="AI Safety",
             document_id="email_sub001abc",
             policy_area="AI",
             official_recommendation="Approve",
-            minister_response="Yes",
+            minister_comment="Yes",
             reply_text="Too short",
         )
 
@@ -145,7 +154,7 @@ def test_generate_reply_contains_minister_response_verbatim(sample_submission, a
     """Test that the minister's response appears verbatim in reply."""
     reply = generate_submission_reply(sample_submission, approval_response)
 
-    assert approval_response.minister_response in reply.reply_text
+    assert approval_response.minister_comment in reply.reply_text
 
 
 def test_generate_reply_contains_policy_area(sample_submission, approval_response):
@@ -159,17 +168,18 @@ def test_generate_reply_model_fields_match_inputs(sample_submission, approval_re
     """Test that SubmissionReply fields match the input data."""
     reply = generate_submission_reply(sample_submission, approval_response)
 
+    assert reply.title == sample_submission.title
     assert reply.document_id == sample_submission.document_id
     assert reply.policy_area == sample_submission.policy_area
     assert reply.official_recommendation == sample_submission.official_recommendation
-    assert reply.minister_response == approval_response.minister_response
+    assert reply.minister_comment == approval_response.minister_comment
 
 
 def test_generate_reply_with_rejection(sample_submission, rejection_response):
     """Test reply generation for a rejection."""
     reply = generate_submission_reply(sample_submission, rejection_response)
 
-    assert rejection_response.minister_response in reply.reply_text
+    assert rejection_response.minister_comment in reply.reply_text
     assert sample_submission.official_recommendation in reply.reply_text
 
 
@@ -177,7 +187,7 @@ def test_generate_reply_with_info_request(sample_submission, info_request_respon
     """Test reply generation for a request for more information."""
     reply = generate_submission_reply(sample_submission, info_request_response)
 
-    assert info_request_response.minister_response in reply.reply_text
+    assert info_request_response.minister_comment in reply.reply_text
     assert sample_submission.official_recommendation in reply.reply_text
 
 
@@ -213,8 +223,9 @@ def test_generate_reply_has_section_headers(sample_submission, approval_response
 def test_generate_reply_with_long_minister_response(sample_submission):
     """Test reply generation with a very long minister response."""
     long_response = SubmissionResponse(
+        title="Test title",
         document_id="email_test001abcdef",
-        minister_response=(
+        minister_comment=(
             "I have several concerns about this proposal. First, the budget seems "
             "overly optimistic given current fiscal constraints. Second, I would like "
             "to see more detail on the international partner commitments, particularly "
@@ -227,35 +238,38 @@ def test_generate_reply_with_long_minister_response(sample_submission):
 
     reply = generate_submission_reply(sample_submission, long_response)
 
-    assert long_response.minister_response in reply.reply_text
+    assert long_response.minister_comment in reply.reply_text
 
 
 def test_generate_reply_with_special_characters(sample_submission):
     """Test reply generation with special characters in minister response."""
     response = SubmissionResponse(
+        title="Test title",
         document_id="email_test001abcdef",
-        minister_response=("Approve £2M (not £3M) - see note re: 'revised scope' & timeline"),
+        minister_comment=("Approve £2M (not £3M) - see note re: 'revised scope' & timeline"),
     )
 
     reply = generate_submission_reply(sample_submission, response)
 
-    assert response.minister_response in reply.reply_text
+    assert response.minister_comment in reply.reply_text
 
 
 def test_generate_reply_with_different_submission():
     """Test reply generation with a different policy area."""
     submission = Submission(
+        title="Test title",
         document_id="email_test002bcdefg",
         policy_area="Quantum Technologies - National Programme",
         responsible_deputy_director="Bob Wilson, Deputy Director - Quantum",
         summary="Request for programme extension and additional funding",
         official_recommendation=("Extend programme by 2 years with £5M additional funding"),
-        urgency_assessment="routine",
+        urgency="routine",
     )
 
     response = SubmissionResponse(
+        title="Test title",
         document_id="email_test002bcdefg",
-        minister_response="Approve 1 year extension only. Review again next year.",
+        minister_comment="Approve 1 year extension only. Review again next year.",
     )
 
     reply = generate_submission_reply(submission, response)
