@@ -104,6 +104,9 @@ TEXT:
         result = await agent.run("Extract invitation details from this document.", deps=safe_doc)
         output = result.output
 
+        # Overwrite LLM-generated document_id with the real one
+        output.document_id = safe_doc.document_id
+
         # Log result type
         result_type = type(output).__name__
         logger.info(

@@ -75,6 +75,22 @@ async def test_classification_accuracy(test_case):
 
 
 # ============================================================================
+# Document ID Passthrough
+# ============================================================================
+
+
+@pytest.mark.parametrize("test_case", TEST_EMAILS, ids=lambda x: x["email_id"])
+async def test_document_id_passthrough(test_case):
+    """Test that the system-assigned document_id is preserved through extraction."""
+    safe_doc = create_safe_document_from_test(test_case)
+    result = await _get_extraction_result(test_case)
+
+    assert result.document_id == safe_doc.document_id, (
+        f"document_id mismatch: expected {safe_doc.document_id}, got {result.document_id}"
+    )
+
+
+# ============================================================================
 # Structural Tests -- Invitation Results
 # ============================================================================
 

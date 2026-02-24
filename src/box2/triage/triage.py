@@ -231,6 +231,9 @@ async def triage_invitation(invitation: Invitation, persona: MinisterPersona) ->
         )
         decision = result.output
 
+        # Overwrite LLM-generated document_id with the real one
+        decision.document_id = invitation.document_id
+
         logger.info(
             f"Triage complete: {decision.decision} (priority: {decision.priority})",
             extra={
