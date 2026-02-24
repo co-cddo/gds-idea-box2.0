@@ -1,7 +1,7 @@
-import json
-from typing import Any, Literal, Optional
+from typing import Any
+
 from pydantic import BaseModel
-from src.box2.sharepoint.models.invitation import SharepointInvitation
+
 
 def generate_graph_schema(model: type[BaseModel], list_name: str) -> dict[str, Any]:
     """

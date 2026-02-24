@@ -1,8 +1,8 @@
 from enum import Enum
-
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
+
 
 class EventType(str, Enum):
     """Type of ministerial event."""
