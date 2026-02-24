@@ -27,8 +27,8 @@ class Submission(BaseModel):
         "(same document_id that flows through the entire pipeline)",
     )
 
-    document_title: str = Field(
-        description="Title of the document"
+    title: str = Field(
+        description="Title of the submission"
     )
 
     # Core fields extracted from document

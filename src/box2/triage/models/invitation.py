@@ -33,7 +33,7 @@ Urgency = Literal["urgent", "not_urgent"]
 class Invitation(BaseModel):
     """Document that is an invitation requiring ministerial triage."""
 
-    event_title: str = Field(description="Name of the event")
+    title: str = Field(description="Title of the event")
 
     document_id: str = Field(description="Unique identifier linking back to the source document")
 

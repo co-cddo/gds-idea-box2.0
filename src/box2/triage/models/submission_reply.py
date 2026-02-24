@@ -48,7 +48,7 @@ class SubmissionReply(BaseModel):
 
     document_id: str = Field(description="Links back to the source document")
 
-    document_title: str = Field(description="Document title")
+    title: str = Field(description="Title of the submission")
 
     policy_area: str = Field(description="Policy area from the original submission")
 
