@@ -14,6 +14,9 @@ Two implementations are provided:
 - ``InMemoryDedup`` — dict-based, suitable for local dev and testing.
 - ``DynamoDedup`` — DynamoDB-backed, provides atomic cross-invocation
   deduplication for concurrent Lambda executions.
+
+Key-building functions are also provided here so that any code that
+needs to produce dedup keys does not depend on the handler pipeline.
 """
 
 import logging
@@ -22,7 +25,52 @@ from typing import Any, Protocol
 
 import boto3
 
+from box2.receiver.models import Notification
+
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Key Builders
+# ============================================================================
+
+
+def build_notification_dedup_key(notification: Notification) -> str:
+    """Build a deduplication key from a notification.
+
+    The key combines subscription ID, resource, and change type so that
+    different change types on the same resource are treated independently.
+
+    Args:
+        notification: The notification to build a key for.
+
+    Returns:
+        A string key suitable for deduplication lookups.
+    """
+    return f"notif:{notification.subscription_id}:{notification.resource}:{notification.change_type}"
+
+
+def build_item_dedup_key(item: dict[str, Any]) -> str:
+    """Build a deduplication key for a list/drive item.
+
+    The key combines the item ID and its ``lastModifiedDateTime`` so that
+    the same edit is not processed twice, but a new edit on the same item
+    (with a newer timestamp) is treated as a fresh event.
+
+    Args:
+        item: An item dict as returned by the Graph API.
+
+    Returns:
+        A string key suitable for deduplication lookups.
+    """
+    item_id = item.get("id", "unknown")
+    modified = item.get("lastModifiedDateTime", "unknown")
+    return f"item:{item_id}:{modified}"
+
+
+# ============================================================================
+# Protocol
+# ============================================================================
 
 
 class DeduplicationStore(Protocol):

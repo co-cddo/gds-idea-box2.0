@@ -172,7 +172,8 @@ def _register_fallback_route(
         get_config: Dependency provider for ReceiverConfig.
         get_dedup_store: Dependency provider for DeduplicationStore.
     """
-    from box2.receiver.handlers import _log_notification, build_notification_dedup_key
+    from box2.receiver.dedup import build_notification_dedup_key
+    from box2.receiver.handlers import _log_notification
 
     @app.post("/webhook")
     async def webhook_fallback(

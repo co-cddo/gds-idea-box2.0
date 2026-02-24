@@ -3,10 +3,8 @@
 import pytest
 
 from box2.receiver.config import ReceiverConfig
-from box2.receiver.dedup import InMemoryDedup
+from box2.receiver.dedup import InMemoryDedup, build_item_dedup_key, build_notification_dedup_key
 from box2.receiver.handlers import (
-    build_item_dedup_key,
-    build_notification_dedup_key,
     dispatch_route,
     filter_self_writes,
 )

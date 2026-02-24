@@ -14,44 +14,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from box2.receiver.config import ReceiverConfig
-from box2.receiver.dedup import DeduplicationStore
+from box2.receiver.dedup import DeduplicationStore, build_item_dedup_key, build_notification_dedup_key
 from box2.receiver.models import Notification, NotificationPayload
 from box2.receiver.routes import WebhookRoute
 
 logger = logging.getLogger(__name__)
-
-
-def build_notification_dedup_key(notification: Notification) -> str:
-    """Build a deduplication key from a notification.
-
-    The key combines subscription ID, resource, and change type so that
-    different change types on the same resource are treated independently.
-
-    Args:
-        notification: The notification to build a key for.
-
-    Returns:
-        A string key suitable for deduplication lookups.
-    """
-    return f"notif:{notification.subscription_id}:{notification.resource}:{notification.change_type}"
-
-
-def build_item_dedup_key(item: dict[str, Any]) -> str:
-    """Build a deduplication key for a list/drive item.
-
-    The key combines the item ID and its ``lastModifiedDateTime`` so that
-    the same edit is not processed twice, but a new edit on the same item
-    (with a newer timestamp) is treated as a fresh event.
-
-    Args:
-        item: An item dict as returned by the Graph API.
-
-    Returns:
-        A string key suitable for deduplication lookups.
-    """
-    item_id = item.get("id", "unknown")
-    modified = item.get("lastModifiedDateTime", "unknown")
-    return f"item:{item_id}:{modified}"
 
 
 def filter_self_writes(items: list[dict[str, Any]], app_identity: str) -> list[dict[str, Any]]:
@@ -96,10 +63,9 @@ async def dispatch_route(
     2. Notification-level dedup — skip already-seen notifications.
     3. Call ``route.get_items()`` to fetch candidate items.
     4. If ``route.filter_self`` is True, remove items modified by the app.
-    5. Item-level dedup — skip items already processed.
-    6. Record each item in the dedup store *before* calling the handler
-       (at-most-once semantics).
-    7. Call ``route.handler(item)`` for each remaining item.
+    5. Item-level dedup — atomically record each item in the dedup store
+       and skip duplicates (at-most-once semantics).
+    6. Call ``route.handler(item)`` for each remaining item.
 
     Args:
         route: The webhook route being processed.
@@ -122,7 +88,7 @@ async def dispatch_route(
             continue
 
         key = build_notification_dedup_key(notification)
-        if dedup_store.is_duplicate(key):
+        if not dedup_store.record_if_new(key):
             logger.info(
                 "Duplicate notification (subscription=%s, resource=%s) — skipping",
                 notification.subscription_id,
@@ -130,7 +96,6 @@ async def dispatch_route(
             )
             continue
 
-        dedup_store.record(key)
         valid_notifications += 1
         _log_notification(notification)
 
@@ -151,16 +116,13 @@ async def dispatch_route(
         items = filter_self_writes(items, config.app_identity)
         logger.info("Route %s: %d item(s) after self-write filtering", route.path, len(items))
 
-    # Step 5, 6, 7: item-level dedup, record, and dispatch
+    # Step 5, 6: item-level dedup (atomic record) and dispatch
     dispatched = 0
     for item in items:
         item_key = build_item_dedup_key(item)
-        if dedup_store.is_duplicate(item_key):
+        if not dedup_store.record_if_new(item_key):
             logger.info("Skipping already-processed item (key=%s)", item_key)
             continue
-
-        # Record before handler (at-most-once)
-        dedup_store.record(item_key)
 
         try:
             await route.handler(item)
