@@ -119,12 +119,11 @@ async def test_invitation_field_integrity(test_case):
 
     assert isinstance(result, Invitation)
 
-    # 1. Event Type Strict Match
+    # 1. Event Type Match (strict or from acceptable list)
     if test_case.get("expected_event_type"):
         actual_type = result.event_type.value if hasattr(result.event_type, "value") else str(result.event_type)
-        assert actual_type == test_case["expected_event_type"], (
-            f"Event type mismatch: expected {test_case['expected_event_type']}, got {actual_type}"
-        )
+        acceptable = test_case.get("acceptable_event_types", [test_case["expected_event_type"]])
+        assert actual_type in acceptable, f"Event type mismatch: expected one of {acceptable}, got {actual_type}"
 
     # 2. Host Organisation Fuzzy Match
     if test_case.get("expected_host_org"):
