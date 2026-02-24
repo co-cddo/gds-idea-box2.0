@@ -10,6 +10,7 @@ comes later.
 Environment variables (required):
     CLIENT_STATE             — shared secret for notification validation
     APP_IDENTITY             — Azure AD service principal app ID
+    DYNAMO_TABLE_NAME        — DynamoDB table for deduplication
     SHAREPOINT_TENANT_ID     — Azure AD tenant ID
     SHAREPOINT_CLIENT_ID     — Azure AD app registration client ID
     SHAREPOINT_SITE_HOST     — e.g. contoso.sharepoint.com
@@ -18,17 +19,13 @@ Environment variables (required):
 
 Environment variables (optional):
     LOOKBACK_MINUTES         — rolling window for get_recent (default: 2)
+    DEDUP_WINDOW_SECONDS     — dedup TTL in seconds (default: 300)
     DOCS_LIBRARY_NAME        — document library name (default: Documents)
     AWS_REGION               — AWS region for STS (default: eu-west-2)
 
 Deployment:
     Configure the Lambda handler as ``box2.receiver.lambda_handler.handler``.
     API Gateway should proxy all requests to the Lambda function.
-
-Note:
-    This uses InMemoryDedup which resets on every cold start. This is a
-    known limitation — DynamoDedup will replace it in a future PR for
-    proper cross-invocation deduplication.
 """
 
 import logging
@@ -37,6 +34,7 @@ import os
 from mangum import Mangum
 
 from box2.receiver import ReceiverConfig, WebhookRoute, create_app
+from box2.receiver.dedup import DynamoDedup
 from box2.sharepoint import DocsClient, SharePointSession
 
 logger = logging.getLogger(__name__)
@@ -47,7 +45,9 @@ logger = logging.getLogger(__name__)
 
 CLIENT_STATE = os.environ["CLIENT_STATE"]
 APP_IDENTITY = os.environ["APP_IDENTITY"]
+DYNAMO_TABLE_NAME = os.environ["DYNAMO_TABLE_NAME"]
 LOOKBACK_MINUTES = int(os.environ.get("LOOKBACK_MINUTES", "2"))
+DEDUP_WINDOW_SECONDS = int(os.environ.get("DEDUP_WINDOW_SECONDS", "300"))
 DOCS_LIBRARY_NAME = os.environ.get("DOCS_LIBRARY_NAME", "Documents")
 
 # ============================================================================
@@ -56,13 +56,15 @@ DOCS_LIBRARY_NAME = os.environ.get("DOCS_LIBRARY_NAME", "Documents")
 
 session = SharePointSession.from_env()
 docs = DocsClient(session, library_name=DOCS_LIBRARY_NAME)
+dedup_store = DynamoDedup(table_name=DYNAMO_TABLE_NAME, window_seconds=DEDUP_WINDOW_SECONDS)
 
 logger.info(
-    "Lambda cold start: session=%s:%s, library=%s, lookback=%dm",
+    "Lambda cold start: session=%s:%s, library=%s, lookback=%dm, dedup_table=%s",
     session.site_host,
     session.site_path,
     DOCS_LIBRARY_NAME,
     LOOKBACK_MINUTES,
+    DYNAMO_TABLE_NAME,
 )
 
 
@@ -121,6 +123,7 @@ app = create_app(
             filter_self=False,
         ),
     ],
+    dedup_store=dedup_store,
 )
 
 handler = Mangum(app, lifespan="off")
