@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -19,7 +18,9 @@ class NotSubmission(BaseModel):
         "(e.g., 'invitation', 'correspondence', 'briefing')",
     )
 
+
 Urgency = Literal["urgent", "routine"]
+
 
 class Submission(BaseModel):
     """Structured ministerial submission extracted from document text."""
