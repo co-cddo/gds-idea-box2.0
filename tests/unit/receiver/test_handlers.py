@@ -3,12 +3,12 @@
 import pytest
 
 from box2.receiver.config import ReceiverConfig
-from box2.receiver.dedup import InMemoryDedup, build_item_dedup_key, build_notification_dedup_key
+from box2.receiver.dedup import InMemoryDedup
 from box2.receiver.handlers import (
     dispatch_route,
     filter_self_writes,
 )
-from box2.receiver.models import Notification, NotificationPayload
+from box2.receiver.models import NotificationPayload
 from box2.receiver.routes import WebhookRoute
 
 # ============================================================================
@@ -51,59 +51,6 @@ def _make_item(
     else:
         item["lastModifiedBy"] = {"user": {"id": "human-user-123"}}
     return item
-
-
-# ============================================================================
-# build_notification_dedup_key Tests
-# ============================================================================
-
-
-def test_notification_dedup_key_includes_subscription_resource_and_change_type():
-    """Notification dedup key should combine subscription, resource, and change type."""
-    notification = Notification.model_validate(VALID_NOTIFICATION)
-    key = build_notification_dedup_key(notification)
-
-    assert "sub-abc-123" in key
-    assert "sites/site-id/lists/list-id" in key
-    assert "updated" in key
-
-
-def test_notification_dedup_key_differs_for_different_change_types():
-    """Different change types on the same resource should produce different keys."""
-    n1 = Notification.model_validate({**VALID_NOTIFICATION, "changeType": "updated"})
-    n2 = Notification.model_validate({**VALID_NOTIFICATION, "changeType": "created"})
-
-    assert build_notification_dedup_key(n1) != build_notification_dedup_key(n2)
-
-
-# ============================================================================
-# build_item_dedup_key Tests
-# ============================================================================
-
-
-def test_item_dedup_key_includes_id_and_timestamp():
-    """Item dedup key should combine item ID and lastModifiedDateTime."""
-    item = _make_item(item_id="item-42", last_modified="2026-02-23T12:30:00Z")
-    key = build_item_dedup_key(item)
-
-    assert "item-42" in key
-    assert "2026-02-23T12:30:00Z" in key
-
-
-def test_item_dedup_key_differs_for_same_item_different_timestamp():
-    """Same item with a newer timestamp should produce a different key."""
-    item_v1 = _make_item(item_id="item-1", last_modified="2026-02-23T12:00:00Z")
-    item_v2 = _make_item(item_id="item-1", last_modified="2026-02-23T12:05:00Z")
-
-    assert build_item_dedup_key(item_v1) != build_item_dedup_key(item_v2)
-
-
-def test_item_dedup_key_same_for_identical_item_and_timestamp():
-    """Same item with the same timestamp should produce the same key."""
-    item_a = _make_item(item_id="item-1", last_modified="2026-02-23T12:00:00Z")
-    item_b = _make_item(item_id="item-1", last_modified="2026-02-23T12:00:00Z")
-
-    assert build_item_dedup_key(item_a) == build_item_dedup_key(item_b)
 
 
 # ============================================================================
@@ -333,7 +280,8 @@ async def test_dispatch_route_records_before_handler(dedup_store):
 
     async def handler(item):
         key = f"item:{item['id']}:{item['lastModifiedDateTime']}"
-        recorded_before_handler.append(dedup_store.is_duplicate(key))
+        # record_if_new returns False if the key was already recorded
+        recorded_before_handler.append(dedup_store.record_if_new(key))
 
     items = [_make_item()]
     route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
@@ -341,8 +289,8 @@ async def test_dispatch_route_records_before_handler(dedup_store):
 
     await dispatch_route(route, payload, CONFIG, dedup_store)
 
-    # The handler should see the key as already recorded (True = duplicate)
-    assert recorded_before_handler == [True]
+    # The handler should see the key as already recorded (False = duplicate)
+    assert recorded_before_handler == [False]
 
 
 @pytest.mark.anyio
