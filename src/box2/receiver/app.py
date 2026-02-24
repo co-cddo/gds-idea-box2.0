@@ -199,10 +199,9 @@ def _register_fallback_route(
                 continue
 
             key = build_notification_dedup_key(notification)
-            if store.is_duplicate(key):
+            if not store.record_if_new(key):
                 continue
 
-            store.record(key)
             _log_notification(notification)
             dispatched += 1
 
