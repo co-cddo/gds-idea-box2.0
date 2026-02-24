@@ -8,11 +8,19 @@ The ``DeduplicationStore`` protocol uses a single atomic
 ``record_if_new`` method that checks and records in one step. This
 design maps cleanly onto DynamoDB conditional writes for Lambda
 deployments while keeping the in-memory implementation simple.
+
+Two implementations are provided:
+
+- ``InMemoryDedup`` — dict-based, suitable for local dev and testing.
+- ``DynamoDedup`` — DynamoDB-backed, provides atomic cross-invocation
+  deduplication for concurrent Lambda executions.
 """
 
 import logging
 import time
-from typing import Protocol
+from typing import Any, Protocol
+
+import boto3
 
 logger = logging.getLogger(__name__)
 
@@ -94,3 +102,79 @@ class InMemoryDedup:
             del self._seen[k]
         if expired:
             logger.debug("Cleaned up %d expired dedup entries", len(expired))
+
+
+class DynamoDedup:
+    """DynamoDB-backed deduplication store with atomic conditional writes.
+
+    Uses ``put_item`` with a condition expression to achieve at-most-once
+    semantics across concurrent Lambda invocations. DynamoDB's TTL feature
+    handles automatic cleanup of expired entries.
+
+    Table schema:
+        - ``pk`` (String, partition key): the dedup key.
+        - ``ttl`` (Number): Unix epoch timestamp for DynamoDB TTL expiry.
+
+    Enable TTL on the ``ttl`` attribute when creating the table::
+
+        aws dynamodb update-time-to-live \\
+            --table-name my-dedup-table \\
+            --time-to-live-specification "Enabled=true, AttributeName=ttl"
+
+    Args:
+        table_name: Name of the DynamoDB table.
+        window_seconds: Time window during which a key is considered a
+            duplicate. Also used to set the TTL on new records.
+        table: Optional pre-configured boto3 DynamoDB Table resource
+            (useful for testing or custom session configuration).
+    """
+
+    def __init__(
+        self,
+        table_name: str,
+        window_seconds: int = 300,
+        table: Any = None,
+    ):
+        self._window_seconds = window_seconds
+        if table is not None:
+            self._table = table
+        else:
+            dynamodb = boto3.resource("dynamodb")
+            self._table = dynamodb.Table(table_name)
+
+    def record_if_new(self, key: str) -> bool:
+        """Atomically check and record a dedup key in DynamoDB.
+
+        Attempts a conditional ``put_item`` that succeeds only if the key
+        does not already exist or has expired (TTL elapsed). This provides
+        atomic at-most-once semantics even when multiple Lambda invocations
+        race on the same key.
+
+        Note:
+            DynamoDB TTL deletion is asynchronous and may lag by up to
+            48 hours. The condition expression checks the ``ttl`` value
+            directly so that expired-but-not-yet-deleted items are treated
+            as available for re-recording.
+
+        Args:
+            key: A unique identifier for the notification or item event.
+
+        Returns:
+            ``True`` if the key was newly recorded (not a duplicate).
+            ``False`` if the key already existed (duplicate).
+        """
+        now = int(time.time())
+        ttl = now + self._window_seconds
+
+        try:
+            self._table.put_item(
+                Item={"pk": key, "ttl": ttl},
+                ConditionExpression="attribute_not_exists(pk) OR #t < :now",
+                ExpressionAttributeNames={"#t": "ttl"},
+                ExpressionAttributeValues={":now": now},
+            )
+            logger.debug("DynamoDB: recorded new key: %s (ttl=%d)", key, ttl)
+            return True
+        except self._table.meta.client.exceptions.ConditionalCheckFailedException:
+            logger.debug("DynamoDB: duplicate key detected: %s", key)
+            return False
