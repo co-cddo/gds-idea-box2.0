@@ -92,6 +92,7 @@ TEXT:
     logger.info(
         "Extracting submission from document",
         extra={
+            "document_title": safe_doc.document_title,
             "document_id": safe_doc.document_id,
             "source_type": safe_doc.source_type,
             "text_length": len(safe_doc.safe_text),
@@ -123,7 +124,7 @@ TEXT:
                 extra={
                     "document_id": output.document_id,
                     "policy_area": output.policy_area,
-                    "urgency": output.urgency_assessment,
+                    "urgency": output.urgency,
                 },
             )
 
@@ -132,6 +133,7 @@ TEXT:
         logger.error(
             f"LLM failed to extract submission: {str(e)}",
             extra={
+                "document_title": safe_doc.document_title,
                 "document_id": safe_doc.document_id,
                 "text_preview": safe_doc.safe_text[:200],
             },
@@ -146,6 +148,7 @@ TEXT:
         logger.error(
             f"Unexpected extraction error: {str(e)}",
             extra={
+                "document_title": safe_doc.document_title,
                 "document_id": safe_doc.document_id,
                 "text_preview": safe_doc.safe_text[:200],
             },
