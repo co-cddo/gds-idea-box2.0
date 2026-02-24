@@ -1,11 +1,8 @@
-from dateutil import parser as date_parser
-
-from datetime import datetime, date
-
+from datetime import date
 from enum import Enum
-
 from typing import Literal
 
+from dateutil import parser as date_parser
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -37,7 +34,7 @@ class Invitation(BaseModel):
     """Document that is an invitation requiring ministerial triage."""
 
     event_title: str = Field(description="Name of the event")
-    
+
     document_id: str = Field(description="Unique identifier linking back to the source document")
 
     event_type: EventType = Field(description="Type of event being invited to")

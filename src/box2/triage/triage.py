@@ -206,6 +206,7 @@ async def triage_invitation(invitation: Invitation, persona: MinisterPersona) ->
     logger.info(
         f"Triaging invitation from {invitation.host_org}",
         extra={
+            "event_title": invitation.event_title,
             "email_id": invitation.document_id,
             "host_org": invitation.host_org,
             "event_type": invitation.event_type,
@@ -225,6 +226,7 @@ async def triage_invitation(invitation: Invitation, persona: MinisterPersona) ->
         logger.info(
             f"Triage complete: {decision.decision} (priority: {decision.priority})",
             extra={
+                "event_title": invitation.event_title,
                 "email_id": invitation.document_id,
                 "decision": decision.decision,
                 "priority": decision.priority,
@@ -232,7 +234,7 @@ async def triage_invitation(invitation: Invitation, persona: MinisterPersona) ->
         )
         logger.debug(
             f"Reason: {decision.reason}",
-            extra={"email_id": invitation.document_id, "reason": decision.reason},
+            extra={"event_title": invitation.event_title, "email_id": invitation.document_id, "reason": decision.reason},
         )
 
         return decision

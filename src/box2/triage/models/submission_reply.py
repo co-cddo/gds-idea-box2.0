@@ -19,6 +19,8 @@ class SubmissionResponse(BaseModel):
 
     document_id: str = Field(description="Links back to the source document")
 
+    document_title: str = Field(description="Document title")
+
     minister_comment: str = Field(
         min_length=1,
         description="The minister's response verbatim as recorded by Private Office "
@@ -45,6 +47,8 @@ class SubmissionReply(BaseModel):
     """
 
     document_id: str = Field(description="Links back to the source document")
+
+    document_title: str = Field(description="Document title")
 
     policy_area: str = Field(description="Policy area from the original submission")
 
