@@ -323,7 +323,7 @@ Cabinet Office""",
         "expected_location": None,  # Call/virtual
         "expected_topics": ["energy crisis"],
     },
-    # ========== INVITATIONS WITH MINIMAL INFO ==========
+    # ========== PRE-INQUIRY (NOT AN INVITATION) ==========
     {
         "email_id": "test_015",
         "subject": "Speaking Request",
@@ -337,12 +337,8 @@ John Smith
 Events Director""",
         "received_date": "2026-02-03T11:00:00Z",  # Yesterday
         "has_attachments": False,
-        "is_invitation": True,
-        "expected_event_type": "speech",  # Speaking engagement
-        "expected_host_org": None,
-        "expected_date": None,
-        "expected_location": None,
-        "expected_topics": [],
+        "is_invitation": False,
+        "expected_reason": "Pre-invitation availability check with no event details, date, or location",
     },
     {
         "email_id": "test_016",

@@ -61,10 +61,13 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "-ra",
+    "-m",
+    "not eval",
 ]
 markers = [
     "integration: tests that require AWS credentials and call live LLM",
     "webhook: tests that require a public notification URL for Microsoft Graph webhooks",
+    "eval: LLM output quality evals -- excluded by default, run with: uv run pytest -m eval",
 ]
 
 [tool.coverage.run]
