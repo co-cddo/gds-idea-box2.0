@@ -27,9 +27,7 @@ class Submission(BaseModel):
         "(same document_id that flows through the entire pipeline)",
     )
 
-    title: str = Field(
-        description="Title of the submission"
-    )
+    title: str = Field(description="Title of the submission")
 
     # Core fields extracted from document
     policy_area: str = Field(

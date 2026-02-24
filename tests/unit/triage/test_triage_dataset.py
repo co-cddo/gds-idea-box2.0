@@ -66,7 +66,7 @@ TRIAGE_TEST_CASES = [
         "test_id": "triage_001",
         "description": "AI Safety Summit - conflicting high priority with strategic priority but justified deferral",
         "invitation": Invitation(
-            title= "AI Safety Institute",
+            title="AI Safety Institute",
             document_id="inv_001",
             event_type=EventType.MEETING,
             host_org="UK AI Safety Institute",

@@ -152,7 +152,7 @@ def test_invitation_confidence_validation():
 def test_invitation_from_dict():
     """Test creating Invitation from dict (simulating JSON parsing)."""
     data = {
-        "title" : "Keynote on AI Policy",
+        "title": "Keynote on AI Policy",
         "document_id": "abc123",
         "event_type": "speech",
         "host_org": "Tech Conference 2026",
