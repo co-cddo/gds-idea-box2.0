@@ -36,7 +36,7 @@ Usage::
 import logging
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import BackgroundTasks, Depends, FastAPI, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from box2.receiver.config import ReceiverConfig
@@ -124,10 +124,17 @@ def _register_route(
     @app.post(bound_route.path)
     async def webhook_endpoint(
         request: Request,
+        background_tasks: BackgroundTasks,
         receiver_config: Annotated[ReceiverConfig, Depends(get_config)],
         store: Annotated[DeduplicationStore, Depends(get_dedup_store)],
     ) -> Response:
-        """Handle Microsoft Graph webhook notifications for a route."""
+        """Handle Microsoft Graph webhook notifications for a route.
+
+        Returns 202 immediately and processes the notification in a
+        background task. This prevents Graph from timing out when
+        handlers take a long time (e.g. LLM calls). With Mangum,
+        background tasks complete before the Lambda invocation ends.
+        """
         # Validation handshake
         validation_token = request.query_params.get("validationToken")
         if validation_token:
@@ -140,8 +147,11 @@ def _register_route(
             return JSONResponse(content={"status": "no data"}, status_code=400)
 
         payload = NotificationPayload.model_validate(body)
-        dispatched = await dispatch_route(bound_route, payload, receiver_config, store)
-        logger.info("Route %s: processed, %d item(s) dispatched", bound_route.path, dispatched)
+
+        # Dispatch in background — response goes back to Graph immediately
+        handler_name = getattr(bound_route.handler, "__name__", repr(bound_route.handler))
+        logger.info("Route %s: dispatching background task → %s", bound_route.path, handler_name)
+        background_tasks.add_task(dispatch_route, bound_route, payload, receiver_config, store)
 
         return JSONResponse(content={"status": "accepted"}, status_code=202)
 
