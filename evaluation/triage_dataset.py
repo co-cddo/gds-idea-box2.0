@@ -320,9 +320,7 @@ TRIAGE_TEST_CASES = [
             purpose="Speaking slot at European tech conference",
             event_summary="Two-day conference in Edinburgh. Minister invited to give 20-minute keynote on UK tech innovation landscape. 300+ attendees from across Europe.",
             topics=["tech innovation", "international", "European"],
-            proposed_times=[
-                "Tuesday, February 10th, 2026, 9:00 AM (requires travel Monday evening)"
-            ],
+            proposed_times=["Tuesday, February 10th, 2026, 9:00 AM (requires travel Monday evening)"],
             is_time_flexible=False,
             location="Edinburgh, Scotland",
         ),

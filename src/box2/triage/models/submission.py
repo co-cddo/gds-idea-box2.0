@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -18,6 +19,9 @@ class NotSubmission(BaseModel):
     )
 
 
+Urgency = Literal["urgent", "routine"]
+
+
 class Submission(BaseModel):
     """Structured ministerial submission extracted from document text."""
 
@@ -26,6 +30,8 @@ class Submission(BaseModel):
         description="Unique identifier linking back to the source document "
         "(same document_id that flows through the entire pipeline)",
     )
+
+    title: str = Field(description="Title of the submission")
 
     # Core fields extracted from document
     policy_area: str = Field(
@@ -73,8 +79,8 @@ class Submission(BaseModel):
     )
 
     # Urgency and context
-    urgency_assessment: str = Field(
-        description="Urgency level indicated in the document (typically 'urgent', 'routine', or 'for_information')",
+    urgency: Urgency = Field(
+        description="Urgency level indicated in the document",
     )
     related_items: list[str] = Field(
         default_factory=list,
