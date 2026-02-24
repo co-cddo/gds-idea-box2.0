@@ -27,11 +27,10 @@ class SharepointInvitation(BaseModel):
 
     host_organisation: str = Field(description="Organization or individual hosting the event")
 
-    purpose: str = Field(min_length=10, description="Stated purpose or description of the event")
+    purpose: str = Field( description="Stated purpose or description of the event")
 
     event_summary: str = Field(
-        min_length=10,
-        description="Concise 2-3 sentence summary of the event for quick review",
+        description="Concise summary of the event for quick review",
     )
 
     topics: list[str] = Field(description="Relevant policy topics from the minister's portfolio (DSIT/DESNZ taxonomy)")
@@ -58,7 +57,6 @@ class SharepointInvitation(BaseModel):
     priority: Literal["high", "medium", "low"] = Field(description="Priority level of this invitation for the minister")
 
     reason: str = Field(
-        min_length=10,
         description="Short explanation for the decision (1-2 sentences)",
     )
 

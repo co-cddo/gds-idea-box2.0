@@ -14,17 +14,14 @@ class SharepointSubmission(BaseModel):
     )
 
     policy_area: str = Field(
-        min_length=5,
         description="Primary policy area covered by this submission "
         "(e.g., 'AI Safety and International Collaboration', 'Horizon Europe', 'Quantum Research')",
     )
     responsible_deputy_director: str = Field(
-        min_length=5,
         description="Name and title of the Deputy Director or official submitting this document "
         "(e.g., 'Jane Smith, Deputy Director - AI Policy')",
     )
     summary: str = Field(
-        min_length=20,
         description="One-paragraph summary extracted from the submission document, "
         "including key context, background, and main points",
     )
@@ -50,7 +47,6 @@ class SharepointSubmission(BaseModel):
         "(e.g., 'Approve £3M from contingency reserve', 'Choose between Option A and B')",
     )
     official_recommendation: str = Field(
-        min_length=5,
         description="The official recommendation from the submission author "
         "(e.g., 'Approve £3M from contingency reserve', 'Note the report; maintain current approach')",
     )
