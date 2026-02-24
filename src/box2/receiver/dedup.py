@@ -4,8 +4,10 @@ Microsoft Graph may send multiple notifications for the same change event.
 A deduplication store tracks recently processed notification keys and
 suppresses duplicates within a configurable time window.
 
-The ``DeduplicationStore`` protocol allows swapping backends (in-memory for
-local dev, DynamoDB for Lambda deployments) without changing handler code.
+The ``DeduplicationStore`` protocol uses a single atomic
+``record_if_new`` method that checks and records in one step. This
+design maps cleanly onto DynamoDB conditional writes for Lambda
+deployments while keeping the in-memory implementation simple.
 """
 
 import logging
@@ -16,24 +18,28 @@ logger = logging.getLogger(__name__)
 
 
 class DeduplicationStore(Protocol):
-    """Interface for notification deduplication backends."""
+    """Interface for notification deduplication backends.
 
-    def is_duplicate(self, key: str) -> bool:
-        """Check if a notification key has been seen within the dedup window.
+    Implementations must provide a single atomic check-and-record
+    operation. This avoids race conditions between separate "check"
+    and "record" calls when multiple Lambda invocations process
+    notifications concurrently.
+    """
+
+    def record_if_new(self, key: str) -> bool:
+        """Atomically check whether a key exists and record it if not.
+
+        If the key has not been seen within the dedup window, it is
+        recorded and the method returns ``True``. If the key already
+        exists (i.e. it is a duplicate), the method returns ``False``
+        without modifying the store.
 
         Args:
-            key: A unique identifier for the notification event.
+            key: A unique identifier for the notification or item event.
 
         Returns:
-            True if the key was already recorded within the window.
-        """
-        ...
-
-    def record(self, key: str) -> None:
-        """Record a notification key as processed.
-
-        Args:
-            key: A unique identifier for the notification event.
+            ``True`` if the key was newly recorded (not a duplicate).
+            ``False`` if the key already existed (duplicate).
         """
         ...
 
@@ -42,8 +48,8 @@ class InMemoryDedup:
     """In-memory deduplication store using a dict with TTL-based expiry.
 
     Suitable for single-instance deployments and local development.
-    For Lambda or multi-instance deployments, use a shared store
-    (e.g. DynamoDB) that implements the ``DeduplicationStore`` protocol.
+    For Lambda or multi-instance deployments, use ``DynamoDedup``
+    which provides atomic cross-invocation deduplication.
 
     Args:
         window_seconds: Time window during which a key is considered a duplicate.
@@ -53,16 +59,19 @@ class InMemoryDedup:
         self._window_seconds = window_seconds
         self._seen: dict[str, float] = {}
 
-    def is_duplicate(self, key: str) -> bool:
-        """Check if a notification key was recorded within the dedup window.
+    def record_if_new(self, key: str) -> bool:
+        """Atomically check and record a dedup key.
 
-        Also performs lazy cleanup of expired entries.
+        Performs lazy cleanup of expired entries before checking.
+        If the key exists and is within the dedup window, returns
+        ``False``. Otherwise records the key and returns ``True``.
 
         Args:
-            key: A unique identifier for the notification event.
+            key: A unique identifier for the notification or item event.
 
         Returns:
-            True if the key exists and has not expired.
+            ``True`` if the key was newly recorded (not a duplicate).
+            ``False`` if the key already existed (duplicate).
         """
         self._cleanup()
         now = time.monotonic()
@@ -71,18 +80,11 @@ class InMemoryDedup:
             elapsed = now - self._seen[key]
             if elapsed < self._window_seconds:
                 logger.debug("Duplicate key detected: %s (%.0fs ago)", key, elapsed)
-                return True
+                return False
 
-        return False
-
-    def record(self, key: str) -> None:
-        """Record a notification key with the current timestamp.
-
-        Args:
-            key: A unique identifier for the notification event.
-        """
-        self._seen[key] = time.monotonic()
-        logger.debug("Recorded key: %s", key)
+        self._seen[key] = now
+        logger.debug("Recorded new key: %s", key)
+        return True
 
     def _cleanup(self) -> None:
         """Remove entries older than the dedup window."""
