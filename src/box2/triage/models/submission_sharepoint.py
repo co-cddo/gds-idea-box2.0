@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -6,6 +5,8 @@ from pydantic import BaseModel, Field
 
 class SharepointSubmission(BaseModel):
     """Schema for the Sharepoint submission list"""
+
+    title: str = Field(description="Title of the submission")
 
     # Metadata
     document_id: str = Field(description="Unique identifier linking back to the source document ")
@@ -23,8 +24,7 @@ class SharepointSubmission(BaseModel):
         "including key context, background, and main points",
     )
 
-    submission_date: datetime = Field(
-        default_factory=datetime.now,
+    submission_date: str = Field(
         description="Date the submission was created or received",
     )
     decision_deadline: str | None = Field(
