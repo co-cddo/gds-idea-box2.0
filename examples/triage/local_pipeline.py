@@ -8,10 +8,12 @@ Set WRITE_TO_SHAREPOINT = True and provide SharePoint env vars to
 write results to a real list.
 
 Usage:
-    AWS_PROFILE=bedrock-dev uv run python examples/triage/local_pipeline.py <file_path>
+    AWS_PROFILE=aws-prototype uv run python examples/triage/local_pipeline.py <file_path>
 
 Example:
-    AWS_PROFILE=bedrock-dev uv run python examples/triage/local_pipeline.py examples/data/example_test.txt
+    AWS_PROFILE=aws-prototype uv run python examples/triage/local_pipeline.py examples/data/example_test.txt
+    AWS_PROFILE=aws-prototype uv run python examples/triage/local_pipeline.py examples/data/example_invitation.txt
+
 """
 
 import asyncio
