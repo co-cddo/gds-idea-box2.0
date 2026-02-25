@@ -33,6 +33,7 @@ Usage::
     )
 """
 
+import json
 import logging
 from typing import Annotated
 
@@ -146,6 +147,8 @@ def _register_route(
         if not body:
             return JSONResponse(content={"status": "no data"}, status_code=400)
 
+        logger.debug("Raw request body on %s: %s", bound_route.path, json.dumps(body, default=str))
+
         payload = NotificationPayload.model_validate(body)
 
         # Dispatch in background — response goes back to Graph immediately
@@ -190,6 +193,8 @@ def _register_fallback_route(
         body = await request.json()
         if not body:
             return JSONResponse(content={"status": "no data"}, status_code=400)
+
+        logger.debug("Raw request body on /webhook: %s", json.dumps(body, default=str))
 
         payload = NotificationPayload.model_validate(body)
         dispatched = 0
