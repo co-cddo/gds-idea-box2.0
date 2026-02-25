@@ -30,18 +30,27 @@ uv sync --all-extras
 
 ### Running tests
 
-Tests are split into two directories:
+Tests are split into three tiers:
 
 ```
 tests/
   unit/           # fast, no external dependencies
   integration/    # calls live LLM via AWS Bedrock / SharePoint via Graph API
+  evals/          # LLM output quality assessments (TODO: migrate to proper eval framework)
 ```
 
 ```bash
-uv run pytest tests/unit/          # unit tests only (what CI runs)
-uv run pytest tests/integration/   # integration tests only (requires AWS)
-uv run pytest                      # everything (integration auto-skips without creds)
+# Unit tests (what CI runs)
+uv run pytest tests/unit/ -v
+
+# Integration tests (deterministic, requires AWS credentials)
+AWS_PROFILE=bedrock-dev uv run pytest tests/integration/ -v
+
+# Everything except evals (default -- evals are excluded by the -m "not eval" default)
+uv run pytest -v
+
+# Evals only (fuzzy/subjective quality checks, some failure expected)
+AWS_PROFILE=bedrock-dev uv run pytest -m eval tests/evals/ -v
 ```
 
 Integration tests require AWS credentials. Without them they are automatically skipped:
@@ -50,6 +59,12 @@ Integration tests require AWS credentials. Without them they are automatically s
 export AWS_PROFILE=bedrock-dev
 uv run pytest tests/integration/
 ```
+
+**Evals** assess LLM output quality (field extraction accuracy, triage decision quality,
+priority calibration) using fuzzy string matching and heuristic thresholds. They are
+excluded from default test runs because some failure is expected -- they measure quality
+trends, not correctness. They are a placeholder until we implement a proper eval framework
+with semantic similarity / LLM-as-judge scoring.
 
 ### Linting and formatting
 
@@ -128,8 +143,10 @@ tests/
     sharepoint/                  # unit tests for SharePoint module
     receiver/                    # unit tests for receiver module
   integration/
-    triage/                      # LLM integration tests
+    triage/                      # LLM integration tests (deterministic)
     sharepoint/                  # SharePoint integration tests
+  evals/
+    triage/                      # LLM output quality evals (TODO: proper eval framework)
 examples/
   triage/                        # triage example scripts
   sharepoint/                    # SharePoint example scripts

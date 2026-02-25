@@ -32,7 +32,8 @@ Tech Policy Forum""",
         "has_attachments": True,
         # Ground truth
         "is_invitation": True,
-        "expected_event_type": "conference",  # Using enum value
+        "expected_event_type": "conference",  # Summit is a conference, even though minister speaks
+        "acceptable_event_types": ["conference", "speech"],  # keynote could be seen as speech
         "expected_host_org": "Tech Policy Forum",
         "expected_date": "2026-03-15",  # 6 weeks away
         "expected_location": "Royal Society",
@@ -322,7 +323,7 @@ Cabinet Office""",
         "expected_location": None,  # Call/virtual
         "expected_topics": ["energy crisis"],
     },
-    # ========== INVITATIONS WITH MINIMAL INFO ==========
+    # ========== PRE-INQUIRY (NOT AN INVITATION) ==========
     {
         "email_id": "test_015",
         "subject": "Speaking Request",
@@ -336,12 +337,8 @@ John Smith
 Events Director""",
         "received_date": "2026-02-03T11:00:00Z",  # Yesterday
         "has_attachments": False,
-        "is_invitation": True,
-        "expected_event_type": "speech",  # Speaking engagement
-        "expected_host_org": None,
-        "expected_date": None,
-        "expected_location": None,
-        "expected_topics": [],
+        "is_invitation": False,
+        "expected_reason": "Pre-invitation availability check with no event details, date, or location",
     },
     {
         "email_id": "test_016",
@@ -431,6 +428,7 @@ UK Trade Mission Team""",
         "has_attachments": True,
         "is_invitation": True,
         "expected_event_type": "site_visit",  # Trade mission includes site visits
+        "acceptable_event_types": ["site_visit", "conference", "meeting"],  # multi-day mission is ambiguous
         "expected_host_org": "Department for Business and Trade",
         "expected_date": "2026-04-15",  # Start date, 10 weeks away
         "expected_location": "Japan (Tokyo, Osaka, Kyoto)",
@@ -464,6 +462,7 @@ CEO, Children's Education Trust""",
         "has_attachments": False,
         "is_invitation": True,
         "expected_event_type": "reception",  # Primary event is gala/reception
+        "acceptable_event_types": ["reception", "speech", "other"],  # gala with keynote is ambiguous
         "expected_host_org": "Children's Education Trust",
         "expected_date": "2026-03-28",  # 7 weeks away
         "expected_location": "Dorchester Hotel",
@@ -568,7 +567,8 @@ Climate Action Now Team""",
         "received_date": "2026-02-03T09:30:00Z",  # Yesterday
         "has_attachments": False,
         "is_invitation": True,
-        "expected_event_type": "speech",  # Speaking at summit
+        "expected_event_type": "conference",  # Climate Summit is a conference, even though minister speaks
+        "acceptable_event_types": ["conference", "speech"],  # speaking role could be seen as speech
         "expected_host_org": "Climate Action Now Team",
         "expected_date": "2026-03-20",  # 6 weeks away
         "expected_location": "Excel London",
@@ -639,6 +639,7 @@ Digital Government Network""",
         "has_attachments": False,
         "is_invitation": True,
         "expected_event_type": "meeting",  # Webinar is a type of meeting
+        "acceptable_event_types": ["meeting", "conference", "panel"],  # webinar format is ambiguous
         "expected_host_org": "Digital Government Network",
         "expected_date": "2026-02-27",  # 3 weeks away
         "expected_location": "Virtual/Zoom",

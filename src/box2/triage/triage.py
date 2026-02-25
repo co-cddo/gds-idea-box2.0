@@ -117,11 +117,19 @@ You MUST check the calendar before making a decision:
 
 Based on Strategic Value + Calendar Analysis, choose ONE:
 
-- **accept**: High value + available time (or soft conflict worth moving)
-- **decline**: Low value, or high-value but insurmountable schedule conflict
-- **delegate**: Relevant but suitable for Private Office team or junior minister
-- **request_more_info**: Need clarity on format, other attendees, or exact timing
-- **defer**: Want to attend but need to reschedule; propose alternatives
+- **accept**: High value AND either the time slot is free OR the only conflicts are MEDIUM/LOW
+  priority items that the Private Office can reschedule. Accepting implies conflicts will be handled.
+- **decline**: Low strategic value, insurmountable schedule conflict with a HIGH priority commitment,
+  violates a scheduling preference (e.g. corporate hospitality, overnight travel) without sufficient
+  strategic justification, or clearly speculative/low-credibility request.
+- **delegate**: Relevant to the portfolio but does NOT directly advance a Strategic Priority. A junior
+  minister or PPS could represent the Minister effectively (e.g. networking receptions, opening
+  remarks, site tours, routine stakeholder engagement).
+- **request_more_info**: The invitation is from a credible organisation AND the topic COULD be relevant,
+  but critical details are missing (agenda, attendees, specific objectives) that prevent assessment of
+  strategic value. Do NOT use this for clearly low-value or speculative requests — decline those instead.
+- **defer**: High value but conflicts with an existing HIGH priority commitment that cannot easily
+  be moved. Express interest and propose alternative times.
 
 **STEP 4: Draft the Response**
 
@@ -222,6 +230,9 @@ async def triage_invitation(invitation: Invitation, persona: MinisterPersona) ->
             deps=deps,
         )
         decision = result.output
+
+        # Overwrite LLM-generated document_id with the real one
+        decision.document_id = invitation.document_id
 
         logger.info(
             f"Triage complete: {decision.decision} (priority: {decision.priority})",

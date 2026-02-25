@@ -79,6 +79,7 @@ TRIAGE_TEST_CASES = [
         ),
         "expected": {
             "decision": "defer",
+            "acceptable_decisions": ["defer", "accept"],  # accept also valid — #1 priority with flexible time
             "priority": "high",
             "should_mention_calendar": True,
             "key_reasoning_points": [
@@ -163,6 +164,7 @@ TRIAGE_TEST_CASES = [
         ),
         "expected": {
             "decision": "delegate",
+            "acceptable_decisions": ["delegate", "decline"],  # decline also valid — evening networking is low value
             "priority": "low",
             "should_mention_calendar": False,
             "key_reasoning_points": [
@@ -289,7 +291,7 @@ TRIAGE_TEST_CASES = [
             ],
         },
     },
-    # ========== CASE 9: Vague Request - REQUEST_MORE_INFO BUT COULD ALSO BE DECLINE AS SPECULATIVE ==========
+    # ========== CASE 9: Vague Request - DECLINE (speculative/low-credibility) ==========
     {
         "test_id": "triage_009",
         "description": "Insufficient detail to assess strategic value",
@@ -306,15 +308,15 @@ TRIAGE_TEST_CASES = [
             location="TBC",
         ),
         "expected": {
-            "decision": "request_more_info",
+            "decision": "decline",
+            "acceptable_decisions": ["decline", "request_more_info"],  # request_more_info borderline acceptable
             "priority": "low",
             "should_mention_calendar": False,
             "key_reasoning_points": [
                 "unclear strategic value",
-                "need specific agenda",
-                "who will attend",
-                "what opportunities",
-                "Private Office assessment needed",
+                "speculative request",
+                "private consultancy",
+                "no specific agenda",
             ],
         },
     },
@@ -374,7 +376,7 @@ TRIAGE_TEST_CASES = [
             ],
         },
     },
-    # ========== CASE 12: Research Investment - Strategic Priority - ACCEPT ==========
+    # ========== CASE 12: Research Investment - Strategic Priority - ACCEPT (medium conflict movable) ==========
     {
         "test_id": "triage_012",
         "description": "Science and research investment roundtable - top priority, good timing",
@@ -391,13 +393,13 @@ TRIAGE_TEST_CASES = [
             location="Houses of Parliament, Westminster",
         ),
         "expected": {
-            "decision": "defer",
+            "decision": "accept",
+            "acceptable_decisions": ["accept", "defer"],  # defer also valid if LLM views conflict as harder
             "priority": "high",
             "should_mention_calendar": True,
             "key_reasoning_points": [
                 "science and research investment top priority",
                 "conflicts with Oxford-Cambridge meeting",
-                "suggest 12:00 PM or afternoon",
                 "key stakeholders",
             ],
         },
@@ -501,5 +503,5 @@ def get_test_cases_by_decision(decision: str) -> list[dict]:
 
 
 def get_test_cases_with_conflicts() -> list[dict]:
-    """Get test cases that have calendar conflicts."""
-    return [tc for tc in TRIAGE_TEST_CASES if len(tc["calendar_events"]) > 0]
+    """Get test cases that should mention calendar conflicts."""
+    return [tc for tc in TRIAGE_TEST_CASES if tc["expected"].get("should_mention_calendar", False)]

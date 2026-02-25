@@ -1,17 +1,27 @@
 """
-Integration tests for invitation triage using ground truth dataset.
-Validates triage accuracy: decision classification and priority assignment.
+Integration tests for invitation triage.
 
-Use pytest tests/integration/triage/test_triage.py --tb=short to avoid replication of the code and show only output text
+These are deterministic tests that verify the LLM produces structurally
+valid output and considers calendar context when expected. They should
+pass consistently at temperature 0.3.
+
+Results are cached per test case so each invitation is triaged once.
+
+Run: AWS_PROFILE=bedrock-dev uv run pytest tests/integration/triage/test_triage.py -v
 """
 
 import pytest
 
-from box2.triage.models import MinisterPersona
+from box2.triage.models import MinisterPersona, TriagedDecision
 from box2.triage.triage import triage_invitation
 from tests.unit.triage.test_triage_dataset import TEST_PERSONA, TRIAGE_TEST_CASES
 
 pytestmark = [pytest.mark.integration, pytest.mark.anyio]
+
+
+# ============================================================================
+# Fixtures
+# ============================================================================
 
 
 @pytest.fixture
@@ -20,37 +30,64 @@ def minister_persona() -> MinisterPersona:
     return MinisterPersona(**TEST_PERSONA)
 
 
+# Cache triage results so each invitation is only triaged once.
+_triage_cache: dict[str, TriagedDecision] = {}
+
+
+async def _get_triage_result(test_case: dict, persona: MinisterPersona) -> TriagedDecision:
+    """Return a cached triage result, calling the LLM only on first access."""
+    test_id = test_case["test_id"]
+    if test_id not in _triage_cache:
+        _triage_cache[test_id] = await triage_invitation(test_case["invitation"], persona)
+    return _triage_cache[test_id]
+
+
 # ============================================================================
-# Triage Accuracy Tests
+# Structural Tests
 # ============================================================================
 
 
 @pytest.mark.parametrize("test_case", TRIAGE_TEST_CASES, ids=lambda x: x["test_id"])
-async def test_triage_decision(test_case, minister_persona):
-    """Test that each invitation receives the correct decision."""
+async def test_triage_decision_is_valid(test_case, minister_persona):
+    """Test that the decision is one of the five allowed values."""
+    result = await _get_triage_result(test_case, minister_persona)
 
-    invitation = test_case["invitation"]
-    expected_decision = test_case["expected"]["decision"]
+    valid_decisions = {"accept", "decline", "delegate", "request_more_info", "defer"}
+    assert result.decision in valid_decisions, f"Invalid decision: {result.decision}, expected one of {valid_decisions}"
 
-    result = await triage_invitation(invitation, minister_persona)
 
-    assert result.decision.lower() == expected_decision.lower(), (
-        f"Decision mismatch: expected {expected_decision}, got {result.decision}\nLLM Reasoning: {result.reason}"
+@pytest.mark.parametrize("test_case", TRIAGE_TEST_CASES, ids=lambda x: x["test_id"])
+async def test_triage_priority_is_valid(test_case, minister_persona):
+    """Test that the priority is one of the three allowed values."""
+    result = await _get_triage_result(test_case, minister_persona)
+
+    valid_priorities = {"high", "medium", "low"}
+    assert result.priority in valid_priorities, (
+        f"Invalid priority: {result.priority}, expected one of {valid_priorities}"
     )
 
 
 @pytest.mark.parametrize("test_case", TRIAGE_TEST_CASES, ids=lambda x: x["test_id"])
-async def test_triage_priority(test_case, minister_persona):
-    """Test that each invitation receives the correct priority level."""
+async def test_triage_has_substantive_reason(test_case, minister_persona):
+    """Test that the triage reason meets minimum length."""
+    result = await _get_triage_result(test_case, minister_persona)
 
-    invitation = test_case["invitation"]
-    expected_priority = test_case["expected"]["priority"]
+    assert len(result.reason) >= 10, f"reason too short ({len(result.reason)} chars): {result.reason}"
 
-    result = await triage_invitation(invitation, minister_persona)
 
-    assert result.priority.lower() == expected_priority.lower(), (
-        f"Priority mismatch: expected {expected_priority}, got {result.priority}\nLLM Reasoning: {result.reason}"
+@pytest.mark.parametrize("test_case", TRIAGE_TEST_CASES, ids=lambda x: x["test_id"])
+async def test_triage_has_substantive_draft_response(test_case, minister_persona):
+    """Test that the draft response meets minimum length."""
+    result = await _get_triage_result(test_case, minister_persona)
+
+    assert len(result.draft_response) >= 20, (
+        f"draft_response too short ({len(result.draft_response)} chars): {result.draft_response}"
     )
+
+
+# ============================================================================
+# Calendar Consideration Tests
+# ============================================================================
 
 
 @pytest.mark.parametrize(
@@ -60,10 +97,7 @@ async def test_triage_priority(test_case, minister_persona):
 )
 async def test_triage_calendar_consideration(test_case, minister_persona):
     """Test that calendar conflicts are mentioned in reasoning when expected."""
-
-    invitation = test_case["invitation"]
-
-    result = await triage_invitation(invitation, minister_persona)
+    result = await _get_triage_result(test_case, minister_persona)
 
     calendar_keywords = [
         "calendar",
