@@ -131,7 +131,7 @@ async def extract_actions(
             # Extract office decision/notes based on response type
             if isinstance(office_response, SubmissionResponse):
                 self.office_decision = "minister_response"
-                self.office_notes = office_response.minister_response
+                self.office_notes = office_response.minister_comment
             else:
                 self.office_decision = office_response.decision
                 self.office_notes = office_response.notes
@@ -209,7 +209,7 @@ Return a list of Action objects.
         # Build final draft object
         if isinstance(office_response, SubmissionResponse):
             was_modified = True  # Submission replies are always generated from response
-            office_notes = office_response.minister_response
+            office_notes = office_response.minister_comment
         else:
             was_modified = office_response.decision in ["yes_but", "no"]
             office_notes = office_response.notes
@@ -229,7 +229,7 @@ Return a list of Action objects.
         # Generate summary
         action_summary = f"{len(actions)} action(s) extracted"
         if isinstance(office_response, SubmissionResponse):
-            decision_text = f"Minister's response: {office_response.minister_response}"
+            decision_text = f"Minister's response: {office_response.minister_comment}"
             office_decision_value = "yes"  # Default for ActionExtractionResult
         elif office_response.decision == "yes":
             decision_text = "approved/accepted as recommended"

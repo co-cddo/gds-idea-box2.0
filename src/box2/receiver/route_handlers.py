@@ -12,20 +12,21 @@ Usage in ``lambda_handler.py``::
         submission_list=submission_list,
     )
 
-    WebhookRoute(
-        path="/file_uploaded",
-        get_items=lambda: docs.get_recent(minutes=2),
-        handler=handle_new_file,
-        ...
+    handle_submission_review = make_list_review_handler(
+        actions_list=actions_list,
+        document_type="submission",
     )
 """
 
 import logging
 import os
 from collections.abc import Awaitable, Callable
+from typing import Literal
 
 from box2.pipeline import (
     TriagedInvitation,
+    extract_actions_from_review,
+    to_sharepoint_action,
     to_sharepoint_fields,
     to_sharepoint_invitation,
     to_sharepoint_submission,
@@ -89,3 +90,49 @@ def make_file_upload_handler(
                 logger.debug(f"Cleaned up {local_path}")
 
     return handle_new_file
+
+
+def make_list_review_handler(
+    actions_list: ListClient,
+    document_type: Literal["invitation", "submission"],
+) -> Callable[[dict], Awaitable[None]]:
+    """Create a handler for minister reviews of list items.
+
+    When a minister adds a comment to a submission or invitation in
+    SharePoint, this handler extracts actions from the review and
+    writes each action as a separate row to the actions list.
+
+    Args:
+        actions_list: ListClient for the actions SharePoint list.
+        document_type: Whether this handler processes invitation or
+            submission reviews.
+
+    Returns:
+        An async handler function matching the WebhookRoute signature.
+    """
+
+    async def handle_review(item: dict) -> None:
+        """Process a minister's review of a list item."""
+        item_fields = item.get("fields", {})
+        item_id = item.get("id", "unknown")
+        minister_comment = item_fields.get("minister_comment")
+
+        if not minister_comment:
+            logger.debug(f"Skipping {document_type} item {item_id}: no minister_comment")
+            return
+
+        logger.info(f"Processing {document_type} review for item {item_id}")
+
+        review_result = await extract_actions_from_review(item_fields, document_type)
+
+        for action in review_result.actions:
+            sp_action = to_sharepoint_action(action, review_result, item_fields, document_type)
+            fields = to_sharepoint_fields(sp_action)
+            actions_list.create_item(fields)
+
+        logger.info(
+            f"Wrote {len(review_result.actions)} action(s) to '{actions_list.list_name}' "
+            f"for {document_type} item {item_id}"
+        )
+
+    return handle_review

@@ -1,12 +1,14 @@
 """Mappers from pipeline results to SharePoint list schemas."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from box2.pipeline.models import TriagedInvitation
+from box2.pipeline.models import ActionReviewResult, TriagedInvitation
 from box2.triage.models import (
+    Action,
+    SharepointAction,
     SharepointInvitation,
     SharepointSubmission,
     Submission,
@@ -106,4 +108,48 @@ def to_sharepoint_submission(submission: Submission) -> SharepointSubmission:
         urgency=submission.urgency,
         related_items=submission.related_items,
         overall_confidence=str(submission.overall_confidence) if submission.overall_confidence is not None else None,
+    )
+
+
+def to_sharepoint_action(
+    action: Action,
+    review_result: ActionReviewResult,
+    item_fields: dict,
+    document_type: Literal["invitation", "submission"],
+) -> SharepointAction:
+    """Map a single Action to the SharePoint actions list schema.
+
+    Called once per action in the extraction result. Combines fields from
+    the Action, the overall review result, and the source list item.
+
+    Args:
+        action: A single extracted action.
+        review_result: The full ActionReviewResult (for office_decision and summary).
+        item_fields: The source SharePoint list item fields.
+        document_type: Whether this came from an invitation or submission review.
+
+    Returns:
+        SharepointAction ready to be serialised via
+        ``to_sharepoint_fields()`` and written with ``ListClient.create_item()``.
+    """
+    minister_comment = item_fields.get("minister_comment", "")
+
+    return SharepointAction(
+        title=action.description[:80] if len(action.description) > 80 else action.description,
+        action_id=action.action_id,
+        description=action.description,
+        action_type=action.action_type,
+        draft_content=action.draft_content,
+        deadline=action.deadline,
+        urgency=action.urgency,
+        owner=action.owner,
+        status=action.status,
+        document_id=action.document_id,
+        source_document_type=document_type,
+        created_at=action.created_at.isoformat(),
+        document_type=document_type,
+        office_decision=review_result.office_decision,
+        final_draft=minister_comment,
+        summary=review_result.summary,
+        minister_comment=minister_comment,
     )
