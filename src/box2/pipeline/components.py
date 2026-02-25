@@ -2,22 +2,21 @@
 
 Each component handles one document type: extracting structured data and
 (for invitations) running the triage decision. These are independently
-callable when the caller already has a SafeDocument and classification.
+callable when the caller already has a SafeDocument.
 """
 
 import logging
 from pathlib import Path
 
-from box2.pipeline.models import TriageResult
-from box2.triage.exceptions import ExtractionError, TriageError
+from box2.pipeline.models import TriagedInvitation
 from box2.triage.invitation_extraction import extract_invitation
 from box2.triage.models import (
-    DocumentClassification,
     Invitation,
     MinisterPersona,
     NotInvitation,
     NotSubmission,
     SafeDocument,
+    Submission,
 )
 from box2.triage.submission_extraction import extract_submission
 from box2.triage.triage import triage_invitation
@@ -30,9 +29,8 @@ _DEFAULT_PERSONA_PATH = str(Path(__file__).resolve().parent.parent / "triage" / 
 
 async def process_invitation(
     safe_doc: SafeDocument,
-    classification: DocumentClassification,
     persona: MinisterPersona | None = None,
-) -> TriageResult:
+) -> TriagedInvitation | NotInvitation:
     """Extract an invitation from a document and triage it.
 
     Runs invitation extraction, then — if a valid invitation is found —
@@ -40,13 +38,12 @@ async def process_invitation(
 
     Args:
         safe_doc: PII-redacted document.
-        classification: The document classification result.
         persona: Minister persona for triage. If ``None``, the default
             example persona shipped with the package is loaded.
 
     Returns:
-        TriageResult with invitation and triage_decision populated, or
-        not_invitation if the extractor disagreed with the classifier.
+        TriagedInvitation if extraction and triage succeeded, or
+        NotInvitation if the extractor disagreed with the classifier.
 
     Raises:
         ExtractionError: If the LLM extraction call fails.
@@ -54,17 +51,11 @@ async def process_invitation(
     """
     document_id = safe_doc.document_id
 
-    # --- Extract ---
     extraction = await extract_invitation(safe_doc)
 
     if isinstance(extraction, NotInvitation):
         logger.info(f"Extractor rejected invitation classification for {document_id}: {extraction.reason}")
-        return TriageResult(
-            document_id=document_id,
-            classification=classification,
-            not_invitation=extraction,
-            status="not_matched",
-        )
+        return extraction
 
     invitation: Invitation = extraction
     logger.info(f"Invitation extracted for {document_id}: event_type={invitation.event_type}, host={invitation.host_org}")
@@ -79,30 +70,21 @@ async def process_invitation(
 
     logger.info(f"Triage complete for {document_id}: decision={decision.decision}, priority={decision.priority}")
 
-    return TriageResult(
-        document_id=document_id,
-        classification=classification,
-        invitation=invitation,
-        triage_decision=decision,
-        status="triaged",
-    )
+    return TriagedInvitation(invitation=invitation, decision=decision)
 
 
 async def process_submission(
     safe_doc: SafeDocument,
-    classification: DocumentClassification,
-) -> TriageResult:
+) -> Submission | NotSubmission:
     """Extract a submission from a document.
 
-    Runs submission extraction and returns structured output ready
-    for review.
+    Runs submission extraction and returns the result directly.
 
     Args:
         safe_doc: PII-redacted document.
-        classification: The document classification result.
 
     Returns:
-        TriageResult with submission populated, or not_submission if the
+        Submission if extraction succeeded, or NotSubmission if the
         extractor disagreed with the classifier.
 
     Raises:
@@ -114,21 +96,11 @@ async def process_submission(
 
     if isinstance(extraction, NotSubmission):
         logger.info(f"Extractor rejected submission classification for {document_id}: {extraction.reason}")
-        return TriageResult(
-            document_id=document_id,
-            classification=classification,
-            not_submission=extraction,
-            status="not_matched",
-        )
+        return extraction
 
     logger.info(
         f"Submission extracted for {document_id}: policy_area={extraction.policy_area}, "
         f"urgency={extraction.urgency}"
     )
 
-    return TriageResult(
-        document_id=document_id,
-        classification=classification,
-        submission=extraction,
-        status="extracted",
-    )
+    return extraction

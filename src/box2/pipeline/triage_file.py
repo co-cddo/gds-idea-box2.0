@@ -1,24 +1,34 @@
 """Core file triage pipeline.
 
 Orchestrates the full classify-extract-triage flow for a single file,
-returning a structured :class:`TriageResult` without side effects.
+returning the appropriate result type based on document classification.
 """
 
 import logging
 
 from box2.pipeline.components import process_invitation, process_submission
-from box2.pipeline.models import TriageResult
+from box2.pipeline.models import TriagedInvitation
 from box2.triage.document_classifier import classify_document
 from box2.triage.file_parser import extract_text_from_file
-from box2.triage.models import MinisterPersona, SafeDocument
+from box2.triage.models import (
+    DocumentClassification,
+    MinisterPersona,
+    NotInvitation,
+    NotSubmission,
+    SafeDocument,
+    Submission,
+)
 
 logger = logging.getLogger(__name__)
+
+# Union of all possible return types from the pipeline.
+TriageFileResult = TriagedInvitation | Submission | NotInvitation | NotSubmission | DocumentClassification
 
 
 async def triage_file(
     file_path: str,
     persona: MinisterPersona | None = None,
-) -> TriageResult:
+) -> TriageFileResult:
     """Run the full triage pipeline on a single file.
 
     Parses the file, redacts PII, classifies, extracts (invitation or
@@ -31,11 +41,16 @@ async def triage_file(
             default example persona shipped with the package is loaded.
 
     Returns:
-        A :class:`TriageResult` capturing every stage of processing.
+        One of:
+        - ``TriagedInvitation`` — invitation extracted and triaged.
+        - ``Submission`` — submission extracted.
+        - ``NotInvitation`` — extractor rejected invitation classification.
+        - ``NotSubmission`` — extractor rejected submission classification.
+        - ``DocumentClassification`` — classified as 'other', no extraction.
 
     Raises:
-        PipelineError: If file parsing or classification fails.
         ExtractionError: If document extraction fails.
+        ClassificationError: If document classification fails.
         TriageError: If invitation triage fails.
     """
     # ------------------------------------------------------------------
@@ -67,14 +82,10 @@ async def triage_file(
     # Phase 2: Branch on document type
     # ------------------------------------------------------------------
     if classification.document_type == "invitation":
-        return await process_invitation(safe_doc, classification, persona)
+        return await process_invitation(safe_doc, persona)
 
     if classification.document_type == "submission":
-        return await process_submission(safe_doc, classification)
+        return await process_submission(safe_doc)
 
     logger.info(f"Document {document_id} classified as '{classification.document_type}'; no extraction attempted")
-    return TriageResult(
-        document_id=document_id,
-        classification=classification,
-        status="classified_only",
-    )
+    return classification
