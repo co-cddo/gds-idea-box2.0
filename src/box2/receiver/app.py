@@ -19,13 +19,13 @@ Usage::
         routes=[
             WebhookRoute(
                 path="/file_uploaded",
-                resource=docs_client,
+                get_items=lambda: docs_client.get_recent(minutes=2),
                 handler=process_new_file,
                 filter_self=False,
             ),
             WebhookRoute(
                 path="/item_reviewed",
-                resource=processing_list,
+                get_items=lambda: processing_list.get_recent(minutes=2),
                 handler=process_human_edit,
                 filter_self=True,
             ),
@@ -58,8 +58,8 @@ def create_app(
 
     Registers one POST endpoint per route. Each endpoint handles the
     Microsoft Graph validation handshake and delegates notification
-    processing to the route's pipeline (client_state check, item fetch
-    by ID from ``resourceData``, self-write filtering, item-level dedup,
+    processing to the route's pipeline (client_state check, item query
+    via ``get_items()``, self-write filtering, item-level dedup,
     handler call).
 
     If no routes are provided, a single ``/webhook`` endpoint is created

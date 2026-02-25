@@ -1,8 +1,8 @@
 """Notification processing and item handling logic.
 
 Provides the per-request pipeline that runs after a notification arrives:
-client-state validation, item fetch by ID (from ``resourceData``),
-self-write filtering, item-level dedup, and handler invocation.
+client-state validation, item query via ``get_items()``, self-write
+filtering, item-level dedup, and handler invocation.
 
 The ``dispatch_route`` function orchestrates this pipeline for a single
 route.
@@ -48,12 +48,8 @@ async def dispatch_route(
     Implements the per-request pipeline for each notification in the payload:
 
     1. Validate ``clientState`` — skip if mismatch.
-    2. Extract ``resource_data.id`` from the notification — skip if absent.
-    3. Call ``route.resource.get_item(item_id)`` to fetch the specific item.
-    4. If ``route.filter_self`` is True, skip items modified by the app.
-    5. Item-level dedup — atomically record the item in the dedup store
-       and skip duplicates (at-most-once semantics).
-    6. Call ``route.handler(item)`` for the remaining item.
+    2. Call ``route.get_items()`` to fetch recently changed items.
+    3. For each item: self-write filter, item-level dedup, handler call.
 
     Args:
         route: The webhook route being processed.
@@ -78,60 +74,47 @@ async def dispatch_route(
 
         _log_notification(notification)
 
-        # Step 2: extract item ID from resourceData
-        resource_data = notification.resource_data
-        if not resource_data or not resource_data.id:
-            logger.warning(
-                "Notification missing resourceData.id (subscription=%s, resource=%s) — skipping",
-                notification.subscription_id,
-                notification.resource,
-            )
-            continue
-
-        item_id = resource_data.id
-        logger.debug(
-            "Extracted item_id=%s from resourceData (odata_id=%s)",
-            item_id,
-            resource_data.odata_id,
-        )
-
-        # Step 3: fetch the specific item
+        # Step 2: query for recently changed items
         try:
-            item = route.resource.get_item(item_id)
+            items = route.get_items()
         except Exception:
-            logger.exception("Failed to fetch item %s for route %s", item_id, route.path)
+            logger.exception("get_items failed for route %s", route.path)
             continue
 
-        logger.debug("Fetched item %s for route %s", item_id, route.path)
+        logger.debug("Route %s: get_items returned %d item(s)", route.path, len(items))
 
-        # Step 4: filter self-writes
-        if route.filter_self:
-            if _is_self_write(item, config.app_identity):
-                logger.info(
-                    "Skipping self-modified item (id=%s, lastModifiedBy=%s) on route %s",
-                    item.get("id"),
-                    config.app_identity,
-                    route.path,
-                )
+        # Step 3: for each item — self-write filter → item dedup → handler
+        for item in items:
+            item_id = item.get("id", "unknown")
+
+            # Self-write filter
+            if route.filter_self:
+                if _is_self_write(item, config.app_identity):
+                    logger.info(
+                        "Skipping self-modified item (id=%s, lastModifiedBy=%s) on route %s",
+                        item_id,
+                        config.app_identity,
+                        route.path,
+                    )
+                    continue
+                logger.debug("Item %s passed self-write filter on route %s", item_id, route.path)
+
+            # Item-level dedup
+            item_key = build_item_dedup_key(route.path, item)
+            is_new = dedup_store.record_if_new(item_key)
+            logger.debug("Item dedup: key=%s, is_new=%s", item_key, is_new)
+
+            if not is_new:
+                logger.info("Skipping already-processed item (key=%s)", item_key)
                 continue
-            logger.debug("Item %s passed self-write filter on route %s", item_id, route.path)
 
-        # Step 5: item-level dedup
-        item_key = build_item_dedup_key(route.path, item)
-        is_new = dedup_store.record_if_new(item_key)
-        logger.debug("Item dedup: key=%s, is_new=%s", item_key, is_new)
-
-        if not is_new:
-            logger.info("Skipping already-processed item (key=%s)", item_key)
-            continue
-
-        # Step 6: call handler
-        try:
-            await route.handler(item)
-            dispatched += 1
-            logger.debug("Handler dispatched for item %s on route %s", item_id, route.path)
-        except Exception:
-            logger.exception("Handler failed for item %s on route %s", item_id, route.path)
+            # Call handler
+            try:
+                await route.handler(item)
+                dispatched += 1
+                logger.debug("Handler dispatched for item %s on route %s", item_id, route.path)
+            except Exception:
+                logger.exception("Handler failed for item %s on route %s", item_id, route.path)
 
     logger.info("Route %s: dispatched %d item(s) to handler", route.path, dispatched)
     return dispatched

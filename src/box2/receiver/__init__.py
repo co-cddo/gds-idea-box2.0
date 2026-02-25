@@ -17,7 +17,7 @@ Usage::
         routes=[
             WebhookRoute(
                 path="/file_uploaded",
-                resource=docs_client,
+                get_items=lambda: docs_client.get_recent(minutes=2),
                 handler=process_new_file,
                 filter_self=False,
             ),
