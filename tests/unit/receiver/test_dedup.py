@@ -5,36 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from box2.receiver.dedup import DynamoDedup, InMemoryDedup, build_item_dedup_key, build_notification_dedup_key
-from box2.receiver.models import Notification
-
-# ============================================================================
-# build_notification_dedup_key Tests
-# ============================================================================
-
-
-def test_notification_dedup_key_format():
-    """Key should combine subscription ID, resource, and change type."""
-    notification = Notification(
-        subscriptionId="sub-1",
-        changeType="updated",
-        clientState="secret",
-        resource="sites/site-id/lists/list-id",
-        tenantId="tenant-1",
-    )
-
-    key = build_notification_dedup_key(notification)
-
-    assert key == "notif:sub-1:sites/site-id/lists/list-id:updated"
-
-
-def test_notification_dedup_key_different_change_types_differ():
-    """Different change types on the same resource should produce different keys."""
-    n1 = Notification(subscriptionId="sub-1", changeType="updated", clientState="s", resource="r", tenantId="t")
-    n2 = Notification(subscriptionId="sub-1", changeType="created", clientState="s", resource="r", tenantId="t")
-
-    assert build_notification_dedup_key(n1) != build_notification_dedup_key(n2)
-
+from box2.receiver.dedup import DynamoDedup, InMemoryDedup, build_item_dedup_key
 
 # ============================================================================
 # build_item_dedup_key Tests
@@ -42,12 +13,12 @@ def test_notification_dedup_key_different_change_types_differ():
 
 
 def test_item_dedup_key_format():
-    """Key should combine item ID and lastModifiedDateTime."""
+    """Key should combine route path, item ID, and lastModifiedDateTime."""
     item = {"id": "item-1", "lastModifiedDateTime": "2026-01-01T00:00:00Z"}
 
-    key = build_item_dedup_key(item)
+    key = build_item_dedup_key("/test_route", item)
 
-    assert key == "item:item-1:2026-01-01T00:00:00Z"
+    assert key == "item:/test_route:item-1:2026-01-01T00:00:00Z"
 
 
 def test_item_dedup_key_different_versions_differ():
@@ -55,15 +26,25 @@ def test_item_dedup_key_different_versions_differ():
     item_v1 = {"id": "item-1", "lastModifiedDateTime": "2026-01-01T00:00:00Z"}
     item_v2 = {"id": "item-1", "lastModifiedDateTime": "2026-01-01T01:00:00Z"}
 
-    assert build_item_dedup_key(item_v1) != build_item_dedup_key(item_v2)
+    assert build_item_dedup_key("/test", item_v1) != build_item_dedup_key("/test", item_v2)
 
 
 def test_item_dedup_key_same_data_same_key():
-    """Identical item data should produce the same key."""
+    """Identical item data on the same route should produce the same key."""
     item_a = {"id": "item-1", "lastModifiedDateTime": "2026-01-01T00:00:00Z"}
     item_b = {"id": "item-1", "lastModifiedDateTime": "2026-01-01T00:00:00Z"}
 
-    assert build_item_dedup_key(item_a) == build_item_dedup_key(item_b)
+    assert build_item_dedup_key("/test", item_a) == build_item_dedup_key("/test", item_b)
+
+
+def test_item_dedup_key_different_routes_differ():
+    """Same item on different routes should produce different keys."""
+    item = {"id": "item-1", "lastModifiedDateTime": "2026-01-01T00:00:00Z"}
+
+    key_a = build_item_dedup_key("/route_a", item)
+    key_b = build_item_dedup_key("/route_b", item)
+
+    assert key_a != key_b
 
 
 # ============================================================================

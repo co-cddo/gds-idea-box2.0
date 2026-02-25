@@ -1,8 +1,10 @@
-"""Pluggable deduplication for webhook notifications.
+"""Pluggable item-level deduplication for webhook processing.
 
-Microsoft Graph may send multiple notifications for the same change event.
-A deduplication store tracks recently processed notification keys and
-suppresses duplicates within a configurable time window.
+After a notification arrives the receiver fetches the specific item from
+the Graph API and checks whether it has already been processed. The dedup
+key combines the item ID and its ``lastModifiedDateTime`` so that the
+same edit is not handled twice, while a new edit on the same item (with a
+newer timestamp) is treated as a fresh event.
 
 The ``DeduplicationStore`` protocol uses a single atomic
 ``record_if_new`` method that checks and records in one step. This
@@ -14,9 +16,6 @@ Two implementations are provided:
 - ``InMemoryDedup`` — dict-based, suitable for local dev and testing.
 - ``DynamoDedup`` — DynamoDB-backed, provides atomic cross-invocation
   deduplication for concurrent Lambda executions.
-
-Key-building functions are also provided here so that any code that
-needs to produce dedup keys does not depend on the handler pipeline.
 """
 
 import logging
@@ -25,39 +24,25 @@ from typing import Any, Protocol
 
 import boto3
 
-from box2.receiver.models import Notification
-
 logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# Key Builders
+# Key Builder
 # ============================================================================
 
 
-def build_notification_dedup_key(notification: Notification) -> str:
-    """Build a deduplication key from a notification.
+def build_item_dedup_key(route_path: str, item: dict[str, Any]) -> str:
+    """Build a deduplication key for a list/drive item scoped to a route.
 
-    The key combines subscription ID, resource, and change type so that
-    different change types on the same resource are treated independently.
-
-    Args:
-        notification: The notification to build a key for.
-
-    Returns:
-        A string key suitable for deduplication lookups.
-    """
-    return f"notif:{notification.subscription_id}:{notification.resource}:{notification.change_type}"
-
-
-def build_item_dedup_key(item: dict[str, Any]) -> str:
-    """Build a deduplication key for a list/drive item.
-
-    The key combines the item ID and its ``lastModifiedDateTime`` so that
-    the same edit is not processed twice, but a new edit on the same item
-    (with a newer timestamp) is treated as a fresh event.
+    The key combines the route path, item ID, and ``lastModifiedDateTime``
+    so that the same edit is not processed twice, but a new edit on the
+    same item (with a newer timestamp) is treated as a fresh event. The
+    route path ensures that items with the same ID in different lists or
+    drives do not collide.
 
     Args:
+        route_path: The webhook route path (e.g. ``"/invitation_updated"``).
         item: An item dict as returned by the Graph API.
 
     Returns:
@@ -65,7 +50,9 @@ def build_item_dedup_key(item: dict[str, Any]) -> str:
     """
     item_id = item.get("id", "unknown")
     modified = item.get("lastModifiedDateTime", "unknown")
-    return f"item:{item_id}:{modified}"
+    key = f"item:{route_path}:{item_id}:{modified}"
+    logger.debug("Built item dedup key: %s (route=%s, item_id=%s, modified=%s)", key, route_path, item_id, modified)
+    return key
 
 
 # ============================================================================

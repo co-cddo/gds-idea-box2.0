@@ -17,7 +17,7 @@ Usage::
         routes=[
             WebhookRoute(
                 path="/file_uploaded",
-                get_items=lambda: docs.get_recent(minutes=2),
+                resource=docs_client,
                 handler=process_new_file,
                 filter_self=False,
             ),
@@ -32,9 +32,8 @@ from box2.receiver.dedup import (
     DynamoDedup,
     InMemoryDedup,
     build_item_dedup_key,
-    build_notification_dedup_key,
 )
-from box2.receiver.models import Notification, NotificationPayload
+from box2.receiver.models import Notification, NotificationPayload, ResourceData
 from box2.receiver.routes import WebhookRoute
 
 __all__ = [
@@ -44,8 +43,8 @@ __all__ = [
     "DeduplicationStore",
     "DynamoDedup",
     "InMemoryDedup",
-    "build_notification_dedup_key",
     "build_item_dedup_key",
     "Notification",
     "NotificationPayload",
+    "ResourceData",
 ]

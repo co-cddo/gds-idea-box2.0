@@ -19,13 +19,13 @@ Usage::
         routes=[
             WebhookRoute(
                 path="/file_uploaded",
-                get_items=lambda: docs.get_recent(minutes=2),
+                resource=docs_client,
                 handler=process_new_file,
                 filter_self=False,
             ),
             WebhookRoute(
                 path="/item_reviewed",
-                get_items=lambda: list_client.get_recent(minutes=2),
+                resource=processing_list,
                 handler=process_human_edit,
                 filter_self=True,
             ),
@@ -58,8 +58,9 @@ def create_app(
 
     Registers one POST endpoint per route. Each endpoint handles the
     Microsoft Graph validation handshake and delegates notification
-    processing to the route's pipeline (client_state check, dedup,
-    item query, self-write filtering, item-level dedup, handler call).
+    processing to the route's pipeline (client_state check, item fetch
+    by ID from ``resourceData``, self-write filtering, item-level dedup,
+    handler call).
 
     If no routes are provided, a single ``/webhook`` endpoint is created
     that accepts notifications but only logs them (useful for E2E testing
@@ -175,7 +176,6 @@ def _register_fallback_route(
         get_config: Dependency provider for ReceiverConfig.
         get_dedup_store: Dependency provider for DeduplicationStore.
     """
-    from box2.receiver.dedup import build_notification_dedup_key
     from box2.receiver.handlers import _log_notification
 
     @app.post("/webhook")
@@ -197,18 +197,14 @@ def _register_fallback_route(
         logger.debug("Raw request body on /webhook: %s", json.dumps(body, default=str))
 
         payload = NotificationPayload.model_validate(body)
-        dispatched = 0
+        logged = 0
 
         for notification in payload.value:
             if notification.client_state != receiver_config.client_state:
                 continue
 
-            key = build_notification_dedup_key(notification)
-            if not store.record_if_new(key):
-                continue
-
             _log_notification(notification)
-            dispatched += 1
+            logged += 1
 
-        logger.info("Fallback: processed %d notification(s)", dispatched)
+        logger.info("Fallback: logged %d notification(s)", logged)
         return JSONResponse(content={"status": "accepted"}, status_code=202)

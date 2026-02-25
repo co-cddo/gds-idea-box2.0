@@ -1,12 +1,14 @@
 """Unit tests for notification handler logic."""
 
+from unittest.mock import MagicMock
+
 import pytest
 
 from box2.receiver.config import ReceiverConfig
 from box2.receiver.dedup import InMemoryDedup
 from box2.receiver.handlers import (
+    _is_self_write,
     dispatch_route,
-    filter_self_writes,
 )
 from box2.receiver.models import NotificationPayload
 from box2.receiver.routes import WebhookRoute
@@ -22,21 +24,23 @@ VALID_NOTIFICATION = {
     "subscriptionId": "sub-abc-123",
     "changeType": "updated",
     "clientState": "test-secret",
-    "resource": "sites/site-id/lists/list-id",
+    "resource": "sites/site-id/lists/list-id/items/1",
     "tenantId": "tenant-id-999",
+    "resourceData": {
+        "@odata.type": "#Microsoft.Graph.listItem",
+        "@odata.id": "sites/site-id/lists/list-id/items/1",
+        "id": "1",
+    },
 }
 
 WRONG_STATE_NOTIFICATION = {
-    "subscriptionId": "sub-abc-123",
-    "changeType": "updated",
+    **VALID_NOTIFICATION,
     "clientState": "wrong-secret",
-    "resource": "sites/site-id/lists/list-id",
-    "tenantId": "tenant-id-999",
 }
 
 
 def _make_item(
-    item_id: str = "item-1",
+    item_id: str = "1",
     last_modified: str = "2026-02-23T12:00:00Z",
     modified_by_app: str | None = None,
 ) -> dict:
@@ -53,56 +57,67 @@ def _make_item(
     return item
 
 
+def _make_notification(item_id: str = "1", **overrides) -> dict:
+    """Build a notification dict with resourceData pointing at an item."""
+    base = {
+        **VALID_NOTIFICATION,
+        "resource": f"sites/site-id/lists/list-id/items/{item_id}",
+        "resourceData": {
+            "@odata.type": "#Microsoft.Graph.listItem",
+            "@odata.id": f"sites/site-id/lists/list-id/items/{item_id}",
+            "id": item_id,
+        },
+    }
+    base.update(overrides)
+    return base
+
+
+def _make_mock_resource(items: dict[str, dict] | None = None) -> MagicMock:
+    """Build a mock resource with a get_item method.
+
+    Args:
+        items: Mapping of item_id -> item dict. get_item returns the
+            matching item or raises KeyError.
+    """
+    resource = MagicMock()
+    if items:
+        resource.get_item.side_effect = lambda item_id: items[item_id]
+    else:
+        resource.get_item.return_value = _make_item()
+    return resource
+
+
 # ============================================================================
-# filter_self_writes Tests
+# _is_self_write Tests
 # ============================================================================
 
 
-def test_filter_self_writes_removes_app_modified_items():
-    """Items modified by the app's service principal should be filtered out."""
-    items = [
-        _make_item(item_id="1", modified_by_app=APP_IDENTITY),
-        _make_item(item_id="2"),  # modified by human
-    ]
+def test_is_self_write_returns_true_for_app_modified():
+    """Items modified by the app's service principal should be detected."""
+    item = _make_item(modified_by_app=APP_IDENTITY)
 
-    result = filter_self_writes(items, APP_IDENTITY)
-
-    assert len(result) == 1
-    assert result[0]["id"] == "2"
+    assert _is_self_write(item, APP_IDENTITY) is True
 
 
-def test_filter_self_writes_keeps_human_modified_items():
-    """Items modified by a human user should be kept."""
-    items = [_make_item(item_id="1"), _make_item(item_id="2")]
+def test_is_self_write_returns_false_for_human_modified():
+    """Items modified by a human user should not be detected as self-writes."""
+    item = _make_item()
 
-    result = filter_self_writes(items, APP_IDENTITY)
-
-    assert len(result) == 2
+    assert _is_self_write(item, APP_IDENTITY) is False
 
 
-def test_filter_self_writes_keeps_items_with_different_app_id():
-    """Items modified by a different app should not be filtered."""
-    items = [_make_item(item_id="1", modified_by_app="other-app-id")]
+def test_is_self_write_returns_false_for_different_app():
+    """Items modified by a different app should not be detected as self-writes."""
+    item = _make_item(modified_by_app="other-app-id")
 
-    result = filter_self_writes(items, APP_IDENTITY)
-
-    assert len(result) == 1
+    assert _is_self_write(item, APP_IDENTITY) is False
 
 
-def test_filter_self_writes_handles_missing_lastmodifiedby():
-    """Items without lastModifiedBy should be kept (not crash)."""
+def test_is_self_write_handles_missing_lastmodifiedby():
+    """Items without lastModifiedBy should return False (not crash)."""
     item = {"id": "1", "lastModifiedDateTime": "2026-02-23T12:00:00Z", "fields": {}}
 
-    result = filter_self_writes([item], APP_IDENTITY)
-
-    assert len(result) == 1
-
-
-def test_filter_self_writes_empty_list():
-    """An empty item list should return an empty list."""
-    result = filter_self_writes([], APP_IDENTITY)
-
-    assert result == []
+    assert _is_self_write(item, APP_IDENTITY) is False
 
 
 # ============================================================================
@@ -122,16 +137,44 @@ def dedup_store():
 
 
 @pytest.mark.anyio
-async def test_dispatch_route_calls_handler_for_each_item(dedup_store):
-    """dispatch_route should call the handler once per matching item."""
+async def test_dispatch_route_calls_handler_for_item(dedup_store):
+    """dispatch_route should call the handler for the item identified in resourceData."""
     called_with = []
 
     async def handler(item):
         called_with.append(item)
 
-    items = [_make_item(item_id="1"), _make_item(item_id="2")]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
+    item = _make_item(item_id="1")
+    resource = _make_mock_resource({"1": item})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     payload = _make_payload(VALID_NOTIFICATION)
+
+    dispatched = await dispatch_route(route, payload, CONFIG, dedup_store)
+
+    assert dispatched == 1
+    assert len(called_with) == 1
+    assert called_with[0]["id"] == "1"
+    resource.get_item.assert_called_once_with("1")
+
+
+@pytest.mark.anyio
+async def test_dispatch_route_handles_multiple_notifications(dedup_store):
+    """dispatch_route should process each notification and fetch the corresponding item."""
+    called_with = []
+
+    async def handler(item):
+        called_with.append(item)
+
+    items = {
+        "1": _make_item(item_id="1", last_modified="2026-02-23T12:00:00Z"),
+        "2": _make_item(item_id="2", last_modified="2026-02-23T12:01:00Z"),
+    }
+    resource = _make_mock_resource(items)
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
+    payload = _make_payload(
+        _make_notification(item_id="1"),
+        _make_notification(item_id="2"),
+    )
 
     dispatched = await dispatch_route(route, payload, CONFIG, dedup_store)
 
@@ -149,35 +192,35 @@ async def test_dispatch_route_skips_wrong_client_state(dedup_store):
     async def handler(item):
         called_with.append(item)
 
-    items = [_make_item()]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
+    resource = _make_mock_resource()
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     payload = _make_payload(WRONG_STATE_NOTIFICATION)
 
     dispatched = await dispatch_route(route, payload, CONFIG, dedup_store)
 
     assert dispatched == 0
     assert len(called_with) == 0
+    resource.get_item.assert_not_called()
 
 
 @pytest.mark.anyio
-async def test_dispatch_route_skips_duplicate_notification(dedup_store):
-    """dispatch_route should not process the same notification twice."""
-    call_count = 0
+async def test_dispatch_route_skips_missing_resource_data(dedup_store):
+    """dispatch_route should skip notifications without resourceData."""
+    called_with = []
 
     async def handler(item):
-        nonlocal call_count
-        call_count += 1
+        called_with.append(item)
 
-    items = [_make_item()]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
-    payload = _make_payload(VALID_NOTIFICATION)
+    notification_no_rd = {k: v for k, v in VALID_NOTIFICATION.items() if k != "resourceData"}
+    resource = _make_mock_resource()
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
+    payload = _make_payload(notification_no_rd)
 
-    await dispatch_route(route, payload, CONFIG, dedup_store)
-    await dispatch_route(route, payload, CONFIG, dedup_store)
+    dispatched = await dispatch_route(route, payload, CONFIG, dedup_store)
 
-    # get_items returns the same item both times, but notification dedup
-    # prevents the second invocation from querying items at all
-    assert call_count == 1
+    assert dispatched == 0
+    assert len(called_with) == 0
+    resource.get_item.assert_not_called()
 
 
 @pytest.mark.anyio
@@ -188,29 +231,28 @@ async def test_dispatch_route_filters_self_writes(dedup_store):
     async def handler(item):
         called_with.append(item)
 
-    items = [
-        _make_item(item_id="app-wrote", modified_by_app=APP_IDENTITY),
-        _make_item(item_id="human-wrote"),
-    ]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=True)
+    item = _make_item(item_id="1", modified_by_app=APP_IDENTITY)
+    resource = _make_mock_resource({"1": item})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=True)
     payload = _make_payload(VALID_NOTIFICATION)
 
     dispatched = await dispatch_route(route, payload, CONFIG, dedup_store)
 
-    assert dispatched == 1
-    assert called_with[0]["id"] == "human-wrote"
+    assert dispatched == 0
+    assert len(called_with) == 0
 
 
 @pytest.mark.anyio
 async def test_dispatch_route_no_self_filter_when_disabled(dedup_store):
-    """dispatch_route should process all items when filter_self=False."""
+    """dispatch_route should process app-modified items when filter_self=False."""
     called_with = []
 
     async def handler(item):
         called_with.append(item)
 
-    items = [_make_item(item_id="app-wrote", modified_by_app=APP_IDENTITY)]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
+    item = _make_item(item_id="1", modified_by_app=APP_IDENTITY)
+    resource = _make_mock_resource({"1": item})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     payload = _make_payload(VALID_NOTIFICATION)
 
     dispatched = await dispatch_route(route, payload, CONFIG, dedup_store)
@@ -220,25 +262,25 @@ async def test_dispatch_route_no_self_filter_when_disabled(dedup_store):
 
 @pytest.mark.anyio
 async def test_dispatch_route_item_level_dedup(dedup_store):
-    """dispatch_route should not process the same item+timestamp twice across notifications."""
+    """dispatch_route should not process the same item+timestamp twice."""
     call_count = 0
 
     async def handler(item):
         nonlocal call_count
         call_count += 1
 
-    # Same item with same lastModifiedDateTime
-    items = [_make_item(item_id="1", last_modified="2026-02-23T12:00:00Z")]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
+    # Same item, same lastModifiedDateTime — two separate notifications
+    item = _make_item(item_id="1", last_modified="2026-02-23T12:00:00Z")
+    resource = _make_mock_resource({"1": item})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
 
-    # First notification — use unique subscription IDs so notification-level dedup doesn't trigger
-    payload1 = _make_payload({**VALID_NOTIFICATION, "subscriptionId": "sub-1"})
-    payload2 = _make_payload({**VALID_NOTIFICATION, "subscriptionId": "sub-2"})
+    payload1 = _make_payload(_make_notification(item_id="1", subscriptionId="sub-1"))
+    payload2 = _make_payload(_make_notification(item_id="1", subscriptionId="sub-2"))
 
     await dispatch_route(route, payload1, CONFIG, dedup_store)
     await dispatch_route(route, payload2, CONFIG, dedup_store)
 
-    # Item should be processed only once — item-level dedup catches the second
+    # Item dedup: same item + same timestamp -> handler called once
     assert call_count == 1
 
 
@@ -250,23 +292,17 @@ async def test_dispatch_route_processes_updated_item(dedup_store):
     async def handler(item):
         called_with.append(item)
 
-    route = WebhookRoute(
-        path="/test",
-        get_items=lambda: [],  # overridden below
-        handler=handler,
-        filter_self=False,
-    )
-
-    # First notification with item at time T1
-    items_v1 = [_make_item(item_id="1", last_modified="2026-02-23T12:00:00Z")]
-    route.get_items = lambda: items_v1
-    payload1 = _make_payload({**VALID_NOTIFICATION, "subscriptionId": "sub-1"})
+    # First notification: item at time T1
+    item_v1 = _make_item(item_id="1", last_modified="2026-02-23T12:00:00Z")
+    resource = _make_mock_resource({"1": item_v1})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
+    payload1 = _make_payload(_make_notification(item_id="1", subscriptionId="sub-1"))
     await dispatch_route(route, payload1, CONFIG, dedup_store)
 
-    # Second notification with same item at time T2 (human edited it again)
-    items_v2 = [_make_item(item_id="1", last_modified="2026-02-23T12:05:00Z")]
-    route.get_items = lambda: items_v2
-    payload2 = _make_payload({**VALID_NOTIFICATION, "subscriptionId": "sub-2"})
+    # Second notification: same item at time T2 (human edited again)
+    item_v2 = _make_item(item_id="1", last_modified="2026-02-23T12:05:00Z")
+    resource.get_item.side_effect = lambda item_id: item_v2
+    payload2 = _make_payload(_make_notification(item_id="1", subscriptionId="sub-2"))
     await dispatch_route(route, payload2, CONFIG, dedup_store)
 
     # Both should be processed — different timestamps mean different edits
@@ -279,12 +315,13 @@ async def test_dispatch_route_records_before_handler(dedup_store):
     recorded_before_handler = []
 
     async def handler(item):
-        key = f"item:{item['id']}:{item['lastModifiedDateTime']}"
+        key = f"item:/test:{item['id']}:{item['lastModifiedDateTime']}"
         # record_if_new returns False if the key was already recorded
         recorded_before_handler.append(dedup_store.record_if_new(key))
 
-    items = [_make_item()]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
+    item = _make_item()
+    resource = _make_mock_resource({"1": item})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     payload = _make_payload(VALID_NOTIFICATION)
 
     await dispatch_route(route, payload, CONFIG, dedup_store)
@@ -294,16 +331,15 @@ async def test_dispatch_route_records_before_handler(dedup_store):
 
 
 @pytest.mark.anyio
-async def test_dispatch_route_handles_get_items_failure(dedup_store):
-    """dispatch_route should return 0 if get_items raises an exception."""
+async def test_dispatch_route_handles_get_item_failure(dedup_store):
+    """dispatch_route should skip the item if get_item raises an exception."""
 
     async def handler(item):
         pass
 
-    def failing_get_items():
-        raise RuntimeError("connection failed")
-
-    route = WebhookRoute(path="/test", get_items=failing_get_items, handler=handler, filter_self=False)
+    resource = MagicMock()
+    resource.get_item.side_effect = RuntimeError("connection failed")
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     payload = _make_payload(VALID_NOTIFICATION)
 
     dispatched = await dispatch_route(route, payload, CONFIG, dedup_store)
@@ -321,9 +357,16 @@ async def test_dispatch_route_handles_handler_failure(dedup_store):
             raise RuntimeError("handler failed")
         called_with.append(item)
 
-    items = [_make_item(item_id="1"), _make_item(item_id="2")]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
-    payload = _make_payload(VALID_NOTIFICATION)
+    items = {
+        "1": _make_item(item_id="1"),
+        "2": _make_item(item_id="2"),
+    }
+    resource = _make_mock_resource(items)
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
+    payload = _make_payload(
+        _make_notification(item_id="1"),
+        _make_notification(item_id="2"),
+    )
 
     dispatched = await dispatch_route(route, payload, CONFIG, dedup_store)
 
@@ -339,7 +382,8 @@ async def test_dispatch_route_empty_payload(dedup_store):
     async def handler(item):
         pass
 
-    route = WebhookRoute(path="/test", get_items=lambda: [], handler=handler, filter_self=False)
+    resource = _make_mock_resource()
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     payload = _make_payload()
 
     dispatched = await dispatch_route(route, payload, CONFIG, dedup_store)
@@ -358,8 +402,9 @@ def test_route_path_must_start_with_slash():
     async def handler(item):
         pass
 
+    resource = _make_mock_resource()
     with pytest.raises(ValueError, match="must start with '/'"):
-        WebhookRoute(path="no_slash", get_items=lambda: [], handler=handler)
+        WebhookRoute(path="no_slash", resource=resource, handler=handler)
 
 
 def test_route_path_accepts_valid_path():
@@ -368,5 +413,6 @@ def test_route_path_accepts_valid_path():
     async def handler(item):
         pass
 
-    route = WebhookRoute(path="/valid", get_items=lambda: [], handler=handler)
+    resource = _make_mock_resource()
+    route = WebhookRoute(path="/valid", resource=resource, handler=handler)
     assert route.path == "/valid"

@@ -7,7 +7,7 @@ and the route-based endpoints (with WebhookRoute).
 
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -28,13 +28,18 @@ VALID_NOTIFICATION = {
     "subscriptionId": "sub-abc-123",
     "changeType": "updated",
     "clientState": CLIENT_STATE,
-    "resource": "sites/site-id/lists/list-id",
+    "resource": "sites/site-id/lists/list-id/items/1",
     "tenantId": "tenant-id-999",
+    "resourceData": {
+        "@odata.type": "#Microsoft.Graph.listItem",
+        "@odata.id": "sites/site-id/lists/list-id/items/1",
+        "id": "1",
+    },
 }
 
 
 def _make_item(
-    item_id: str = "item-1",
+    item_id: str = "1",
     last_modified: str = "2026-02-23T12:00:00Z",
     modified_by_app: str | None = None,
 ) -> dict:
@@ -49,6 +54,31 @@ def _make_item(
     else:
         item["lastModifiedBy"] = {"user": {"id": "human-user-123"}}
     return item
+
+
+def _make_notification(item_id: str = "1", **overrides) -> dict:
+    """Build a notification dict with resourceData pointing at an item."""
+    base = {
+        **VALID_NOTIFICATION,
+        "resource": f"sites/site-id/lists/list-id/items/{item_id}",
+        "resourceData": {
+            "@odata.type": "#Microsoft.Graph.listItem",
+            "@odata.id": f"sites/site-id/lists/list-id/items/{item_id}",
+            "id": item_id,
+        },
+    }
+    base.update(overrides)
+    return base
+
+
+def _make_mock_resource(items: dict[str, dict] | None = None) -> MagicMock:
+    """Build a mock resource with a get_item method."""
+    resource = MagicMock()
+    if items:
+        resource.get_item.side_effect = lambda item_id: items[item_id]
+    else:
+        resource.get_item.return_value = _make_item()
+    return resource
 
 
 @pytest.fixture
@@ -188,7 +218,8 @@ def _make_routed_client(config, routes, store=None):
 def test_route_validation_handshake(config):
     """Each route endpoint should handle the validation handshake."""
     handler = AsyncMock()
-    route = WebhookRoute(path="/file_uploaded", get_items=lambda: [], handler=handler, filter_self=False)
+    resource = _make_mock_resource()
+    route = WebhookRoute(path="/file_uploaded", resource=resource, handler=handler, filter_self=False)
     client, _ = _make_routed_client(config, [route])
 
     response = client.post("/file_uploaded?validationToken=my-token")
@@ -200,7 +231,8 @@ def test_route_validation_handshake(config):
 def test_route_notification_returns_202(config):
     """POST to a route endpoint with a valid notification should return 202."""
     handler = AsyncMock()
-    route = WebhookRoute(path="/test_route", get_items=lambda: [], handler=handler, filter_self=False)
+    resource = _make_mock_resource()
+    route = WebhookRoute(path="/test_route", resource=resource, handler=handler, filter_self=False)
     client, _ = _make_routed_client(config, [route])
 
     response = client.post("/test_route", json={"value": [VALID_NOTIFICATION]})
@@ -208,41 +240,56 @@ def test_route_notification_returns_202(config):
     assert response.status_code == 202
 
 
-def test_route_calls_handler_with_items(config):
-    """Handler should be called once per item returned by get_items."""
+def test_route_calls_handler_with_item(config):
+    """Handler should be called for the item identified in resourceData."""
     handler = AsyncMock()
-    items = [_make_item(item_id="1"), _make_item(item_id="2")]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
-    client, _ = _make_routed_client(config, [route])
-
-    client.post("/test", json={"value": [VALID_NOTIFICATION]})
-
-    assert handler.call_count == 2
-    assert handler.call_args_list[0].args[0]["id"] == "1"
-    assert handler.call_args_list[1].args[0]["id"] == "2"
-
-
-def test_route_filters_self_writes(config):
-    """Handler should not be called for items modified by the app when filter_self=True."""
-    handler = AsyncMock()
-    items = [
-        _make_item(item_id="app-wrote", modified_by_app=APP_IDENTITY),
-        _make_item(item_id="human-wrote"),
-    ]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=True)
+    item = _make_item(item_id="1")
+    resource = _make_mock_resource({"1": item})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     client, _ = _make_routed_client(config, [route])
 
     client.post("/test", json={"value": [VALID_NOTIFICATION]})
 
     handler.assert_called_once()
-    assert handler.call_args.args[0]["id"] == "human-wrote"
+    assert handler.call_args.args[0]["id"] == "1"
+
+
+def test_route_calls_handler_for_multiple_notifications(config):
+    """Handler should be called once per notification with different items."""
+    handler = AsyncMock()
+    items = {
+        "1": _make_item(item_id="1"),
+        "2": _make_item(item_id="2"),
+    }
+    resource = _make_mock_resource(items)
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
+    client, _ = _make_routed_client(config, [route])
+
+    payload = {"value": [_make_notification(item_id="1"), _make_notification(item_id="2")]}
+    client.post("/test", json=payload)
+
+    assert handler.call_count == 2
+
+
+def test_route_filters_self_writes(config):
+    """Handler should not be called for items modified by the app when filter_self=True."""
+    handler = AsyncMock()
+    item = _make_item(item_id="1", modified_by_app=APP_IDENTITY)
+    resource = _make_mock_resource({"1": item})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=True)
+    client, _ = _make_routed_client(config, [route])
+
+    client.post("/test", json={"value": [VALID_NOTIFICATION]})
+
+    handler.assert_not_called()
 
 
 def test_route_no_filter_self_when_disabled(config):
     """Handler should be called for app-modified items when filter_self=False."""
     handler = AsyncMock()
-    items = [_make_item(item_id="app-wrote", modified_by_app=APP_IDENTITY)]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
+    item = _make_item(item_id="1", modified_by_app=APP_IDENTITY)
+    resource = _make_mock_resource({"1": item})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     client, _ = _make_routed_client(config, [route])
 
     client.post("/test", json={"value": [VALID_NOTIFICATION]})
@@ -253,8 +300,8 @@ def test_route_no_filter_self_when_disabled(config):
 def test_route_wrong_client_state_skips_handler(config):
     """Handler should not be called when clientState doesn't match."""
     handler = AsyncMock()
-    items = [_make_item()]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
+    resource = _make_mock_resource()
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     client, _ = _make_routed_client(config, [route])
 
     bad = {**VALID_NOTIFICATION, "clientState": "wrong"}
@@ -263,35 +310,22 @@ def test_route_wrong_client_state_skips_handler(config):
     handler.assert_not_called()
 
 
-def test_route_notification_dedup(config):
-    """Sending the same notification twice should only invoke the handler once."""
-    handler = AsyncMock()
-    items = [_make_item()]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
-    client, store = _make_routed_client(config, [route])
-
-    payload = {"value": [VALID_NOTIFICATION]}
-    client.post("/test", json=payload)
-    client.post("/test", json=payload)
-
-    handler.assert_called_once()
-
-
 def test_route_item_level_dedup(config):
     """Same item across different notifications should only be processed once."""
     handler = AsyncMock()
-    items = [_make_item(item_id="1", last_modified="2026-02-23T12:00:00Z")]
-    route = WebhookRoute(path="/test", get_items=lambda: items, handler=handler, filter_self=False)
+    item = _make_item(item_id="1", last_modified="2026-02-23T12:00:00Z")
+    resource = _make_mock_resource({"1": item})
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     client, store = _make_routed_client(config, [route])
 
-    # Two notifications with different subscription IDs (bypasses notification dedup)
-    n1 = {**VALID_NOTIFICATION, "subscriptionId": "sub-1"}
-    n2 = {**VALID_NOTIFICATION, "subscriptionId": "sub-2"}
+    # Two notifications with different subscription IDs but same item+timestamp
+    n1 = _make_notification(item_id="1", subscriptionId="sub-1")
+    n2 = _make_notification(item_id="1", subscriptionId="sub-2")
 
     client.post("/test", json={"value": [n1]})
     client.post("/test", json={"value": [n2]})
 
-    # Item-level dedup: same item+timestamp → handler called once
+    # Item-level dedup: same item+timestamp -> handler called once
     handler.assert_called_once()
 
 
@@ -299,16 +333,16 @@ def test_multiple_routes_dispatch_to_correct_handler(config):
     """Each route should dispatch to its own handler."""
     handler_a = AsyncMock()
     handler_b = AsyncMock()
-    items_a = [_make_item(item_id="a1")]
-    items_b = [_make_item(item_id="b1")]
+    resource_a = _make_mock_resource({"1": _make_item(item_id="1")})
+    resource_b = _make_mock_resource({"2": _make_item(item_id="2")})
 
     routes = [
-        WebhookRoute(path="/route_a", get_items=lambda: items_a, handler=handler_a, filter_self=False),
-        WebhookRoute(path="/route_b", get_items=lambda: items_b, handler=handler_b, filter_self=False),
+        WebhookRoute(path="/route_a", resource=resource_a, handler=handler_a, filter_self=False),
+        WebhookRoute(path="/route_b", resource=resource_b, handler=handler_b, filter_self=False),
     ]
     client, _ = _make_routed_client(config, routes)
 
-    client.post("/route_a", json={"value": [VALID_NOTIFICATION]})
+    client.post("/route_a", json={"value": [_make_notification(item_id="1")]})
 
     handler_a.assert_called_once()
     handler_b.assert_not_called()
@@ -318,10 +352,12 @@ def test_multiple_routes_each_get_handshake(config):
     """Each route should independently handle the validation handshake."""
     handler_a = AsyncMock()
     handler_b = AsyncMock()
+    resource_a = _make_mock_resource()
+    resource_b = _make_mock_resource()
 
     routes = [
-        WebhookRoute(path="/route_a", get_items=lambda: [], handler=handler_a, filter_self=False),
-        WebhookRoute(path="/route_b", get_items=lambda: [], handler=handler_b, filter_self=False),
+        WebhookRoute(path="/route_a", resource=resource_a, handler=handler_a, filter_self=False),
+        WebhookRoute(path="/route_b", resource=resource_b, handler=handler_b, filter_self=False),
     ]
     client, _ = _make_routed_client(config, routes)
 
@@ -337,7 +373,8 @@ def test_multiple_routes_each_get_handshake(config):
 def test_route_health_still_works(config):
     """The /health endpoint should work alongside route-based endpoints."""
     handler = AsyncMock()
-    route = WebhookRoute(path="/test", get_items=lambda: [], handler=handler, filter_self=False)
+    resource = _make_mock_resource()
+    route = WebhookRoute(path="/test", resource=resource, handler=handler, filter_self=False)
     client, _ = _make_routed_client(config, [route])
 
     response = client.get("/health")

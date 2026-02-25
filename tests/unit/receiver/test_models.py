@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from box2.receiver.models import Notification, NotificationPayload
+from box2.receiver.models import Notification, NotificationPayload, ResourceData
 
 # ============================================================================
 # Fixtures
@@ -22,6 +22,55 @@ SINGLE_NOTIFICATION = {
     "tenantId": "tenant-id-999",
     "subscriptionExpirationDateTime": "2026-02-27T12:00:00.000Z",
 }
+
+
+# ============================================================================
+# ResourceData Model Tests
+# ============================================================================
+
+
+def test_parse_resource_data_with_all_fields():
+    """ResourceData should parse odata_type, odata_id, and id."""
+    data = {
+        "@odata.type": "#Microsoft.Graph.listItem",
+        "@odata.id": "sites/site-id/lists/list-id/items/42",
+        "id": "42",
+    }
+    rd = ResourceData.model_validate(data)
+
+    assert rd.odata_type == "#Microsoft.Graph.listItem"
+    assert rd.odata_id == "sites/site-id/lists/list-id/items/42"
+    assert rd.id == "42"
+
+
+def test_parse_resource_data_with_id_only():
+    """ResourceData should parse when only id is present."""
+    rd = ResourceData.model_validate({"id": "99"})
+
+    assert rd.id == "99"
+    assert rd.odata_type is None
+    assert rd.odata_id is None
+
+
+def test_parse_resource_data_preserves_extra_fields():
+    """ResourceData should preserve extra OData fields in model_extra."""
+    data = {
+        "@odata.type": "#Microsoft.Graph.listItem",
+        "id": "42",
+        "@odata.etag": '"abc123"',
+    }
+    rd = ResourceData.model_validate(data)
+
+    assert rd.model_extra["@odata.etag"] == '"abc123"'
+
+
+def test_parse_resource_data_empty():
+    """ResourceData should parse an empty dict with all fields None."""
+    rd = ResourceData.model_validate({})
+
+    assert rd.odata_type is None
+    assert rd.odata_id is None
+    assert rd.id is None
 
 
 # ============================================================================
@@ -57,8 +106,33 @@ def test_parse_notification_without_expiration():
     assert notification.subscription_expiration is None
 
 
+def test_parse_notification_without_resource_data():
+    """Notification should allow resourceData to be absent."""
+    notification = Notification.model_validate(SINGLE_NOTIFICATION)
+
+    assert notification.resource_data is None
+
+
+def test_parse_notification_with_resource_data():
+    """Notification should parse resourceData into a ResourceData model."""
+    data = {
+        **SINGLE_NOTIFICATION,
+        "resourceData": {
+            "@odata.type": "#Microsoft.Graph.listItem",
+            "@odata.id": "sites/site-id-001/lists/list-id-002/items/42",
+            "id": "42",
+        },
+    }
+    notification = Notification.model_validate(data)
+
+    assert notification.resource_data is not None
+    assert notification.resource_data.id == "42"
+    assert notification.resource_data.odata_id == "sites/site-id-001/lists/list-id-002/items/42"
+    assert notification.resource_data.odata_type == "#Microsoft.Graph.listItem"
+
+
 def test_parse_notification_preserves_extra_fields():
-    """Extra fields from the Graph payload should be preserved in model_extra."""
+    """Extra fields (not resourceData) should be preserved in model_extra."""
     data = {
         **SINGLE_NOTIFICATION,
         "resourceData": {"@odata.type": "#Microsoft.Graph.listItem", "id": "42"},
@@ -66,7 +140,10 @@ def test_parse_notification_preserves_extra_fields():
     }
     notification = Notification.model_validate(data)
 
-    assert notification.model_extra["resourceData"]["id"] == "42"
+    # resourceData is now a first-class field, not in model_extra
+    assert notification.resource_data is not None
+    assert notification.resource_data.id == "42"
+    # lifecycleEvent is still in model_extra
     assert notification.model_extra["lifecycleEvent"] == "reauthorizationRequired"
 
 
@@ -125,4 +202,5 @@ def test_parse_fixture_file():
     assert len(payload.value) == 1
     assert payload.value[0].change_type == "created"
     assert payload.value[0].client_state == "test-secret"
-    assert "resourceData" in payload.value[0].model_extra
+    assert payload.value[0].resource_data is not None
+    assert payload.value[0].resource_data.id == "42"
