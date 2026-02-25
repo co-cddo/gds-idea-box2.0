@@ -80,6 +80,7 @@ class SharepointAction(BaseModel):
         description="Brief summary of the decision and key actions to be taken",
     )
 
-    minister_comment: str = Field(
-        description="Minister's comments on how to proceed",
-    )
+    # TODO: uncomment once Actions list has this column
+    # minister_comment: str = Field(
+    #     description="Minister's comments on how to proceed",
+    # )

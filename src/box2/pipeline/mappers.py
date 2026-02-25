@@ -151,5 +151,6 @@ def to_sharepoint_action(
         office_decision=review_result.office_decision,
         final_draft=minister_comment,
         summary=review_result.summary,
-        minister_comment=minister_comment,
+        # TODO: uncomment once Actions list has minister_comment column
+        # minister_comment=minister_comment,
     )
