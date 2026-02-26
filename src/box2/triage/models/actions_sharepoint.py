@@ -75,6 +75,4 @@ class SharepointAction(BaseModel):
         description="Brief summary of the decision and key actions to be taken",
     )
 
-    minister_comment: str = Field(
-        description="Minister's comments on how to proceed with the action"
-    )
+    minister_comment: str = Field(description="Minister's comments on how to proceed with the action")

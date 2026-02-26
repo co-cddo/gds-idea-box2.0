@@ -81,6 +81,7 @@ def to_sharepoint_invitation(triaged: TriagedInvitation) -> SharepointInvitation
         reason=dec.reason,
         draft_response=dec.draft_response,
         affected_events=dec.affected_events,
+        urgency=inv.urgency,
     )
 
 
@@ -151,6 +152,5 @@ def to_sharepoint_action(
         office_decision=review_result.office_decision,
         final_draft=minister_comment,
         summary=review_result.summary,
-        # TODO: uncomment once Actions list has minister_comment column
-        # minister_comment=minister_comment,
+        minister_comment=minister_comment,
     )

@@ -69,4 +69,3 @@ class SharepointSubmission(BaseModel):
     minister_comment: str | None = Field(
         default=None, description="Ministers recommendation on how submission should be handled"
     )
-
