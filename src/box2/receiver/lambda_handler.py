@@ -66,12 +66,8 @@ actions_list = ListClient(session, list_name=ACTIONS_LIST_NAME)
 dedup_store = DynamoDedup(table_name=DYNAMO_TABLE_NAME, window_seconds=DEDUP_WINDOW_SECONDS)
 
 logger.info(
-    "Lambda cold start: session=%s:%s, library=%s, lookback=%dm, dedup_table=%s",
-    session.site_host,
-    session.site_path,
-    DOCS_LIBRARY_NAME,
-    LOOKBACK_MINUTES,
-    DYNAMO_TABLE_NAME,
+    f"Lambda cold start: session={session.site_host}:{session.site_path}, "
+    f"library={DOCS_LIBRARY_NAME}, lookback={LOOKBACK_MINUTES}m, dedup_table={DYNAMO_TABLE_NAME}"
 )
 
 
