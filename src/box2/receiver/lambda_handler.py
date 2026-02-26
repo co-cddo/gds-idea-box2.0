@@ -1,11 +1,8 @@
 """AWS Lambda entry point for the box2 webhook receiver.
 
 Wraps the FastAPI app with Mangum so API Gateway can invoke it as a
-Lambda function. Wires up a single ``/file_uploaded`` route backed by
-a real ``DocsClient`` (authenticated via environment variables).
-
-The handler placeholder logs what it receives — real workflow wiring
-comes later.
+Lambda function. Wires up routes for file uploads and list item reviews
+that run the triage pipeline and write results to SharePoint lists.
 
 Environment variables (required):
     CLIENT_STATE             — shared secret for notification validation
@@ -21,6 +18,9 @@ Environment variables (optional):
     LOOKBACK_MINUTES         — rolling window for get_recent (default: 2)
     DEDUP_WINDOW_SECONDS     — dedup TTL in seconds (default: 300)
     DOCS_LIBRARY_NAME        — document library name (default: Documents)
+    INVITATION_LIST_NAME     — SharePoint invitation list (default: Invitations)
+    SUBMISSION_LIST_NAME     — SharePoint submission list (default: Submissions)
+    ACTIONS_LIST_NAME        — SharePoint actions list (default: Actions)
     AWS_REGION               — AWS region for STS (default: eu-west-2)
 
 Deployment:
@@ -35,7 +35,8 @@ from mangum import Mangum
 
 from box2.receiver import ReceiverConfig, WebhookRoute, create_app
 from box2.receiver.dedup import DynamoDedup
-from box2.sharepoint import DocsClient, SharePointSession
+from box2.receiver.route_handlers import make_file_upload_handler, make_list_review_handler
+from box2.sharepoint import DocsClient, ListClient, SharePointSession
 
 logger = logging.getLogger(__name__)
 
@@ -49,59 +50,46 @@ DYNAMO_TABLE_NAME = os.environ["DYNAMO_TABLE_NAME"]
 LOOKBACK_MINUTES = int(os.environ.get("LOOKBACK_MINUTES", "2"))
 DEDUP_WINDOW_SECONDS = int(os.environ.get("DEDUP_WINDOW_SECONDS", "300"))
 DOCS_LIBRARY_NAME = os.environ.get("DOCS_LIBRARY_NAME", "Documents")
+INVITATION_LIST_NAME = os.environ.get("INVITATION_LIST_NAME", "Invitations")
+SUBMISSION_LIST_NAME = os.environ.get("SUBMISSION_LIST_NAME", "Submissions")
+ACTIONS_LIST_NAME = os.environ.get("ACTIONS_LIST_NAME", "Actions")
 
 # ============================================================================
-# SharePoint session and client (created once per cold start)
+# SharePoint session and clients (created once per cold start)
 # ============================================================================
 
 session = SharePointSession.from_env()
 docs = DocsClient(session, library_name=DOCS_LIBRARY_NAME)
+invitation_list = ListClient(session, list_name=INVITATION_LIST_NAME)
+submission_list = ListClient(session, list_name=SUBMISSION_LIST_NAME)
+actions_list = ListClient(session, list_name=ACTIONS_LIST_NAME)
 dedup_store = DynamoDedup(table_name=DYNAMO_TABLE_NAME, window_seconds=DEDUP_WINDOW_SECONDS)
 
 logger.info(
-    "Lambda cold start: session=%s:%s, library=%s, lookback=%dm, dedup_table=%s",
-    session.site_host,
-    session.site_path,
-    DOCS_LIBRARY_NAME,
-    LOOKBACK_MINUTES,
-    DYNAMO_TABLE_NAME,
+    f"Lambda cold start: session={session.site_host}:{session.site_path}, "
+    f"library={DOCS_LIBRARY_NAME}, lookback={LOOKBACK_MINUTES}m, dedup_table={DYNAMO_TABLE_NAME}"
 )
 
 
 # ============================================================================
-# Placeholder handler — logs what would be processed
+# Route handlers
 # ============================================================================
 
+handle_new_file = make_file_upload_handler(
+    docs=docs,
+    invitation_list=invitation_list,
+    submission_list=submission_list,
+)
 
-async def handle_new_file(item: dict) -> None:
-    """Placeholder handler for newly uploaded files.
+handle_submission_review = make_list_review_handler(
+    actions_list=actions_list,
+    document_type="submission",
+)
 
-    Logs file metadata. Will be replaced with the real triage +
-    extraction pipeline in a future PR.
-
-    Args:
-        item: A drive item dict from the Graph API delta response.
-    """
-    name = item.get("name", "unknown")
-    item_id = item.get("id", "unknown")
-    web_url = item.get("webUrl", "")
-    size = item.get("size", 0)
-    modified = item.get("lastModifiedDateTime", "unknown")
-
-    banner = (
-        "\n"
-        "============================================================\n"
-        "  NEW FILE UPLOADED\n"
-        f"    Item ID:    {item_id}\n"
-        f"    Name:       {name}\n"
-        f"    Size:       {size} bytes\n"
-        f"    Modified:   {modified}\n"
-        f"    URL:        {web_url}\n"
-        "\n"
-        "    TODO: run triage + extraction pipeline\n"
-        "============================================================"
-    )
-    logger.info(banner)
+handle_invitation_review = make_list_review_handler(
+    actions_list=actions_list,
+    document_type="invitation",
+)
 
 
 # ============================================================================
@@ -121,6 +109,18 @@ app = create_app(
             get_items=lambda: docs.get_recent(minutes=LOOKBACK_MINUTES),
             handler=handle_new_file,
             filter_self=False,
+        ),
+        WebhookRoute(
+            path="/submission_reviewed",
+            get_items=lambda: submission_list.get_recent(minutes=LOOKBACK_MINUTES),
+            handler=handle_submission_review,
+            filter_self=True,
+        ),
+        WebhookRoute(
+            path="/invitation_reviewed",
+            get_items=lambda: invitation_list.get_recent(minutes=LOOKBACK_MINUTES),
+            handler=handle_invitation_review,
+            filter_self=True,
         ),
     ],
     dedup_store=dedup_store,

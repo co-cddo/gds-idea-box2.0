@@ -4,6 +4,7 @@ from box2.triage.models.action import (
     FinalDraft,
     InvitationResponse,
 )
+from box2.triage.models.actions_sharepoint import SharepointAction
 from box2.triage.models.calendar import CalendarEvent
 from box2.triage.models.decision import TriagedDecision
 from box2.triage.models.document import (
@@ -41,6 +42,7 @@ __all__ = [
     "RawEmail",
     "SafeDocument",
     "SafeEmail",
+    "SharepointAction",
     "SharepointInvitation",
     "SharepointSubmission",
     "SharepointPQs",
