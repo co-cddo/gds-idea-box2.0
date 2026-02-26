@@ -6,15 +6,11 @@ from pydantic import BaseModel, Field
 
 
 class SharepointAction(BaseModel):
-    """Schema for the SharePoint actions list.
+    """A discrete actionable item extracted from the minister's response."""
 
-    Each row represents a single actionable item extracted from a
-    minister's review of a submission or invitation.
-    """
-
-    title: str = Field(description="Brief title for this action")
-
-    action_id: str = Field(description="Unique identifier for this action")
+    action_id: str = Field(
+        description="Unique identifier for this action",
+    )
 
     description: str = Field(
         min_length=10,
@@ -23,64 +19,62 @@ class SharepointAction(BaseModel):
     )
 
     action_type: Literal[
-        "correspondence",
-        "calendar",
-        "approval",
-        "briefing",
-        "meeting",
-        "notification",
-        "other",
+        "correspondence",  # Send email/letter/memo
+        "calendar",  # Add to minister's calendar
+        "approval",  # Sign/approve document
+        "briefing",  # Prepare briefing materials
+        "meeting",  # Arrange meeting
+        "notification",  # Notify stakeholder
+        "other",  # Other actions
     ] = Field(description="Type of action required")
 
+    # For correspondence actions - include the final draft
     draft_content: str | None = Field(
         default=None,
         description="Final draft text for correspondence actions. Should be ready to send with minimal edits.",
     )
 
+    # Timing and priority
     deadline: str | None = Field(
         default=None,
         description="Deadline as stated in raw text (e.g., 'By 5th February 2026', 'Before the event', 'ASAP')",
     )
 
-    urgency: Literal["urgent", "routine", "low"] = Field(
-        default="routine",
-        description="How urgent this action is",
-    )
+    urgency: Literal["urgent", "routine", "low"] = Field(default="routine", description="How urgent this action is")
 
+    # Ownership
     owner: str | None = Field(
         default=None,
         description="Who should do this action (e.g., 'Private Office', 'AI Policy Team', 'Minister')",
     )
 
+    # Status tracking
     status: Literal["pending", "in_progress", "completed"] = Field(
-        default="pending",
-        description="Current status of this action",
+        default="pending", description="Current status of this action"
     )
 
+    # Linking back to source
     document_id: str = Field(description="Links back to the source document that generated this action")
+    source_document_type: Literal["invitation", "submission"]
 
-    source_document_type: Literal["invitation", "submission"] = Field(
-        description="Type of document this action was extracted from",
-    )
+    # Audit trail
+    created_at: str = Field(description="When this action was created")
 
-    created_at: str = Field(description="When this action was created (ISO format)")
-
-    document_type: Literal["invitation", "submission"] = Field(
-        description="Type of document this action relates to",
-    )
+    document_type: Literal["invitation", "submission"]
 
     office_decision: Literal["yes", "yes_but", "no"] = Field(
-        description="The office's decision on behalf of the minister, inferred from their comment",
+        description="The office's decision on behalf of the minister"
     )
 
-    final_draft: str = Field(description="Minister's comment verbatim")
+    final_draft: str = Field(description="Final approved draft (original or redrafted)")
+
+    title: str = Field(description="List of actionable items extracted from the decision")
 
     summary: str = Field(
         min_length=20,
         description="Brief summary of the decision and key actions to be taken",
     )
 
-    # TODO: uncomment once Actions list has this column
-    # minister_comment: str = Field(
-    #     description="Minister's comments on how to proceed",
-    # )
+    minister_comment: str = Field(
+        description="Minister's comments on how to proceed with the action"
+    )

@@ -68,6 +68,10 @@ class SharepointInvitation(BaseModel):
         description="Titles of calendar events that conflict or are relevant to this decision",
     )
 
+    urgency: Literal["urgent", "not_urgent"] = Field(
+        description="Urgency of responding: 'urgent' if the response deadline is within 7 days (inclusive), else 'not_urgent'.",
+    )
+
     minister_comment: str | None = Field(
         default=None,
         description="Minister's feedback on the invitation",
