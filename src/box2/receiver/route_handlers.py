@@ -84,6 +84,9 @@ def make_file_upload_handler(
 
                 case _:
                     logger.info(f"No list write for {name}: result type={type(result).__name__}")
+        except Exception as e:
+            logger.exception(f"Pipeline failed for file {name} (item_id={item_id}): {type(e).__name__}: {e}")
+            raise
         finally:
             if os.path.exists(local_path):
                 os.remove(local_path)
@@ -123,16 +126,20 @@ def make_list_review_handler(
 
         logger.info(f"Processing {document_type} review for item {item_id}")
 
-        review_result = await extract_actions_from_review(item_fields, document_type)
+        try:
+            review_result = await extract_actions_from_review(item_fields, document_type)
 
-        for action in review_result.actions:
-            sp_action = to_sharepoint_action(action, review_result, item_fields, document_type)
-            fields = to_sharepoint_fields(sp_action)
-            actions_list.create_item(fields)
+            for action in review_result.actions:
+                sp_action = to_sharepoint_action(action, review_result, item_fields, document_type)
+                fields = to_sharepoint_fields(sp_action)
+                actions_list.create_item(fields)
 
-        logger.info(
-            f"Wrote {len(review_result.actions)} action(s) to '{actions_list.list_name}' "
-            f"for {document_type} item {item_id}"
-        )
+            logger.info(
+                f"Wrote {len(review_result.actions)} action(s) to '{actions_list.list_name}' "
+                f"for {document_type} item {item_id}"
+            )
+        except Exception as e:
+            logger.exception(f"Action extraction failed for {document_type} item {item_id}: {type(e).__name__}: {e}")
+            raise
 
     return handle_review
