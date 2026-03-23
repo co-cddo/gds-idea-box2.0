@@ -32,6 +32,14 @@ class SharepointPQs(BaseModel):
     )
 
     ai_predicted_directorate: str = Field(description="Parliamentary question")
+    
+    ai_predicted_scs: str = Field(description="")
+
+    ai_routing_confidence: str = Field(description="Parliamentary question")
+    
+    ai_routing_reasoning: str = Field(description="")
+
+    ai_routing_alternative_directorate: str = Field(description="")
 
     urgency: Literal["urgent", "not urgent"] = Field(
         description="Urgency for the minister to review draft response. Urgent responses <=2 days before dateforAnswer"
