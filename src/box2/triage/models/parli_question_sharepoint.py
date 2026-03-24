@@ -31,15 +31,15 @@ class SharepointPQs(BaseModel):
         min_length=15, default_factory=list, description="List of links used by LLM for draft response"
     )
 
-    ai_predicted_directorate: str = Field(description="Parliamentary question")
+    ai_predicted_directorate: str = Field(description="Predicted directorate")
 
-    ai_predicted_scs: str = Field(description="")
+    ai_predicted_scs: str = Field(description="Predicted SCS")
 
-    ai_routing_confidence: str = Field(description="Parliamentary question")
+    ai_routing_confidence: str = Field(description="Predicted confidence")
 
-    ai_routing_reasoning: str = Field(description="")
+    ai_routing_reasoning: str = Field(description="Predicted reasoning")
 
-    ai_routing_alternative_directorate: str = Field(description="")
+    ai_routing_alternative_directorate: str = Field(description="Predicted alternative directorare")
 
     urgency: Literal["urgent", "not urgent"] = Field(
         description="Urgency for the minister to review draft response. Urgent responses <=2 days before dateforAnswer"
