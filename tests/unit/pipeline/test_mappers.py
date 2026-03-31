@@ -16,6 +16,13 @@ class MockSharepointModel(BaseModel):
     score: float = Field(default=0.0, description="Numeric score")
 
 
+class MockModelWithLongFieldName(BaseModel):
+    """Model with a field name exceeding 32 characters."""
+
+    title: str = Field(description="Title")
+    ai_routing_alternative_directorate: str | None = Field(default=None, description="38 chars")
+
+
 def test_title_mapped_to_capital_t():
     """Title field should be keyed as 'Title' for SharePoint's built-in column."""
     model = MockSharepointModel(title="Test", created=datetime(2025, 1, 1))
@@ -75,3 +82,21 @@ def test_float_serialised_as_string():
     model = MockSharepointModel(title="Test", score=3.14, created=datetime(2025, 1, 1))
     fields = to_sharepoint_fields(model)
     assert fields["score"] == "3.14"
+
+
+def test_long_field_name_truncated_to_32_chars():
+    """Field names longer than 32 characters should be truncated."""
+    model = MockModelWithLongFieldName(
+        title="Test",
+        ai_routing_alternative_directorate="Cross-Government S&T",
+    )
+    fields = to_sharepoint_fields(model)
+
+    # 38-char field name should be truncated to 32
+    truncated = "ai_routing_alternative_directora"
+    assert len(truncated) == 32
+    assert truncated in fields
+    assert fields[truncated] == "Cross-Government S&T"
+
+    # Full name should NOT be present
+    assert "ai_routing_alternative_directorate" not in fields
