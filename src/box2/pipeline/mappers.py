@@ -6,6 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from box2.pipeline.models import ActionReviewResult, TriagedInvitation
+from box2.sharepoint.graph_api_schema import _contains_url_type, _unwrap_optional
 from box2.triage.models import (
     Action,
     SharepointAction,
@@ -23,6 +24,10 @@ def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
     Fields with ``None`` values are omitted entirely (Graph API can 500
     if you send explicit nulls for optional columns).
 
+    URL-typed list fields (e.g. ``list[AnyHttpUrl]``) are formatted as
+    HTML anchor tags joined by ``<br>`` so they render as clickable links
+    in rich-text SharePoint columns.
+
     Args:
         model: Any SharePoint schema model (e.g. SharepointSubmission).
 
@@ -30,6 +35,14 @@ def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
         Dict ready to pass to ``ListClient.create_item()``.
     """
     fields: dict[str, Any] = {}
+
+    # Build a set of field names whose annotations contain URL types,
+    # so we can format them as HTML links during serialisation.
+    url_fields: set[str] = set()
+    for fname, finfo in model.model_fields.items():
+        tp = _unwrap_optional(finfo.annotation)
+        if _contains_url_type(tp):
+            url_fields.add(fname)
 
     for name, value in model.model_dump().items():
         # Skip None values — Graph API rejects explicit nulls
@@ -40,7 +53,11 @@ def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
         key = "Title" if name == "title" else name
 
         if isinstance(value, list):
-            fields[key] = "; ".join(str(v) for v in value)
+            if name in url_fields:
+                links = [f'<a href="{v}">{v}</a>' for v in value if v]
+                fields[key] = "<br>".join(links)
+            else:
+                fields[key] = "; ".join(str(v) for v in value)
         elif isinstance(value, datetime):
             fields[key] = value.isoformat()
         elif isinstance(value, float):
