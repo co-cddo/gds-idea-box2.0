@@ -27,9 +27,7 @@ class SharepointPQs(BaseModel):
 
     ai_generic_answer: str = Field(min_length=55, description="Generic LLM draft response")
 
-    url: list[AnyHttpUrl] = Field(
-        default_factory=list, description="List of links used by LLM for draft response"
-    )
+    url: list[AnyHttpUrl] = Field(default_factory=list, description="List of links used by LLM for draft response")
 
     ai_predicted_directorate: str = Field(description="Parliamentary question")
 

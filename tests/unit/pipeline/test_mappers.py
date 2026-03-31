@@ -34,9 +34,7 @@ def test_none_values_omitted():
 
 def test_plain_list_joined_with_semicolons():
     """list[str] fields should be semicolon-delimited."""
-    model = MockSharepointModel(
-        title="Test", tags=["alpha", "beta", "gamma"], created=datetime(2025, 1, 1)
-    )
+    model = MockSharepointModel(title="Test", tags=["alpha", "beta", "gamma"], created=datetime(2025, 1, 1))
     fields = to_sharepoint_fields(model)
     assert fields["tags"] == "alpha; beta; gamma"
 
