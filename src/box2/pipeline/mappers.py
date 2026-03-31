@@ -15,6 +15,12 @@ from box2.triage.models import (
     Submission,
 )
 
+# SharePoint internal column names are limited to 32 characters.
+# generate_graph_schema sets the internal name from the Pydantic field name,
+# but SharePoint silently truncates anything longer.  We must do the same
+# when writing items so that field keys match the actual column names.
+_SP_INTERNAL_NAME_MAX = 32
+
 
 def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
     """Serialise a SharePoint Pydantic model to a flat dict for Graph API.
@@ -28,6 +34,9 @@ def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
     HTML anchor tags joined by ``<br>`` so they render as clickable links
     in rich-text SharePoint columns.
 
+    Field names longer than 32 characters are truncated to match
+    SharePoint's internal column name limit.
+
     Args:
         model: Any SharePoint schema model (e.g. SharepointSubmission).
 
@@ -39,7 +48,7 @@ def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
     # Build a set of field names whose annotations contain URL types,
     # so we can format them as HTML links during serialisation.
     url_fields: set[str] = set()
-    for fname, finfo in model.model_fields.items():
+    for fname, finfo in model.__class__.model_fields.items():
         tp = _unwrap_optional(finfo.annotation)
         if _contains_url_type(tp):
             url_fields.add(fname)
@@ -50,7 +59,10 @@ def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
             continue
 
         # SharePoint's built-in Title column uses capital-T "Title"
-        key = "Title" if name == "title" else name
+        if name == "title":
+            key = "Title"
+        else:
+            key = name[:_SP_INTERNAL_NAME_MAX]
 
         if isinstance(value, list):
             if name in url_fields:

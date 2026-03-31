@@ -7,7 +7,7 @@ from src.box2.triage.models.parli_question_sharepoint import SharepointPQs
 
 # Minimal kwargs for a valid SharepointPQs — only Parliament API fields + urgency.
 _REQUIRED_FIELDS = {
-    "uin": "123456",
+    "title": "123456",
     "questiontext": "To ask the Secretary of State ...",
     "house": "commons",
     "datetabled": datetime(2026, 2, 24),
@@ -27,7 +27,7 @@ def test_construct_with_required_fields_only():
     """
     pq = SharepointPQs(**_REQUIRED_FIELDS)
 
-    assert pq.uin == "123456"
+    assert pq.title == "123456"
     assert pq.ai_expansive_answer is None
     assert pq.ai_generic_answer is None
     assert pq.ai_predicted_directorate is None

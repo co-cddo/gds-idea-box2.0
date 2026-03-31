@@ -9,7 +9,7 @@ class SharepointPQs(BaseModel):
 
     # --- Parliament API fields (always present) ---
 
-    uin: str = Field(description="Unique identifier for PQ")
+    title: str = Field(description="UIN — unique identifier for PQ")
 
     questiontext: str = Field(description="Parliamentary question")
 
