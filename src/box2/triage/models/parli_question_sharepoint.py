@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, Field
 
 
 class SharepointPQs(BaseModel):
@@ -27,8 +27,8 @@ class SharepointPQs(BaseModel):
 
     ai_generic_answer: str = Field(min_length=55, description="Generic LLM draft response")
 
-    url: list[str] = Field(
-        min_length=15, default_factory=list, description="List of links used by LLM for draft response"
+    url: list[AnyHttpUrl] = Field(
+        default_factory=list, description="List of links used by LLM for draft response"
     )
 
     ai_predicted_directorate: str = Field(description="Parliamentary question")
@@ -37,8 +37,8 @@ class SharepointPQs(BaseModel):
         description="Urgency for the minister to review draft response. Urgent responses <=2 days before dateforAnswer"
     )
 
-    minister_comment: str = Field(
-        min_length=55, description="Minister's additional feedback for his decision to approve/request redraft"
+    minister_comment: str | None = Field(
+        default=None, description="Minister's additional feedback for his decision to approve/request redraft"
     )
 
     minister_decision: Literal["approve", "request redraft"] | None = Field(
