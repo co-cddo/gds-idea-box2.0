@@ -10,22 +10,32 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "azure-identity>=1.20.0",
     "boto3>=1.40.63",
     "httpx>=0.28.0",
-    "pandas>=2.3.3",
-    "pydantic-ai>=1.56.0",
-    "pypdf>=5.3.0",
+    "pydantic>=2.0.0",
     "python-dateutil>=2.9.0.post0",
-    "python-docx>=1.1.2",
 ]
 
 [project.optional-dependencies]
+sharepoint = [
+    "azure-identity>=1.20.0",
+]
+pipeline = [
+    "pandas>=2.3.3",
+    "pydantic-ai>=1.56.0",
+    "pypdf>=5.3.0",
+    "python-docx>=1.1.2",
+]
 receiver = [
+    "azure-identity>=1.20.0",
     "fastapi>=0.115.0",
     "mangum>=0.19.0",
+    "pydantic-ai>=1.56.0",
     "pyngrok>=7.2.0",
     "uvicorn>=0.34.0",
+]
+all = [
+    "box2[sharepoint,pipeline,receiver]",
 ]
 
 [build-system]
