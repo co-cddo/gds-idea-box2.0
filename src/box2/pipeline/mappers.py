@@ -191,7 +191,7 @@ def to_sharepoint_action(
 # ======================================================================
 
 # Fields added by the QA model that are not part of the minister-facing
-# invitation schema. Used by ``qa_item_to_sharepoint_invitation`` to
+# invitation schema. Used by ``to_sharepoint_invitation_from_qa`` to
 # strip QA-only columns when copying an approved item.
 _QA_ONLY_FIELDS = frozenset({"qa_status", "qa_reviewer", "qa_notes"})
 
@@ -254,7 +254,7 @@ def _split_list_field(value: str | list[str] | None) -> list[str]:
     return [v.strip() for v in value.split(";") if v.strip()]
 
 
-def qa_item_to_sharepoint_invitation(item_fields: dict[str, Any]) -> SharepointInvitation:
+def to_sharepoint_invitation_from_qa(item_fields: dict[str, Any]) -> SharepointInvitation:
     """Map a QA list item's fields to the minister-facing invitation schema.
 
     Called when a QA reviewer approves an item. Reads the (potentially

@@ -32,9 +32,9 @@ from typing import Literal
 from box2.pipeline import (
     TriagedInvitation,
     extract_actions_from_review,
-    qa_item_to_sharepoint_invitation,
     to_sharepoint_action,
     to_sharepoint_fields,
+    to_sharepoint_invitation_from_qa,
     to_sharepoint_invitation_qa,
     to_sharepoint_submission,
     triage_file,
@@ -193,7 +193,7 @@ def make_qa_review_handler(
             logger.info(f"QA approved invitation {item_id}, copying to '{invitation_list.list_name}'")
 
             try:
-                sp_invitation = qa_item_to_sharepoint_invitation(item_fields)
+                sp_invitation = to_sharepoint_invitation_from_qa(item_fields)
                 fields = to_sharepoint_fields(sp_invitation)
                 invitation_list.create_item(fields)
                 qa_list.delete_item(item_id)

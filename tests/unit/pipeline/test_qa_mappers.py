@@ -4,8 +4,8 @@ import pytest
 
 from box2.pipeline.mappers import (
     _split_list_field,
-    qa_item_to_sharepoint_invitation,
     to_sharepoint_fields,
+    to_sharepoint_invitation_from_qa,
     to_sharepoint_invitation_qa,
 )
 from box2.pipeline.models import TriagedInvitation
@@ -137,18 +137,18 @@ def test_to_sharepoint_invitation_qa_serialises_with_qa_fields(sample_triaged: T
     assert "qa_notes" not in fields
 
 
-# ===== qa_item_to_sharepoint_invitation =====
+# ===== to_sharepoint_invitation_from_qa =====
 
 
-def test_qa_item_to_sharepoint_invitation_returns_base_model(sample_qa_item_fields: dict):
-    """qa_item_to_sharepoint_invitation should return a SharepointInvitation (not QA variant)."""
-    result = qa_item_to_sharepoint_invitation(sample_qa_item_fields)
+def test_to_sharepoint_invitation_from_qa_returns_base_model(sample_qa_item_fields: dict):
+    """to_sharepoint_invitation_from_qa should return a SharepointInvitation (not QA variant)."""
+    result = to_sharepoint_invitation_from_qa(sample_qa_item_fields)
     assert type(result) is SharepointInvitation
 
 
-def test_qa_item_to_sharepoint_invitation_maps_scalar_fields(sample_qa_item_fields: dict):
+def test_to_sharepoint_invitation_from_qa_maps_scalar_fields(sample_qa_item_fields: dict):
     """Scalar fields should be correctly mapped from the QA item."""
-    result = qa_item_to_sharepoint_invitation(sample_qa_item_fields)
+    result = to_sharepoint_invitation_from_qa(sample_qa_item_fields)
 
     assert result.title == "conference: Royal Society"
     assert result.document_id == "doc-001"
@@ -162,25 +162,25 @@ def test_qa_item_to_sharepoint_invitation_maps_scalar_fields(sample_qa_item_fiel
     assert result.urgency == "not_urgent"
 
 
-def test_qa_item_to_sharepoint_invitation_splits_list_fields(sample_qa_item_fields: dict):
+def test_to_sharepoint_invitation_from_qa_splits_list_fields(sample_qa_item_fields: dict):
     """Semicolon-delimited list fields should be split back into Python lists."""
-    result = qa_item_to_sharepoint_invitation(sample_qa_item_fields)
+    result = to_sharepoint_invitation_from_qa(sample_qa_item_fields)
 
     assert result.topics == ["AI Safety", "International Collaboration"]
     assert result.proposed_times == ["15th March 2026, 10:00 AM"]
     assert result.affected_events == ["Cabinet Committee on AI"]
 
 
-def test_qa_item_to_sharepoint_invitation_strips_qa_fields(sample_qa_item_fields: dict):
+def test_to_sharepoint_invitation_from_qa_strips_qa_fields(sample_qa_item_fields: dict):
     """QA-specific fields should not appear on the resulting SharepointInvitation."""
-    result = qa_item_to_sharepoint_invitation(sample_qa_item_fields)
+    result = to_sharepoint_invitation_from_qa(sample_qa_item_fields)
 
     assert not hasattr(result, "qa_status")
     assert not hasattr(result, "qa_reviewer")
     assert not hasattr(result, "qa_notes")
 
 
-def test_qa_item_to_sharepoint_invitation_handles_missing_optional_fields():
+def test_to_sharepoint_invitation_from_qa_handles_missing_optional_fields():
     """Missing optional fields should fall back to safe defaults."""
     minimal_fields = {
         "Title": "Test invite",
@@ -192,7 +192,7 @@ def test_qa_item_to_sharepoint_invitation_handles_missing_optional_fields():
         "reason": "Test reason text",
         "draft_response": "Test draft response text",
     }
-    result = qa_item_to_sharepoint_invitation(minimal_fields)
+    result = to_sharepoint_invitation_from_qa(minimal_fields)
 
     assert result.title == "Test invite"
     assert result.deadline_to_respond is None

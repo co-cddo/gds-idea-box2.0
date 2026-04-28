@@ -12,10 +12,10 @@ import this package without the heavy AI dependency tree.
 import importlib
 
 from box2.pipeline.mappers import (
-    qa_item_to_sharepoint_invitation,
     to_sharepoint_action,
     to_sharepoint_fields,
     to_sharepoint_invitation,
+    to_sharepoint_invitation_from_qa,
     to_sharepoint_invitation_qa,
     to_sharepoint_submission,
 )
@@ -50,7 +50,7 @@ __all__ = [
     "extract_actions_from_review",
     "process_invitation",
     "process_submission",
-    "qa_item_to_sharepoint_invitation",
+    "to_sharepoint_invitation_from_qa",
     "to_sharepoint_action",
     "to_sharepoint_fields",
     "to_sharepoint_invitation",
