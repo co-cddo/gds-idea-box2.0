@@ -200,9 +200,7 @@ def make_qa_review_handler(
 
                 logger.info(f"Invitation {item_id} moved to '{invitation_list.list_name}'")
             except Exception as e:
-                logger.exception(
-                    f"Failed to process approved QA item {item_id}: {type(e).__name__}: {e}"
-                )
+                logger.exception(f"Failed to process approved QA item {item_id}: {type(e).__name__}: {e}")
                 raise
 
         elif qa_status == "rejected":
@@ -216,9 +214,7 @@ def make_qa_review_handler(
 
                 logger.info(f"Invitation {item_id} moved to '{rejected_list.list_name}'")
             except Exception as e:
-                logger.exception(
-                    f"Failed to process rejected QA item {item_id}: {type(e).__name__}: {e}"
-                )
+                logger.exception(f"Failed to process rejected QA item {item_id}: {type(e).__name__}: {e}")
                 raise
 
         else:

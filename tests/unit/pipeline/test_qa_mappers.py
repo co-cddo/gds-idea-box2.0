@@ -12,11 +12,10 @@ from box2.pipeline.models import TriagedInvitation
 from box2.triage.models import Invitation, SharepointInvitation, SharepointInvitationQA, TriagedDecision
 from box2.triage.models.invitation import EventType
 
-
 # ===== Fixtures =====
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_invitation() -> Invitation:
     """Minimal valid Invitation for testing."""
     return Invitation(
@@ -35,7 +34,7 @@ def sample_invitation() -> Invitation:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_decision() -> TriagedDecision:
     """Minimal valid TriagedDecision for testing."""
     return TriagedDecision(
@@ -49,13 +48,13 @@ def sample_decision() -> TriagedDecision:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_triaged(sample_invitation: Invitation, sample_decision: TriagedDecision) -> TriagedInvitation:
     """TriagedInvitation combining the sample invitation and decision."""
     return TriagedInvitation(invitation=sample_invitation, decision=sample_decision)
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_qa_item_fields() -> dict:
     """Flat dict simulating a QA SharePoint list item's fields after reviewer edits."""
     return {

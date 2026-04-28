@@ -6,7 +6,6 @@ import pytest
 
 from box2.receiver.route_handlers import make_qa_review_handler
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -46,7 +45,7 @@ def _make_qa_item(
     return {"id": item_id, "fields": fields}
 
 
-@pytest.fixture()
+@pytest.fixture
 def invitation_list() -> MagicMock:
     """Mock ListClient for the minister-facing invitations list."""
     mock = MagicMock()
@@ -54,7 +53,7 @@ def invitation_list() -> MagicMock:
     return mock
 
 
-@pytest.fixture()
+@pytest.fixture
 def rejected_list() -> MagicMock:
     """Mock ListClient for the rejected invitations list."""
     mock = MagicMock()
@@ -62,7 +61,7 @@ def rejected_list() -> MagicMock:
     return mock
 
 
-@pytest.fixture()
+@pytest.fixture
 def qa_list() -> MagicMock:
     """Mock ListClient for the QA invitations list."""
     mock = MagicMock()
