@@ -8,13 +8,19 @@ Usage in ``lambda_handler.py``::
 
     handle_new_file = make_file_upload_handler(
         docs=docs,
-        invitation_list=invitation_list,
+        qa_invitation_list=qa_invitation_list,
         submission_list=submission_list,
     )
 
     handle_submission_review = make_list_review_handler(
         actions_list=actions_list,
         document_type="submission",
+    )
+
+    handle_qa_review = make_qa_review_handler(
+        invitation_list=invitation_list,
+        rejected_list=rejected_list,
+        qa_list=qa_invitation_list,
     )
 """
 
@@ -26,9 +32,10 @@ from typing import Literal
 from box2.pipeline import (
     TriagedInvitation,
     extract_actions_from_review,
+    qa_item_to_sharepoint_invitation,
     to_sharepoint_action,
     to_sharepoint_fields,
-    to_sharepoint_invitation,
+    to_sharepoint_invitation_qa,
     to_sharepoint_submission,
     triage_file,
 )
@@ -40,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 def make_file_upload_handler(
     docs: DocsClient,
-    invitation_list: ListClient,
+    qa_invitation_list: ListClient,
     submission_list: ListClient,
     download_dir: str = "/tmp/downloads",
 ) -> Callable[[dict], Awaitable[None]]:
@@ -49,9 +56,14 @@ def make_file_upload_handler(
     Downloads the file from SharePoint, runs the triage pipeline, maps
     the result to the appropriate SharePoint list schema, and writes it.
 
+    Invitations are written to the QA list for private-office review
+    before being forwarded to the minister. Submissions bypass QA and
+    go directly to the submissions list.
+
     Args:
         docs: DocsClient for downloading files from SharePoint.
-        invitation_list: ListClient for the invitations SharePoint list.
+        qa_invitation_list: ListClient for the QA invitations list.
+            Triaged invitations are written here for review.
         submission_list: ListClient for the submissions SharePoint list.
         download_dir: Local directory for temporary file downloads.
             Defaults to ``/tmp/downloads`` (Lambda-friendly).
@@ -73,9 +85,9 @@ def make_file_upload_handler(
 
             match result:
                 case TriagedInvitation():
-                    fields = to_sharepoint_fields(to_sharepoint_invitation(result))
-                    invitation_list.create_item(fields)
-                    logger.info(f"Wrote triaged invitation to '{invitation_list.list_name}' for {name}")
+                    fields = to_sharepoint_fields(to_sharepoint_invitation_qa(result))
+                    qa_invitation_list.create_item(fields)
+                    logger.info(f"Wrote triaged invitation to QA list '{qa_invitation_list.list_name}' for {name}")
 
                 case Submission():
                     fields = to_sharepoint_fields(to_sharepoint_submission(result))
@@ -143,3 +155,73 @@ def make_list_review_handler(
             raise
 
     return handle_review
+
+
+def make_qa_review_handler(
+    invitation_list: ListClient,
+    rejected_list: ListClient,
+    qa_list: ListClient,
+) -> Callable[[dict], Awaitable[None]]:
+    """Create a handler for private-office QA reviews of invitations.
+
+    When a private-office reviewer sets ``qa_status`` on an item in the
+    QA invitations list, this handler routes the item to the appropriate
+    destination:
+
+    - **approved** — copied to the minister-facing Invitations list,
+      then deleted from the QA list.
+    - **rejected** — copied to the Rejected Invitations list (preserving
+      QA notes), then deleted from the QA list.
+    - **pending** — skipped (reviewer has not finished yet).
+
+    Args:
+        invitation_list: ListClient for the minister-facing invitations list.
+        rejected_list: ListClient for the rejected invitations list.
+        qa_list: ListClient for the QA invitations list (source).
+
+    Returns:
+        An async handler function matching the WebhookRoute signature.
+    """
+
+    async def handle_qa_review(item: dict) -> None:
+        """Route a QA-reviewed invitation to its destination list."""
+        item_fields = item.get("fields", {})
+        item_id = item.get("id", "unknown")
+        qa_status = item_fields.get("qa_status", "pending")
+
+        if qa_status == "approved":
+            logger.info(f"QA approved invitation {item_id}, copying to '{invitation_list.list_name}'")
+
+            try:
+                sp_invitation = qa_item_to_sharepoint_invitation(item_fields)
+                fields = to_sharepoint_fields(sp_invitation)
+                invitation_list.create_item(fields)
+                qa_list.delete_item(item_id)
+
+                logger.info(f"Invitation {item_id} moved to '{invitation_list.list_name}'")
+            except Exception as e:
+                logger.exception(
+                    f"Failed to process approved QA item {item_id}: {type(e).__name__}: {e}"
+                )
+                raise
+
+        elif qa_status == "rejected":
+            logger.info(f"QA rejected invitation {item_id}, copying to '{rejected_list.list_name}'")
+
+            try:
+                # Preserve all fields including QA notes for audit trail
+                rejected_fields = {k: v for k, v in item_fields.items() if v is not None}
+                rejected_list.create_item(rejected_fields)
+                qa_list.delete_item(item_id)
+
+                logger.info(f"Invitation {item_id} moved to '{rejected_list.list_name}'")
+            except Exception as e:
+                logger.exception(
+                    f"Failed to process rejected QA item {item_id}: {type(e).__name__}: {e}"
+                )
+                raise
+
+        else:
+            logger.debug(f"Skipping QA item {item_id}: qa_status='{qa_status}' (still pending)")
+
+    return handle_qa_review
