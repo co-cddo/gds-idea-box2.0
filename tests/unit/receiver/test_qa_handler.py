@@ -198,9 +198,11 @@ async def test_pending_item_skipped(invitation_list, rejected_list, qa_list):
 
 @pytest.mark.anyio
 async def test_missing_qa_status_defaults_to_skip(invitation_list, rejected_list, qa_list):
-    """Items without a qa_status field should be treated as pending and skipped."""
+    """Items without a qa_status field should default to 'pending' and be skipped."""
     handler = make_qa_review_handler(invitation_list, rejected_list, qa_list)
-    item = {"id": "qa-1", "fields": {"Title": "Test", "document_id": "doc-001"}}
+    item = _make_qa_item(qa_status="pending")
+    # Remove qa_status to simulate it being absent — model default is "pending"
+    del item["fields"]["qa_status"]
 
     await handler(item)
 
@@ -238,3 +240,24 @@ async def test_rejected_item_not_deleted_if_create_fails(invitation_list, reject
         await handler(item)
 
     qa_list.delete_item.assert_not_called()
+
+
+@pytest.mark.anyio
+async def test_rejected_item_strips_system_fields(invitation_list, rejected_list, qa_list):
+    """SharePoint system fields should not be forwarded to the rejected list."""
+    handler = make_qa_review_handler(invitation_list, rejected_list, qa_list)
+    item = _make_qa_item(qa_status="rejected", qa_notes="Bad extraction")
+    # Inject SharePoint system fields that should be stripped by model validation
+    item["fields"]["Modified"] = "2026-01-01T00:00:00Z"
+    item["fields"]["Created"] = "2026-01-01T00:00:00Z"
+    item["fields"]["AuthorLookupId"] = "42"
+
+    await handler(item)
+
+    fields = rejected_list.create_item.call_args[0][0]
+    assert "Modified" not in fields
+    assert "Created" not in fields
+    assert "AuthorLookupId" not in fields
+    # Model fields should still be present
+    assert fields["qa_status"] == "rejected"
+    assert fields["qa_notes"] == "Bad extraction"

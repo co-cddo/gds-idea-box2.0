@@ -188,13 +188,13 @@ def make_qa_review_handler(
         """Route a QA-reviewed invitation to its destination list."""
         item_fields = item.get("fields", {})
         item_id = item.get("id", "unknown")
-        qa_status = item_fields.get("qa_status", "pending")
 
-        if qa_status == "approved":
+        qa_item = from_sharepoint_fields(item_fields, SharepointInvitationQA)
+
+        if qa_item.qa_status == "approved":
             logger.info(f"QA approved invitation {item_id}, copying to '{invitation_list.list_name}'")
 
             try:
-                qa_item = from_sharepoint_fields(item_fields, SharepointInvitationQA)
                 sp_invitation = to_sharepoint_invitation(qa_item)
                 fields = to_sharepoint_fields(sp_invitation)
                 invitation_list.create_item(fields)
@@ -205,13 +205,12 @@ def make_qa_review_handler(
                 logger.exception(f"Failed to process approved QA item {item_id}: {type(e).__name__}: {e}")
                 raise
 
-        elif qa_status == "rejected":
+        elif qa_item.qa_status == "rejected":
             logger.info(f"QA rejected invitation {item_id}, copying to '{rejected_list.list_name}'")
 
             try:
-                # Preserve all fields including QA notes for audit trail
-                rejected_fields = {k: v for k, v in item_fields.items() if v is not None}
-                rejected_list.create_item(rejected_fields)
+                fields = to_sharepoint_fields(qa_item)
+                rejected_list.create_item(fields)
                 qa_list.delete_item(item_id)
 
                 logger.info(f"Invitation {item_id} moved to '{rejected_list.list_name}'")
@@ -220,6 +219,6 @@ def make_qa_review_handler(
                 raise
 
         else:
-            logger.debug(f"Skipping QA item {item_id}: qa_status='{qa_status}' (still pending)")
+            logger.debug(f"Skipping QA item {item_id}: qa_status='{qa_item.qa_status}' (still pending)")
 
     return handle_qa_review
