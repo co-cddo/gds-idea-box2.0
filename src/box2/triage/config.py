@@ -7,13 +7,11 @@ from pydantic_ai.settings import ModelSettings
 
 # Model IDs
 SONNET_45 = "eu.anthropic.claude-sonnet-4-5-20250929-v1:0"
-HAIKU_45 = "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
 
 # Configuration from environment variables with defaults
 AWS_REGION = os.getenv("AWS_REGION", "eu-west-2")
 MODEL_ID = os.getenv("CLAUDE_MODEL", SONNET_45)
 TEMPERATURE = float(os.getenv("CLAUDE_TEMPERATURE", "0.3"))
-MINISTER_PERSONA_PATH = os.getenv("MINISTER_PERSONA_PATH", "data/example_science_minister.json")
 
 session = boto3.Session(
     region_name=AWS_REGION,

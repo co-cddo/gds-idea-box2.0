@@ -1,11 +1,14 @@
-"""Tests for QA stage mapper functions."""
+"""Tests for QA stage mapper functions and from_sharepoint_fields."""
 
 import pytest
+from pydantic import AnyHttpUrl, BaseModel, Field
 
 from box2.pipeline.mappers import (
+    _extract_urls_from_html,
     _split_list_field,
+    from_sharepoint_fields,
     to_sharepoint_fields,
-    to_sharepoint_invitation_from_qa,
+    to_sharepoint_invitation,
     to_sharepoint_invitation_qa,
 )
 from box2.pipeline.models import TriagedInvitation
@@ -137,67 +140,167 @@ def test_to_sharepoint_invitation_qa_serialises_with_qa_fields(sample_triaged: T
     assert "qa_notes" not in fields
 
 
-# ===== to_sharepoint_invitation_from_qa =====
+# ===== to_sharepoint_invitation (QA model → minister model) =====
 
 
-def test_to_sharepoint_invitation_from_qa_returns_base_model(sample_qa_item_fields: dict):
-    """to_sharepoint_invitation_from_qa should return a SharepointInvitation (not QA variant)."""
-    result = to_sharepoint_invitation_from_qa(sample_qa_item_fields)
+def test_to_sharepoint_invitation_returns_base_model(sample_qa_item_fields: dict):
+    """to_sharepoint_invitation should return a SharepointInvitation (not QA variant)."""
+    qa_item = from_sharepoint_fields(sample_qa_item_fields, SharepointInvitationQA)
+    result = to_sharepoint_invitation(qa_item)
     assert type(result) is SharepointInvitation
 
 
-def test_to_sharepoint_invitation_from_qa_maps_scalar_fields(sample_qa_item_fields: dict):
-    """Scalar fields should be correctly mapped from the QA item."""
-    result = to_sharepoint_invitation_from_qa(sample_qa_item_fields)
+def test_to_sharepoint_invitation_maps_fields(sample_qa_item_fields: dict):
+    """Fields should be correctly mapped from the QA model to the invitation model."""
+    qa_item = from_sharepoint_fields(sample_qa_item_fields, SharepointInvitationQA)
+    result = to_sharepoint_invitation(qa_item)
 
     assert result.title == "conference: Royal Society"
     assert result.document_id == "doc-001"
-    assert result.event_type == "conference"
     assert result.host_organisation == "Royal Society"
-    assert result.purpose == "Discuss AI safety policy and international cooperation"
-    assert result.is_time_flexible is False
-    assert result.location == "The Royal Society, London"
-    assert result.model_decision == "accept"
-    assert result.priority == "high"
-    assert result.urgency == "not_urgent"
-
-
-def test_to_sharepoint_invitation_from_qa_splits_list_fields(sample_qa_item_fields: dict):
-    """Semicolon-delimited list fields should be split back into Python lists."""
-    result = to_sharepoint_invitation_from_qa(sample_qa_item_fields)
-
     assert result.topics == ["AI Safety", "International Collaboration"]
     assert result.proposed_times == ["15th March 2026, 10:00 AM"]
     assert result.affected_events == ["Cabinet Committee on AI"]
+    assert result.model_decision == "accept"
+    assert result.priority == "high"
 
 
-def test_to_sharepoint_invitation_from_qa_strips_qa_fields(sample_qa_item_fields: dict):
+def test_to_sharepoint_invitation_strips_qa_fields(sample_qa_item_fields: dict):
     """QA-specific fields should not appear on the resulting SharepointInvitation."""
-    result = to_sharepoint_invitation_from_qa(sample_qa_item_fields)
+    qa_item = from_sharepoint_fields(sample_qa_item_fields, SharepointInvitationQA)
+    result = to_sharepoint_invitation(qa_item)
 
     assert not hasattr(result, "qa_status")
     assert not hasattr(result, "qa_reviewer")
     assert not hasattr(result, "qa_notes")
 
 
-def test_to_sharepoint_invitation_from_qa_handles_missing_optional_fields():
-    """Missing optional fields should fall back to safe defaults."""
-    minimal_fields = {
+# ===== from_sharepoint_fields =====
+
+
+def test_from_sharepoint_fields_maps_title(sample_qa_item_fields: dict):
+    """The SharePoint 'Title' key should be mapped to the model's 'title' field."""
+    result = from_sharepoint_fields(sample_qa_item_fields, SharepointInvitationQA)
+    assert result.title == "conference: Royal Society"
+
+
+def test_from_sharepoint_fields_splits_list_fields(sample_qa_item_fields: dict):
+    """Semicolon-delimited string fields should be split into Python lists."""
+    result = from_sharepoint_fields(sample_qa_item_fields, SharepointInvitationQA)
+
+    assert result.topics == ["AI Safety", "International Collaboration"]
+    assert result.proposed_times == ["15th March 2026, 10:00 AM"]
+    assert result.affected_events == ["Cabinet Committee on AI"]
+
+
+def test_from_sharepoint_fields_preserves_scalar_fields(sample_qa_item_fields: dict):
+    """Scalar fields should pass through unchanged."""
+    result = from_sharepoint_fields(sample_qa_item_fields, SharepointInvitationQA)
+
+    assert result.document_id == "doc-001"
+    assert result.event_type == "conference"
+    assert result.is_time_flexible is False
+    assert result.model_decision == "accept"
+    assert result.qa_status == "approved"
+    assert result.qa_reviewer == "jane.smith@example.gov.uk"
+
+
+def test_from_sharepoint_fields_ignores_extra_keys():
+    """SharePoint system fields not on the model should be silently ignored."""
+    fields = {
+        "Title": "Test",
+        "document_id": "doc-001",
+        "event_type": "conference",
+        "host_organisation": "Test Org",
+        "purpose": "Testing with extra fields",
+        "event_summary": "A test event for validation purposes.",
+        "topics": "AI Safety",
+        "proposed_times": "1st Jan 2026",
+        "is_time_flexible": False,
+        "location": "London",
+        "model_decision": "accept",
+        "priority": "high",
+        "reason": "Test reason text here.",
+        "draft_response": "Test draft response text.",
+        "urgency": "not_urgent",
+        # SharePoint system fields that aren't on the model:
+        "Modified": "2026-01-01T00:00:00Z",
+        "Created": "2026-01-01T00:00:00Z",
+        "AuthorLookupId": "42",
+    }
+    result = from_sharepoint_fields(fields, SharepointInvitation)
+    assert result.title == "Test"
+
+
+def test_from_sharepoint_fields_handles_missing_optional_fields():
+    """Missing optional fields should use model defaults."""
+    fields = {
         "Title": "Test invite",
         "document_id": "doc-002",
-        "event_summary": "A test event for validation purposes.",
-        "purpose": "Testing the mapper with minimal fields",
+        "event_type": "conference",
         "host_organisation": "Test Org",
+        "purpose": "Testing the mapper with minimal fields",
+        "event_summary": "A test event for validation purposes.",
+        "topics": "",
         "proposed_times": "1st Jan 2026",
-        "reason": "Test reason text",
-        "draft_response": "Test draft response text",
+        "is_time_flexible": False,
+        "location": "London",
+        "model_decision": "accept",
+        "priority": "high",
+        "reason": "Test reason text here.",
+        "draft_response": "Test draft response text.",
+        "urgency": "not_urgent",
     }
-    result = to_sharepoint_invitation_from_qa(minimal_fields)
+    result = from_sharepoint_fields(fields, SharepointInvitation)
 
-    assert result.title == "Test invite"
     assert result.deadline_to_respond is None
     assert result.affected_events == []
     assert result.topics == []
+
+
+class _MockUrlModel(BaseModel):
+    """Test model with a URL list field."""
+
+    title: str = Field(description="Title")
+    links: list[AnyHttpUrl] = Field(default_factory=list, description="URLs")
+
+
+def test_from_sharepoint_fields_extracts_urls_from_html():
+    """HTML anchor tags should be parsed back into URL lists."""
+    fields = {
+        "Title": "Test",
+        "links": '<a href="https://www.gov.uk/example">https://www.gov.uk/example</a>'
+        "<br>"
+        '<a href="https://example.com/page">https://example.com/page</a>',
+    }
+    result = from_sharepoint_fields(fields, _MockUrlModel)
+
+    assert [str(u) for u in result.links] == [
+        "https://www.gov.uk/example",
+        "https://example.com/page",
+    ]
+
+
+def test_from_sharepoint_fields_empty_url_html():
+    """An empty HTML string should produce an empty URL list."""
+    fields = {"Title": "Test", "links": ""}
+    result = from_sharepoint_fields(fields, _MockUrlModel)
+    assert result.links == []
+
+
+def test_from_sharepoint_fields_round_trip(sample_triaged: TriagedInvitation):
+    """Serialising then deserialising a model should produce equivalent data."""
+    original = to_sharepoint_invitation_qa(sample_triaged)
+    serialised = to_sharepoint_fields(original)
+    restored = from_sharepoint_fields(serialised, SharepointInvitationQA)
+
+    assert restored.title == original.title
+    assert restored.document_id == original.document_id
+    assert restored.topics == original.topics
+    assert restored.proposed_times == original.proposed_times
+    assert restored.affected_events == original.affected_events
+    assert restored.qa_status == original.qa_status
+    assert restored.model_decision == original.model_decision
 
 
 # ===== _split_list_field =====
@@ -231,3 +334,23 @@ def test_split_list_field_strips_whitespace():
 def test_split_list_field_ignores_empty_segments():
     """Empty segments from trailing semicolons should be filtered out."""
     assert _split_list_field("a; ; b;") == ["a", "b"]
+
+
+# ===== _extract_urls_from_html =====
+
+
+def test_extract_urls_from_html_single_link():
+    """A single anchor tag should produce a one-element list."""
+    html = '<a href="https://example.com">https://example.com</a>'
+    assert _extract_urls_from_html(html) == ["https://example.com"]
+
+
+def test_extract_urls_from_html_multiple_links():
+    """Multiple anchor tags separated by <br> should all be extracted."""
+    html = '<a href="https://a.com">a</a><br><a href="https://b.com">b</a>'
+    assert _extract_urls_from_html(html) == ["https://a.com", "https://b.com"]
+
+
+def test_extract_urls_from_html_empty_string():
+    """An empty string should return an empty list."""
+    assert _extract_urls_from_html("") == []

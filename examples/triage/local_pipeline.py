@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 from box2.pipeline import (
     TriagedInvitation,
     to_sharepoint_fields,
-    to_sharepoint_invitation,
+    to_sharepoint_invitation_qa,
     to_sharepoint_submission,
     triage_file,
 )
@@ -70,7 +70,7 @@ async def main() -> None:
     # ------------------------------------------------------------------
     match result:
         case TriagedInvitation():
-            sp_item = to_sharepoint_invitation(result)
+            sp_item = to_sharepoint_invitation_qa(result)
             list_name = INVITATION_LIST_NAME
             print("\n" + "=" * 80)
             print("TRIAGED INVITATION")

@@ -1,7 +1,14 @@
-"""Mappers from pipeline results to SharePoint list schemas."""
+"""Mappers between pipeline results and SharePoint list schemas.
 
+Provides generic serialisation (``to_sharepoint_fields``) and
+deserialisation (``from_sharepoint_fields``) for any Pydantic model
+that represents a SharePoint list schema, plus domain-specific mappers
+for converting between pipeline result types and SharePoint models.
+"""
+
+import re
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, get_origin
 
 from pydantic import BaseModel
 
@@ -21,6 +28,14 @@ from box2.triage.models import (
 # but SharePoint silently truncates anything longer.  We must do the same
 # when writing items so that field keys match the actual column names.
 _SP_INTERNAL_NAME_MAX = 32
+
+# Regex to extract URLs from HTML anchor tags produced by to_sharepoint_fields.
+_HREF_PATTERN = re.compile(r'href="([^"]+)"')
+
+
+# ======================================================================
+# Generic serialisation / deserialisation
+# ======================================================================
 
 
 def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
@@ -81,20 +96,157 @@ def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
     return fields
 
 
-def to_sharepoint_invitation(triaged: TriagedInvitation) -> SharepointInvitation:
-    """Map a triaged invitation to the SharePoint invitation list schema.
+def from_sharepoint_fields[T: BaseModel](fields: dict[str, Any], model_type: type[T]) -> T:
+    """Deserialise a SharePoint list item's fields dict into a Pydantic model.
+
+    Inverse of ``to_sharepoint_fields()``. Handles:
+
+    - ``Title`` → ``title`` key mapping.
+    - Semicolon-delimited strings → ``list[str]`` fields.
+    - HTML anchor tags → ``list[AnyHttpUrl]`` fields.
+    - Truncated field name matching (names > 32 chars).
+    - Extra keys in *fields* that don't match model fields are ignored.
+
+    Pydantic's ``model_validate`` handles remaining type coercion
+    (ISO strings → ``datetime``, strings → ``Literal``/``Enum``, etc.).
 
     Args:
-        triaged: A TriagedInvitation containing extraction and triage results.
+        fields: Flat dict from a SharePoint list item
+            (i.e. ``item["fields"]``).
+        model_type: The Pydantic model class to deserialise into.
+
+    Returns:
+        A validated instance of *model_type*.
+    """
+    # Build field classification maps from the model's annotations.
+    list_fields: set[str] = set()
+    url_fields: set[str] = set()
+
+    for fname, finfo in model_type.model_fields.items():
+        tp = _unwrap_optional(finfo.annotation)
+        if _contains_url_type(tp):
+            url_fields.add(fname)
+        elif get_origin(tp) is list:
+            list_fields.add(fname)
+
+    # Map SharePoint keys → model field names (handles Title and truncation).
+    sp_key_to_field: dict[str, str] = {}
+    for fname in model_type.model_fields:
+        if fname == "title":
+            sp_key_to_field["Title"] = "title"
+        else:
+            sp_key_to_field[fname[:_SP_INTERNAL_NAME_MAX]] = fname
+
+    # Convert each value back to the type the model expects.
+    parsed: dict[str, Any] = {}
+    for sp_key, value in fields.items():
+        model_key = sp_key_to_field.get(sp_key)
+        if model_key is None:
+            continue  # Skip SharePoint system fields not on the model
+
+        if model_key in url_fields and isinstance(value, str):
+            parsed[model_key] = _extract_urls_from_html(value)
+        elif model_key in list_fields and isinstance(value, str):
+            parsed[model_key] = _split_list_field(value)
+        else:
+            parsed[model_key] = value
+
+    return model_type.model_validate(parsed)
+
+
+def _split_list_field(value: str | list[str] | None) -> list[str]:
+    """Split a semicolon-delimited SharePoint text value back to a list.
+
+    SharePoint stores ``list[str]`` fields as ``"; "`` joined strings.
+    This helper handles both the serialised string form and the already-
+    split list form (e.g. from test fixtures).
+
+    Args:
+        value: Semicolon-delimited string, an already-split list, or None.
+
+    Returns:
+        List of strings, or an empty list if *value* is falsy.
+    """
+    if not value:
+        return []
+    if isinstance(value, list):
+        return value
+    return [v.strip() for v in value.split(";") if v.strip()]
+
+
+def _extract_urls_from_html(html: str) -> list[str]:
+    """Extract URLs from HTML anchor tags.
+
+    Reverses the HTML link formatting applied by ``to_sharepoint_fields``
+    for ``list[AnyHttpUrl]`` fields.
+
+    Args:
+        html: HTML string containing ``<a href="...">`` tags joined by
+            ``<br>``, or an empty string.
+
+    Returns:
+        List of URL strings, or an empty list if no links are found.
+    """
+    if not html:
+        return []
+    return _HREF_PATTERN.findall(html)
+
+
+# ======================================================================
+# Domain-specific mappers
+# ======================================================================
+
+
+def to_sharepoint_invitation(qa_item: SharepointInvitationQA) -> SharepointInvitation:
+    """Map an approved QA invitation to the minister-facing schema.
+
+    Copies all invitation fields from the QA model, dropping the
+    QA-specific fields (``qa_status``, ``qa_reviewer``, ``qa_notes``).
+
+    Args:
+        qa_item: A ``SharepointInvitationQA`` from the QA list, typically
+            constructed via ``from_sharepoint_fields()``.
 
     Returns:
         SharepointInvitation ready to be serialised via
         ``to_sharepoint_fields()`` and written with ``ListClient.create_item()``.
     """
+    return SharepointInvitation(
+        title=qa_item.title,
+        document_id=qa_item.document_id,
+        event_type=qa_item.event_type,
+        host_organisation=qa_item.host_organisation,
+        purpose=qa_item.purpose,
+        event_summary=qa_item.event_summary,
+        topics=qa_item.topics,
+        proposed_times=qa_item.proposed_times,
+        is_time_flexible=qa_item.is_time_flexible,
+        location=qa_item.location,
+        deadline_to_respond=qa_item.deadline_to_respond,
+        model_decision=qa_item.model_decision,
+        priority=qa_item.priority,
+        reason=qa_item.reason,
+        draft_response=qa_item.draft_response,
+        affected_events=qa_item.affected_events,
+        urgency=qa_item.urgency,
+    )
+
+
+def to_sharepoint_invitation_qa(triaged: TriagedInvitation) -> SharepointInvitationQA:
+    """Map a triaged invitation to the QA invitations list schema.
+
+    Args:
+        triaged: A TriagedInvitation containing extraction and triage results.
+
+    Returns:
+        SharepointInvitationQA with ``qa_status`` set to ``"pending"``,
+        ready to be serialised via ``to_sharepoint_fields()`` and written
+        with ``ListClient.create_item()``.
+    """
     inv = triaged.invitation
     dec = triaged.decision
 
-    return SharepointInvitation(
+    return SharepointInvitationQA(
         title=f"{inv.event_type.value}: {inv.host_org}",
         document_id=inv.document_id,
         event_type=inv.event_type.value,
@@ -112,6 +264,7 @@ def to_sharepoint_invitation(triaged: TriagedInvitation) -> SharepointInvitation
         draft_response=dec.draft_response,
         affected_events=dec.affected_events,
         urgency=inv.urgency,
+        qa_status="pending",
     )
 
 
@@ -183,112 +336,4 @@ def to_sharepoint_action(
         final_draft=minister_comment,
         summary=review_result.summary,
         minister_comment=minister_comment,
-    )
-
-
-# ======================================================================
-# QA stage mappers
-# ======================================================================
-
-# Fields added by the QA model that are not part of the minister-facing
-# invitation schema. Used by ``to_sharepoint_invitation_from_qa`` to
-# strip QA-only columns when copying an approved item.
-_QA_ONLY_FIELDS = frozenset({"qa_status", "qa_reviewer", "qa_notes"})
-
-
-def to_sharepoint_invitation_qa(triaged: TriagedInvitation) -> SharepointInvitationQA:
-    """Map a triaged invitation to the QA invitations list schema.
-
-    Produces the same fields as ``to_sharepoint_invitation`` but returns
-    the QA variant with ``qa_status`` defaulting to ``"pending"``.
-
-    Args:
-        triaged: A TriagedInvitation containing extraction and triage results.
-
-    Returns:
-        SharepointInvitationQA ready to be serialised via
-        ``to_sharepoint_fields()`` and written with ``ListClient.create_item()``.
-    """
-    inv = triaged.invitation
-    dec = triaged.decision
-
-    return SharepointInvitationQA(
-        title=f"{inv.event_type.value}: {inv.host_org}",
-        document_id=inv.document_id,
-        event_type=inv.event_type.value,
-        host_organisation=inv.host_org,
-        purpose=inv.purpose,
-        event_summary=inv.event_summary,
-        topics=inv.topics,
-        proposed_times=inv.proposed_times,
-        is_time_flexible=inv.is_time_flexible,
-        location=inv.location,
-        deadline_to_respond=inv.deadline_to_respond,
-        model_decision=dec.decision,
-        priority=dec.priority,
-        reason=dec.reason,
-        draft_response=dec.draft_response,
-        affected_events=dec.affected_events,
-        urgency=inv.urgency,
-        qa_status="pending",
-    )
-
-
-def _split_list_field(value: str | list[str] | None) -> list[str]:
-    """Split a semicolon-delimited SharePoint text value back to a list.
-
-    SharePoint stores ``list[str]`` fields as ``"; "`` joined strings.
-    This helper handles both the serialised string form and the already-
-    split list form (e.g. from test fixtures).
-
-    Args:
-        value: Semicolon-delimited string, an already-split list, or None.
-
-    Returns:
-        List of strings, or an empty list if *value* is falsy.
-    """
-    if not value:
-        return []
-    if isinstance(value, list):
-        return value
-    return [v.strip() for v in value.split(";") if v.strip()]
-
-
-def to_sharepoint_invitation_from_qa(item_fields: dict[str, Any]) -> SharepointInvitation:
-    """Map a QA list item's fields to the minister-facing invitation schema.
-
-    Called when a QA reviewer approves an item. Reads the (potentially
-    edited) field values from the QA SharePoint list item and constructs
-    a ``SharepointInvitation`` for the minister's Invitations list.
-
-    List-type fields (``topics``, ``proposed_times``, ``affected_events``)
-    are split from their semicolon-delimited SharePoint representation
-    back into Python lists.
-
-    Args:
-        item_fields: Flat dict of SharePoint list item fields from the
-            QA Invitations list (i.e. ``item["fields"]``).
-
-    Returns:
-        SharepointInvitation ready to be serialised via
-        ``to_sharepoint_fields()`` and written with ``ListClient.create_item()``.
-    """
-    return SharepointInvitation(
-        title=item_fields.get("Title", ""),
-        document_id=item_fields.get("document_id", ""),
-        event_type=item_fields.get("event_type", "other"),
-        host_organisation=item_fields.get("host_organisation", ""),
-        purpose=item_fields.get("purpose", ""),
-        event_summary=item_fields.get("event_summary", ""),
-        topics=_split_list_field(item_fields.get("topics")),
-        proposed_times=_split_list_field(item_fields.get("proposed_times")),
-        is_time_flexible=item_fields.get("is_time_flexible", False),
-        location=item_fields.get("location", ""),
-        deadline_to_respond=item_fields.get("deadline_to_respond"),
-        model_decision=item_fields.get("model_decision", "defer"),
-        priority=item_fields.get("priority", "medium"),
-        reason=item_fields.get("reason", ""),
-        draft_response=item_fields.get("draft_response", ""),
-        affected_events=_split_list_field(item_fields.get("affected_events")),
-        urgency=item_fields.get("urgency", "not_urgent"),
     )
