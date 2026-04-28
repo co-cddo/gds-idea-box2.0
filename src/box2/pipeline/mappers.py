@@ -200,8 +200,10 @@ def _extract_urls_from_html(html: str) -> list[str]:
 def to_sharepoint_invitation(qa_item: SharepointInvitationQA) -> SharepointInvitation:
     """Map an approved QA invitation to the minister-facing schema.
 
-    Copies all invitation fields from the QA model, dropping the
-    QA-specific fields (``qa_status``, ``qa_reviewer``, ``qa_notes``).
+    Dynamically copies all fields defined on ``SharepointInvitation`` from
+    the QA model, automatically dropping QA-specific fields that only
+    exist on the subclass.  This ensures new fields added to
+    ``SharepointInvitation`` are picked up without updating this mapper.
 
     Args:
         qa_item: A ``SharepointInvitationQA`` from the QA list, typically
@@ -211,25 +213,8 @@ def to_sharepoint_invitation(qa_item: SharepointInvitationQA) -> SharepointInvit
         SharepointInvitation ready to be serialised via
         ``to_sharepoint_fields()`` and written with ``ListClient.create_item()``.
     """
-    return SharepointInvitation(
-        title=qa_item.title,
-        document_id=qa_item.document_id,
-        event_type=qa_item.event_type,
-        host_organisation=qa_item.host_organisation,
-        purpose=qa_item.purpose,
-        event_summary=qa_item.event_summary,
-        topics=qa_item.topics,
-        proposed_times=qa_item.proposed_times,
-        is_time_flexible=qa_item.is_time_flexible,
-        location=qa_item.location,
-        deadline_to_respond=qa_item.deadline_to_respond,
-        model_decision=qa_item.model_decision,
-        priority=qa_item.priority,
-        reason=qa_item.reason,
-        draft_response=qa_item.draft_response,
-        affected_events=qa_item.affected_events,
-        urgency=qa_item.urgency,
-    )
+    shared_fields = {name: getattr(qa_item, name) for name in SharepointInvitation.model_fields}
+    return SharepointInvitation(**shared_fields)
 
 
 def to_sharepoint_invitation_qa(triaged: TriagedInvitation) -> SharepointInvitationQA:
