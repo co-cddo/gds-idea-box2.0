@@ -21,6 +21,8 @@ Environment variables (optional):
     INVITATION_LIST_NAME     — SharePoint invitation list (default: Invitations)
     SUBMISSION_LIST_NAME     — SharePoint submission list (default: Submissions)
     ACTIONS_LIST_NAME        — SharePoint actions list (default: Actions)
+    QA_INVITATION_LIST_NAME  — QA invitations list (default: QA Invitations)
+    REJECTED_INVITATION_LIST_NAME — rejected invitations list (default: Rejected Invitations)
     AWS_REGION               — AWS region for STS (default: eu-west-2)
 
 Deployment:
@@ -35,7 +37,7 @@ from mangum import Mangum
 
 from box2.receiver import ReceiverConfig, WebhookRoute, create_app
 from box2.receiver.dedup import DynamoDedup
-from box2.receiver.route_handlers import make_file_upload_handler, make_list_review_handler
+from box2.receiver.route_handlers import make_file_upload_handler, make_list_review_handler, make_qa_review_handler
 from box2.sharepoint import DocsClient, ListClient, SharePointSession
 
 logger = logging.getLogger(__name__)
@@ -53,6 +55,8 @@ DOCS_LIBRARY_NAME = os.environ.get("DOCS_LIBRARY_NAME", "Documents")
 INVITATION_LIST_NAME = os.environ.get("INVITATION_LIST_NAME", "Invitations")
 SUBMISSION_LIST_NAME = os.environ.get("SUBMISSION_LIST_NAME", "Submissions")
 ACTIONS_LIST_NAME = os.environ.get("ACTIONS_LIST_NAME", "Actions")
+QA_INVITATION_LIST_NAME = os.environ.get("QA_INVITATION_LIST_NAME", "QA_Invitations")
+REJECTED_INVITATION_LIST_NAME = os.environ.get("REJECTED_INVITATION_LIST_NAME", "Rejected_Invitations")
 
 # ============================================================================
 # SharePoint session and clients (created once per cold start)
@@ -63,6 +67,8 @@ docs = DocsClient(session, library_name=DOCS_LIBRARY_NAME)
 invitation_list = ListClient(session, list_name=INVITATION_LIST_NAME)
 submission_list = ListClient(session, list_name=SUBMISSION_LIST_NAME)
 actions_list = ListClient(session, list_name=ACTIONS_LIST_NAME)
+qa_invitation_list = ListClient(session, list_name=QA_INVITATION_LIST_NAME)
+rejected_invitation_list = ListClient(session, list_name=REJECTED_INVITATION_LIST_NAME)
 dedup_store = DynamoDedup(table_name=DYNAMO_TABLE_NAME, window_seconds=DEDUP_WINDOW_SECONDS)
 
 logger.info(
@@ -77,7 +83,7 @@ logger.info(
 
 handle_new_file = make_file_upload_handler(
     docs=docs,
-    invitation_list=invitation_list,
+    qa_invitation_list=qa_invitation_list,
     submission_list=submission_list,
 )
 
@@ -89,6 +95,12 @@ handle_submission_review = make_list_review_handler(
 handle_invitation_review = make_list_review_handler(
     actions_list=actions_list,
     document_type="invitation",
+)
+
+handle_qa_review = make_qa_review_handler(
+    invitation_list=invitation_list,
+    rejected_list=rejected_invitation_list,
+    qa_list=qa_invitation_list,
 )
 
 
@@ -120,6 +132,12 @@ app = create_app(
             path="/invitation_reviewed",
             get_items=lambda: invitation_list.get_recent(minutes=LOOKBACK_MINUTES),
             handler=handle_invitation_review,
+            filter_self=True,
+        ),
+        WebhookRoute(
+            path="/qa_reviewed",
+            get_items=lambda: qa_invitation_list.get_recent(minutes=LOOKBACK_MINUTES),
+            handler=handle_qa_review,
             filter_self=True,
         ),
     ],

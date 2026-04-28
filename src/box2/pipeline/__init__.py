@@ -12,9 +12,11 @@ import this package without the heavy AI dependency tree.
 import importlib
 
 from box2.pipeline.mappers import (
+    from_sharepoint_fields,
     to_sharepoint_action,
     to_sharepoint_fields,
     to_sharepoint_invitation,
+    to_sharepoint_invitation_qa,
     to_sharepoint_submission,
 )
 from box2.pipeline.models import ActionReviewResult, TriagedInvitation
@@ -46,11 +48,13 @@ __all__ = [
     "TriageFileResult",
     "TriagedInvitation",
     "extract_actions_from_review",
+    "from_sharepoint_fields",
     "process_invitation",
     "process_submission",
     "to_sharepoint_action",
     "to_sharepoint_fields",
     "to_sharepoint_invitation",
+    "to_sharepoint_invitation_qa",
     "to_sharepoint_submission",
     "triage_file",
 ]

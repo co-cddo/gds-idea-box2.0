@@ -24,6 +24,7 @@ from box2.triage.models.document import (
     generate_document_id,
 )
 from box2.triage.models.invitation import EventType, Invitation, NotInvitation
+from box2.triage.models.invitation_qa_sharepoint import SharepointInvitationQA
 from box2.triage.models.invitation_sharepoint import SharepointInvitation
 from box2.triage.models.parli_question_sharepoint import SharepointPQs
 from box2.triage.models.persona import MinisterPersona
@@ -71,6 +72,7 @@ __all__ = [
     "SafeEmail",
     "SharepointAction",
     "SharepointInvitation",
+    "SharepointInvitationQA",
     "SharepointSubmission",
     "SharepointPQs",
     "Submission",
