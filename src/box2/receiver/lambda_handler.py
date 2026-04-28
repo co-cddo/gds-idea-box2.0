@@ -55,8 +55,8 @@ DOCS_LIBRARY_NAME = os.environ.get("DOCS_LIBRARY_NAME", "Documents")
 INVITATION_LIST_NAME = os.environ.get("INVITATION_LIST_NAME", "Invitations")
 SUBMISSION_LIST_NAME = os.environ.get("SUBMISSION_LIST_NAME", "Submissions")
 ACTIONS_LIST_NAME = os.environ.get("ACTIONS_LIST_NAME", "Actions")
-QA_INVITATION_LIST_NAME = os.environ.get("QA_INVITATION_LIST_NAME", "QA Invitations")
-REJECTED_INVITATION_LIST_NAME = os.environ.get("REJECTED_INVITATION_LIST_NAME", "Rejected Invitations")
+QA_INVITATION_LIST_NAME = os.environ.get("QA_INVITATION_LIST_NAME", "QA_Invitations")
+REJECTED_INVITATION_LIST_NAME = os.environ.get("REJECTED_INVITATION_LIST_NAME", "Rejected_Invitations")
 
 # ============================================================================
 # SharePoint session and clients (created once per cold start)
