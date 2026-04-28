@@ -11,6 +11,7 @@ from box2.triage.models import (
     Action,
     SharepointAction,
     SharepointInvitation,
+    SharepointInvitationQA,
     SharepointSubmission,
     Submission,
 )
@@ -182,4 +183,112 @@ def to_sharepoint_action(
         final_draft=minister_comment,
         summary=review_result.summary,
         minister_comment=minister_comment,
+    )
+
+
+# ======================================================================
+# QA stage mappers
+# ======================================================================
+
+# Fields added by the QA model that are not part of the minister-facing
+# invitation schema. Used by ``qa_item_to_sharepoint_invitation`` to
+# strip QA-only columns when copying an approved item.
+_QA_ONLY_FIELDS = frozenset({"qa_status", "qa_reviewer", "qa_notes"})
+
+
+def to_sharepoint_invitation_qa(triaged: TriagedInvitation) -> SharepointInvitationQA:
+    """Map a triaged invitation to the QA invitations list schema.
+
+    Produces the same fields as ``to_sharepoint_invitation`` but returns
+    the QA variant with ``qa_status`` defaulting to ``"pending"``.
+
+    Args:
+        triaged: A TriagedInvitation containing extraction and triage results.
+
+    Returns:
+        SharepointInvitationQA ready to be serialised via
+        ``to_sharepoint_fields()`` and written with ``ListClient.create_item()``.
+    """
+    inv = triaged.invitation
+    dec = triaged.decision
+
+    return SharepointInvitationQA(
+        title=f"{inv.event_type.value}: {inv.host_org}",
+        document_id=inv.document_id,
+        event_type=inv.event_type.value,
+        host_organisation=inv.host_org,
+        purpose=inv.purpose,
+        event_summary=inv.event_summary,
+        topics=inv.topics,
+        proposed_times=inv.proposed_times,
+        is_time_flexible=inv.is_time_flexible,
+        location=inv.location,
+        deadline_to_respond=inv.deadline_to_respond,
+        model_decision=dec.decision,
+        priority=dec.priority,
+        reason=dec.reason,
+        draft_response=dec.draft_response,
+        affected_events=dec.affected_events,
+        urgency=inv.urgency,
+        qa_status="pending",
+    )
+
+
+def _split_list_field(value: str | list[str] | None) -> list[str]:
+    """Split a semicolon-delimited SharePoint text value back to a list.
+
+    SharePoint stores ``list[str]`` fields as ``"; "`` joined strings.
+    This helper handles both the serialised string form and the already-
+    split list form (e.g. from test fixtures).
+
+    Args:
+        value: Semicolon-delimited string, an already-split list, or None.
+
+    Returns:
+        List of strings, or an empty list if *value* is falsy.
+    """
+    if not value:
+        return []
+    if isinstance(value, list):
+        return value
+    return [v.strip() for v in value.split(";") if v.strip()]
+
+
+def qa_item_to_sharepoint_invitation(item_fields: dict[str, Any]) -> SharepointInvitation:
+    """Map a QA list item's fields to the minister-facing invitation schema.
+
+    Called when a QA reviewer approves an item. Reads the (potentially
+    edited) field values from the QA SharePoint list item and constructs
+    a ``SharepointInvitation`` for the minister's Invitations list.
+
+    List-type fields (``topics``, ``proposed_times``, ``affected_events``)
+    are split from their semicolon-delimited SharePoint representation
+    back into Python lists.
+
+    Args:
+        item_fields: Flat dict of SharePoint list item fields from the
+            QA Invitations list (i.e. ``item["fields"]``).
+
+    Returns:
+        SharepointInvitation ready to be serialised via
+        ``to_sharepoint_fields()`` and written with ``ListClient.create_item()``.
+    """
+    return SharepointInvitation(
+        title=item_fields.get("Title", ""),
+        document_id=item_fields.get("document_id", ""),
+        event_type=item_fields.get("event_type", "other"),
+        host_organisation=item_fields.get("host_organisation", ""),
+        purpose=item_fields.get("purpose", ""),
+        event_summary=item_fields.get("event_summary", ""),
+        topics=_split_list_field(item_fields.get("topics")),
+        proposed_times=_split_list_field(item_fields.get("proposed_times")),
+        is_time_flexible=item_fields.get("is_time_flexible", False),
+        location=item_fields.get("location", ""),
+        deadline_to_respond=item_fields.get("deadline_to_respond"),
+        model_decision=item_fields.get("model_decision", "defer"),
+        priority=item_fields.get("priority", "medium"),
+        reason=item_fields.get("reason", ""),
+        draft_response=item_fields.get("draft_response", ""),
+        affected_events=_split_list_field(item_fields.get("affected_events")),
+        urgency=item_fields.get("urgency", "not_urgent"),
     )
