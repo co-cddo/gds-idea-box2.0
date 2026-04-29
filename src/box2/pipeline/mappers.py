@@ -319,6 +319,7 @@ def to_sharepoint_action(
         document_type=document_type,
         office_decision=review_result.office_decision,
         final_draft=minister_comment,
+        calendar_conflicts=item_fields.get("affected_events", []),
         summary=review_result.summary,
         minister_comment=minister_comment,
     )

@@ -138,6 +138,10 @@ def make_list_review_handler(
             if not minister_decision:
                 logger.debug(f"Skipping invitation item {item_id}: no minister_decision")
                 return
+            if minister_decision == "other" and not minister_comment:
+                logger.debug(f"Skipping invitation item {item_id}: decision is 'other' but no minister_comment")
+                return
+
         else:
             if not minister_comment:
                 logger.debug(f"Skipping submission item {item_id}: no minister_comment")
