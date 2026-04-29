@@ -34,6 +34,11 @@ class SharepointAction(BaseModel):
         description="Final draft text for correspondence actions. Should be ready to send with minimal edits.",
     )
 
+    calendar_conflicts: str | None = Field(
+        default=None,
+        description="Calendar events that conflict with this invitation, identified during triage (e.g. 'Cabinet committee 15 Feb 6-7pm",
+    )
+
     # Timing and priority
     deadline: str | None = Field(
         default=None,

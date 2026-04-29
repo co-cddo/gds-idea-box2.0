@@ -77,7 +77,7 @@ class SharepointInvitation(BaseModel):
         description="Minister's feedback on the invitation",
     )
 
-    minister_decision: Literal["accept", "decline"] | None = Field(
+    minister_decision: Literal["accept", "decline", "other"] | None = Field(
         default=None,
         description="Minister's decision on whether to accept or decline the invitation",
     )
