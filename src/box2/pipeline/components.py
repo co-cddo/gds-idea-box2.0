@@ -121,10 +121,10 @@ async def process_submission(
 
 
 # ======================================================================
-# Action extraction from list item reviews
+# Action extraction based on type of document: invitation or submission
 # ======================================================================
 
-INVITATION_DECISION_INSTRUCTIONS = """
+INVITATION_ACTIONS_DECISION_INSTRUCTIONS = """
 You are preparing a single action for Private Office staff based on a minister's decision on an invitation.
 The minister's decision is explicit — do NOT infer it from any comment.
 YOUR TASK:
@@ -152,7 +152,7 @@ IF DECISION IS "other":
 - description must clearly explain what Private Office needs to do based on the comment
 """
 
-SUBMISSION_ACTION_REVIEW_INSTRUCTIONS = """
+SUBMISSION_ACTIONS_DECISION_INSTRUCTIONS = """
 You are extracting actionable items from a minister's review of a {document_type}.
 
 Your task is to:
@@ -270,7 +270,7 @@ async def extract_actions_from_review(
             responsible_deputy_director=item_fields.get("responsible_deputy_director", ""),
             minister_comment=minister_comment,
         )
-        instructions = SUBMISSION_ACTION_REVIEW_INSTRUCTIONS.format(
+        instructions = SUBMISSION_ACTIONS_DECISION_INSTRUCTIONS.format(
             document_type=document_type,
             document_id=document_id,
         )
@@ -291,7 +291,8 @@ async def extract_actions_from_review(
             minister_comment=minister_comment,
             minister_decision=item_fields.get("minister_decision", "not specified"),
         )
-        instructions = INVITATION_DECISION_INSTRUCTIONS.format(
+
+        instructions = INVITATION_ACTIONS_DECISION_INSTRUCTIONS.format(
             document_id=document_id,
         )
 
