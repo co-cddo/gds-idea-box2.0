@@ -30,8 +30,8 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "extract_actions_from_review": ("box2.pipeline.components", "extract_actions_from_review"),
     "process_invitation": ("box2.pipeline.components", "process_invitation"),
     "process_submission": ("box2.pipeline.components", "process_submission"),
-    "TriageFileResult": ("box2.pipeline.triage_file", "TriageFileResult"),
-    "triage_file": ("box2.pipeline.triage_file", "triage_file"),
+    "TriageFileResult": ("box2.pipeline.file_triage", "TriageFileResult"),
+    "triage_file": ("box2.pipeline.file_triage", "triage_file"),
 }
 
 
