@@ -6,8 +6,8 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-class Action_Status(str, Enum):
-    """Type of ministerial event."""
+class ActionStatus(str, Enum):
+    """Action status to be changed by private office staff. Defalts to pending."""
 
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
@@ -63,7 +63,7 @@ class SharepointAction(BaseModel):
     )
 
     # Status tracking
-    status: Action_Status = Field(default="pending", description="Current status of this action")
+    status: ActionStatus = Field(default="pending", description="Current status of this action")
 
     # Linking back to source
     document_id: str = Field(description="Links back to the source document that generated this action")
