@@ -88,7 +88,3 @@ class SharepointAction(BaseModel):
     )
 
     minister_comment: str = Field(description="Minister's comments on how to proceed with the action")
-
-    action_progress: Literal["yes", "yes_but", "no"] = Field(
-        description="The office's decision on behalf of the minister"
-    )
