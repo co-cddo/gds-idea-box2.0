@@ -133,9 +133,19 @@ def make_list_review_handler(
         item_id = item.get("id", "unknown")
         minister_comment = item_fields.get("minister_comment")
 
-        if not minister_comment:
-            logger.debug(f"Skipping {document_type} item {item_id}: no minister_comment")
-            return
+        if document_type == "invitation":
+            minister_decision = item_fields.get("minister_decision")
+            if not minister_decision:
+                logger.debug(f"Skipping invitation item {item_id}: no minister_decision")
+                return
+            if minister_decision == "other" and not minister_comment:
+                logger.debug(f"Skipping invitation item {item_id}: decision is 'other' but no minister_comment")
+                return
+
+        else:
+            if not minister_comment:
+                logger.debug(f"Skipping submission item {item_id}: no minister_comment")
+                return
 
         logger.info(f"Processing {document_type} review for item {item_id}")
 

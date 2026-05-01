@@ -121,10 +121,38 @@ async def process_submission(
 
 
 # ======================================================================
-# Action extraction from list item reviews
+# Action extraction based on type of document: invitation or submission
 # ======================================================================
 
-ACTION_REVIEW_INSTRUCTIONS = """
+INVITATION_ACTIONS_DECISION_INSTRUCTIONS = """
+You are preparing a single action for Private Office staff based on a minister's decision on an invitation.
+The minister's decision is explicit — do NOT infer it from any comment.
+YOUR TASK:
+Return exactly ONE action of type "correspondence". This single action must capture everything
+Private Office needs to know and do.
+ACTION FIELDS:
+- action_id: short unique identifier, e.g. "ACT-001"
+- action_type: always "correspondence"
+- description: brief summary of the decision, event details (date, time, location), and any calendar conflicts
+- draft_content: a complete, ready-to-send email based on the instructions below
+- deadline: the response deadline from the invitation if available
+- urgency: based on the response deadline
+- owner: "Private Office"
+- document_id: "{document_id}"
+- source_document_type: "invitation"
+- created_at: current timestamp
+IF DECISION IS "accept":
+- draft_content must be an acceptance email using the existing draft response as the basis
+- description must note the event details and any calendar conflicts that need resolving
+IF DECISION IS "decline":
+- draft_content must be a decline email using the existing draft response as the basis
+- description must note the decline and any calendar conflicts that are now freed up
+IF DECISION IS "other":
+- draft_content must be drafted based on the minister's comment — use it as the direct instruction for what the email should say
+- description must clearly explain what Private Office needs to do based on the comment
+"""
+
+SUBMISSION_ACTIONS_DECISION_INSTRUCTIONS = """
 You are extracting actionable items from a minister's review of a {document_type}.
 
 Your task is to:
@@ -187,6 +215,7 @@ INVITATION DETAILS:
 - Topics: {topics}
 - Proposed Times: {proposed_times}
 - Location: {location}
+- Calendar Clash: {affected_events}
 
 AI TRIAGE RECOMMENDATION:
 - Recommended Decision: {model_decision}
@@ -241,6 +270,10 @@ async def extract_actions_from_review(
             responsible_deputy_director=item_fields.get("responsible_deputy_director", ""),
             minister_comment=minister_comment,
         )
+        instructions = SUBMISSION_ACTIONS_DECISION_INSTRUCTIONS.format(
+            document_type=document_type,
+            document_id=document_id,
+        )
     else:
         context = INVITATION_CONTEXT_TEMPLATE.format(
             host_organisation=item_fields.get("host_organisation", ""),
@@ -254,14 +287,14 @@ async def extract_actions_from_review(
             priority=item_fields.get("priority", ""),
             reason=item_fields.get("reason", ""),
             draft_response=item_fields.get("draft_response", ""),
+            affected_events=item_fields.get("affected_events", ""),
             minister_comment=minister_comment,
             minister_decision=item_fields.get("minister_decision", "not specified"),
         )
 
-    instructions = ACTION_REVIEW_INSTRUCTIONS.format(
-        document_type=document_type,
-        document_id=document_id,
-    )
+        instructions = INVITATION_ACTIONS_DECISION_INSTRUCTIONS.format(
+            document_id=document_id,
+        )
 
     agent = Agent(
         model=model,

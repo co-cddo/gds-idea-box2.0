@@ -1,8 +1,17 @@
 """Schema for the SharePoint actions list."""
 
+from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, Field
+
+
+class ActionStatus(str, Enum):
+    """Action status to be changed by private office staff. Defalts to pending."""
+
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
 
 
 class SharepointAction(BaseModel):
@@ -34,6 +43,11 @@ class SharepointAction(BaseModel):
         description="Final draft text for correspondence actions. Should be ready to send with minimal edits.",
     )
 
+    calendar_conflicts: str | None = Field(
+        default=None,
+        description="Calendar events that conflict with this invitation, identified during triage (e.g. 'Cabinet committee 15 Feb 6-7pm",
+    )
+
     # Timing and priority
     deadline: str | None = Field(
         default=None,
@@ -49,9 +63,7 @@ class SharepointAction(BaseModel):
     )
 
     # Status tracking
-    status: Literal["pending", "in_progress", "completed"] = Field(
-        default="pending", description="Current status of this action"
-    )
+    status: ActionStatus = Field(default="pending", description="Current status of this action")
 
     # Linking back to source
     document_id: str = Field(description="Links back to the source document that generated this action")
@@ -76,3 +88,7 @@ class SharepointAction(BaseModel):
     )
 
     minister_comment: str = Field(description="Minister's comments on how to proceed with the action")
+
+    action_progress: Literal["yes", "yes_but", "no"] = Field(
+        description="The office's decision on behalf of the minister"
+    )

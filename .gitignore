@@ -224,3 +224,6 @@ src/box2/_version.py
 
 .DS_Store
 **/.DS_Store
+
+opencode.json
+.opencode
