@@ -16,6 +16,12 @@ class EventType(str, Enum):
     OTHER = "other"
 
 
+class MinisterDecision(str, Enum):
+    ACCEPT = "accept"
+    DECLINE = "decline"
+    OTHER = "other"
+
+
 class SharepointInvitation(BaseModel):
     """Data schema for the Sharepoint Invitation List"""
 
@@ -77,7 +83,7 @@ class SharepointInvitation(BaseModel):
         description="Minister's feedback on the invitation",
     )
 
-    minister_decision: Literal["accept", "decline", "other"] | None = Field(
+    minister_decision: MinisterDecision | None = Field(
         default=None,
         description="Minister's decision on whether to accept or decline the invitation",
     )
