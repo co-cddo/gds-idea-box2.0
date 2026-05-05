@@ -38,3 +38,18 @@ jobs:
 
       - name: Run unit tests
         run: uv run --all-extras pytest tests/unit/ -v
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Build package
+        run: uv build
+
+      - name: Check build artifacts
+        run: ls -lh dist/
