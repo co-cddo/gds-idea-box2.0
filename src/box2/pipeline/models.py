@@ -27,8 +27,8 @@ class ActionReviewResult(BaseModel):
     """
 
     actions: list[Action] = Field(description="Discrete actionable items extracted from the review")
-    office_decision: Literal["yes", "yes_but", "no"] = Field(
-        description="The office's decision inferred from the minister's comment"
+    office_decision: Literal["yes", "yes_but", "no"] | None = Field(
+        default=None, description="The office's decision inferred from the minister's comment"
     )
     summary: str = Field(
         min_length=20,

@@ -16,6 +16,14 @@ class EventType(str, Enum):
     OTHER = "other"
 
 
+class ActionStatus(str, Enum):
+    """Action status to be changed by private office staff. Defalts to pending."""
+
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+
+
 class SharepointInvitation(BaseModel):
     """Data schema for the Sharepoint Invitation List"""
 
@@ -77,7 +85,7 @@ class SharepointInvitation(BaseModel):
         description="Minister's feedback on the invitation",
     )
 
-    minister_decision: Literal["accept", "decline", "other"] | None = Field(
+    minister_decision: ActionStatus = Field(
         default=None,
         description="Minister's decision on whether to accept or decline the invitation",
     )
