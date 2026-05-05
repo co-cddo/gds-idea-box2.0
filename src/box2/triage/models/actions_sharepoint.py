@@ -74,8 +74,8 @@ class SharepointAction(BaseModel):
 
     document_type: Literal["invitation", "submission"]
 
-    office_decision: Literal["yes", "yes_but", "no"] = Field(
-        description="The office's decision on behalf of the minister"
+    office_decision: Literal["yes", "yes_but", "no"] | None = Field(
+        default=None, description="The office's decision on behalf of the minister"
     )
 
     final_draft: str = Field(description="Final approved draft (original or redrafted)")
