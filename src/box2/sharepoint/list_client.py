@@ -256,9 +256,7 @@ class ListClient:
         if filter_expr:
             params["$filter"] = filter_expr
 
-        extra_headers = (
-            {"Prefer": "HonorNonIndexedQueriesWarningMayFailRandomly"} if prefer_unindexed else None
-        )
+        extra_headers = {"Prefer": "HonorNonIndexedQueriesWarningMayFailRandomly"} if prefer_unindexed else None
 
         data = self._session.request(
             "GET",
