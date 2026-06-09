@@ -232,12 +232,17 @@ class ListClient:
         self,
         select: list[str] | None = None,
         filter_expr: str | None = None,
+        prefer_unindexed: bool = False,
     ) -> list[dict[str, Any]]:
         """Get all items from the list.
 
         Args:
             select: Optional list of field names to return.
             filter_expr: Optional OData $filter expression.
+            prefer_unindexed: If True, sends the
+                ``Prefer: HonorNonIndexedQueriesWarningMayFailRandomly`` header,
+                allowing filters on non-indexed columns. Safe for small lists;
+                may fail unpredictably on large ones.
 
         Returns:
             List of item dicts, each containing ``id`` and ``fields``.
@@ -251,10 +256,15 @@ class ListClient:
         if filter_expr:
             params["$filter"] = filter_expr
 
+        extra_headers = (
+            {"Prefer": "HonorNonIndexedQueriesWarningMayFailRandomly"} if prefer_unindexed else None
+        )
+
         data = self._session.request(
             "GET",
             f"/sites/{self._site_id}/lists/{self._list_id}/items",
             params=params,
+            extra_headers=extra_headers,
         )
         return data.get("value", [])
 
@@ -378,7 +388,7 @@ class ListClient:
             raise ValueError(f"key_field '{key_field}' must be present in fields")
 
         key_value = str(fields[key_field]).replace("'", "''")  # OData single-quote escape
-        existing = self.get_items(filter_expr=f"fields/{key_field} eq '{key_value}'")
+        existing = self.get_items(filter_expr=f"fields/{key_field} eq '{key_value}'", prefer_unindexed=True)
 
         if len(existing) > 1:
             raise SharePointAPIError(
