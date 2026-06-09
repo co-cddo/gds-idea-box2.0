@@ -95,17 +95,18 @@ The webhook E2E scripts (`lists_webhook_e2e.py` and `docs_webhook_e2e.py`) run t
 Versions are derived from git tags using [hatch-vcs](https://github.com/ofek/hatch-vcs).
 There is no version number in `pyproject.toml`.
 
-**Patch releases** are created automatically when a PR is merged to `main`.
-The CI increments the patch number from the latest tag (e.g. `v0.2.1` -> `v0.2.2`).
+**Patch releases** are created automatically when a PR is merged to `main` — no action needed.
 
-**Minor or major releases** are created by pushing a tag manually:
+**Minor or major releases** are triggered by applying a label to the PR before merging:
 
-```bash
-git tag v0.3.0 && git push --tags    # minor bump
-git tag v1.0.0 && git push --tags    # major bump
-```
+| Label | Effect | Example |
+|-------|--------|---------|
+| _(none)_ | patch bump | `v0.3.8` → `v0.3.9` |
+| `bump:minor` | minor bump, patch reset to 0 | `v0.3.8` → `v0.4.0` |
+| `bump:major` | major bump, minor+patch reset to 0 | `v0.3.8` → `v1.0.0` |
 
-The tag push triggers a GitHub release with auto-generated notes.
+The `Auto Release` workflow runs on every merge to `main`, computes the next version from the
+latest tag and the PR's labels, and publishes a GitHub release with the built wheel and sdist.
 
 ## Project structure
 
