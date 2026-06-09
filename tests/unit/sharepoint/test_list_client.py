@@ -100,7 +100,28 @@ def test_get_items_calls_correct_path(client, mock_session):
         "GET",
         f"/sites/{SITE_ID}/lists/{LIST_ID}/items",
         params={"$expand": "fields"},
+        extra_headers=None,
     )
+
+
+def test_get_items_prefer_unindexed_sends_header(client, mock_session):
+    """get_items with prefer_unindexed=True should send the Prefer header."""
+    mock_session.request.return_value = {"value": []}
+
+    client.get_items(prefer_unindexed=True)
+
+    call_kwargs = mock_session.request.call_args.kwargs
+    assert call_kwargs["extra_headers"] == {"Prefer": "HonorNonIndexedQueriesWarningMayFailRandomly"}
+
+
+def test_get_items_no_prefer_header_by_default(client, mock_session):
+    """get_items should not send the Prefer header unless prefer_unindexed=True."""
+    mock_session.request.return_value = {"value": []}
+
+    client.get_items()
+
+    call_kwargs = mock_session.request.call_args.kwargs
+    assert call_kwargs["extra_headers"] is None
 
 
 def test_get_items_returns_value_list(client, mock_session):
@@ -495,6 +516,19 @@ def test_upsert_item_updates_when_one_match(client, mock_session):
     patch_calls = [c for c in mock_session.request.call_args_list if c[0][0] == "PATCH"]
     assert len(patch_calls) == 1
     assert "/items/existing-1/fields" in patch_calls[0][0][1]
+
+
+def test_upsert_item_sends_prefer_header(client, mock_session):
+    """upsert_item should send the Prefer unindexed header on the filter lookup."""
+    mock_session.request.side_effect = [
+        {"value": []},
+        {"id": "n1", "fields": {"Title": "X"}},
+    ]
+
+    client.upsert_item({"Title": "X"})
+
+    get_call = mock_session.request.call_args_list[-2]
+    assert get_call.kwargs["extra_headers"] == {"Prefer": "HonorNonIndexedQueriesWarningMayFailRandomly"}
 
 
 def test_upsert_item_builds_correct_filter(client, mock_session):
