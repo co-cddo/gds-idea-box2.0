@@ -458,3 +458,100 @@ def test_ensure_creates_when_list_missing(mock_session):
     # POST should have been made to create the list
     post_calls = [c for c in mock_session.request.call_args_list if c[0][0] == "POST"]
     assert len(post_calls) == 1
+
+
+# ============================================================================
+# upsert_item Tests
+# ============================================================================
+
+
+def test_upsert_item_creates_when_no_match(client, mock_session):
+    """upsert_item should create a new item when no existing item matches the key."""
+    created = {"id": "new-1", "fields": {"Title": "Foo"}}
+    mock_session.request.side_effect = [
+        {"value": []},  # GET items (filter lookup) — no match
+        created,  # POST create
+    ]
+
+    result = client.upsert_item({"Title": "Foo"})
+
+    assert result == created
+    post_calls = [c for c in mock_session.request.call_args_list if c[0][0] == "POST"]
+    assert len(post_calls) == 1
+
+
+def test_upsert_item_updates_when_one_match(client, mock_session):
+    """upsert_item should update the existing item when exactly one match is found."""
+    match = {"id": "existing-1", "fields": {"Title": "Foo", "Status": "Open"}}
+    updated_fields = {"Title": "Foo", "Status": "Closed"}
+    mock_session.request.side_effect = [
+        {"value": [match]},  # GET items (filter lookup) — one match
+        updated_fields,  # PATCH update
+    ]
+
+    result = client.upsert_item({"Title": "Foo", "Status": "Closed"})
+
+    assert result == {"id": "existing-1", "fields": updated_fields}
+    patch_calls = [c for c in mock_session.request.call_args_list if c[0][0] == "PATCH"]
+    assert len(patch_calls) == 1
+    assert f"/items/existing-1/fields" in patch_calls[0][0][1]
+
+
+def test_upsert_item_builds_correct_filter(client, mock_session):
+    """upsert_item should query with fields/{key_field} eq '{value}'."""
+    mock_session.request.side_effect = [
+        {"value": []},
+        {"id": "x", "fields": {"Title": "Bar"}},
+    ]
+
+    client.upsert_item({"Title": "Bar"})
+
+    get_call = mock_session.request.call_args_list[0]
+    assert get_call[1]["params"]["$filter"] == "fields/Title eq 'Bar'"
+
+
+def test_upsert_item_custom_key_field(client, mock_session):
+    """upsert_item should use the specified key_field for the lookup."""
+    mock_session.request.side_effect = [
+        {"value": []},
+        {"id": "r1", "fields": {"Reference": "REF-001"}},
+    ]
+
+    client.upsert_item({"Reference": "REF-001", "Title": "x"}, key_field="Reference")
+
+    get_call = mock_session.request.call_args_list[0]
+    assert get_call[1]["params"]["$filter"] == "fields/Reference eq 'REF-001'"
+
+
+def test_upsert_item_escapes_single_quotes(client, mock_session):
+    """upsert_item should escape single quotes in the key value for OData."""
+    mock_session.request.side_effect = [
+        {"value": []},
+        {"id": "q1", "fields": {"Title": "O'Brien"}},
+    ]
+
+    client.upsert_item({"Title": "O'Brien"})
+
+    get_call = mock_session.request.call_args_list[0]
+    assert get_call[1]["params"]["$filter"] == "fields/Title eq 'O''Brien'"
+
+
+def test_upsert_item_raises_when_key_field_missing(client, mock_session):
+    """upsert_item should raise ValueError when key_field is absent from fields."""
+    with pytest.raises(ValueError, match="key_field 'Title' must be present"):
+        client.upsert_item({"Status": "Open"})
+
+
+def test_upsert_item_raises_on_multiple_matches(client, mock_session):
+    """upsert_item should raise SharePointAPIError when multiple items match the key."""
+    mock_session.request.return_value = {
+        "value": [
+            {"id": "dup-1", "fields": {"Title": "Dup"}},
+            {"id": "dup-2", "fields": {"Title": "Dup"}},
+        ]
+    }
+
+    with pytest.raises(SharePointAPIError) as exc_info:
+        client.upsert_item({"Title": "Dup"})
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.error_code == "ambiguousKey"
