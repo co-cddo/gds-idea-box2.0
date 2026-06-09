@@ -494,7 +494,7 @@ def test_upsert_item_updates_when_one_match(client, mock_session):
     assert result == {"id": "existing-1", "fields": updated_fields}
     patch_calls = [c for c in mock_session.request.call_args_list if c[0][0] == "PATCH"]
     assert len(patch_calls) == 1
-    assert f"/items/existing-1/fields" in patch_calls[0][0][1]
+    assert "/items/existing-1/fields" in patch_calls[0][0][1]
 
 
 def test_upsert_item_builds_correct_filter(client, mock_session):
@@ -506,8 +506,8 @@ def test_upsert_item_builds_correct_filter(client, mock_session):
 
     client.upsert_item({"Title": "Bar"})
 
-    get_call = mock_session.request.call_args_list[0]
-    assert get_call[1]["params"]["$filter"] == "fields/Title eq 'Bar'"
+    get_call = mock_session.request.call_args_list[-2]  # filter lookup, then create
+    assert get_call.kwargs["params"]["$filter"] == "fields/Title eq 'Bar'"
 
 
 def test_upsert_item_custom_key_field(client, mock_session):
@@ -519,8 +519,8 @@ def test_upsert_item_custom_key_field(client, mock_session):
 
     client.upsert_item({"Reference": "REF-001", "Title": "x"}, key_field="Reference")
 
-    get_call = mock_session.request.call_args_list[0]
-    assert get_call[1]["params"]["$filter"] == "fields/Reference eq 'REF-001'"
+    get_call = mock_session.request.call_args_list[-2]
+    assert get_call.kwargs["params"]["$filter"] == "fields/Reference eq 'REF-001'"
 
 
 def test_upsert_item_escapes_single_quotes(client, mock_session):
@@ -532,8 +532,8 @@ def test_upsert_item_escapes_single_quotes(client, mock_session):
 
     client.upsert_item({"Title": "O'Brien"})
 
-    get_call = mock_session.request.call_args_list[0]
-    assert get_call[1]["params"]["$filter"] == "fields/Title eq 'O''Brien'"
+    get_call = mock_session.request.call_args_list[-2]
+    assert get_call.kwargs["params"]["$filter"] == "fields/Title eq 'O''Brien'"
 
 
 def test_upsert_item_raises_when_key_field_missing(client, mock_session):
