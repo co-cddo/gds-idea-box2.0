@@ -150,20 +150,14 @@ class SharePointSession:
             response = sm.get_secret_value(SecretId=secret_name)
             secret = json.loads(response["SecretString"])
         except json.JSONDecodeError as e:
-            raise SharePointConfigError(
-                f"Secret '{secret_name}' is not valid JSON: {e}"
-            ) from e
+            raise SharePointConfigError(f"Secret '{secret_name}' is not valid JSON: {e}") from e
         except Exception as e:
-            raise SharePointConfigError(
-                f"Failed to fetch secret '{secret_name}': {e}"
-            ) from e
+            raise SharePointConfigError(f"Failed to fetch secret '{secret_name}': {e}") from e
 
         required_keys = ["tenant_id", "client_id", "site_host", "site_path"]
         missing = [k for k in required_keys if not secret.get(k)]
         if missing:
-            raise SharePointConfigError(
-                f"Secret '{secret_name}' is missing required keys: {', '.join(missing)}"
-            )
+            raise SharePointConfigError(f"Secret '{secret_name}' is missing required keys: {', '.join(missing)}")
 
         resolved_role_arn = secret.get("role_arn") or role_arn
         if not resolved_role_arn:
