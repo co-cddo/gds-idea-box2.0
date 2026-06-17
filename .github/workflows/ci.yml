@@ -6,50 +6,10 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-
-      - run: uv sync --all-extras
-
-      - name: Ruff check
-        run: uv run ruff check src/ tests/
-
-      - name: Ruff format check
-        run: uv run ruff format --check src/ tests/
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pkg_lint.yml@main
 
   test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-
-      - run: uv sync --all-extras --python ${{ matrix.python-version }}
-
-      - name: Run unit tests
-        run: uv run --all-extras pytest tests/unit/ -v
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pkg_test.yml@main
 
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v7
-        with:
-          version: "latest"
-
-      - name: Build package
-        run: uv build
-
-      - name: Check build artifacts
-        run: ls -lh dist/
+    uses: co-cddo/gds-idea-workflows-catalogue/.github/workflows/ci_pkg_build.yml@main
