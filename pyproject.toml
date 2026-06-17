@@ -8,7 +8,7 @@ authors = [
     { name = "Jose Orjales", email = "jose.orjales@digital.cabinet-office.gov.uk" },
     { name = "David Gillespie", email = "david.gillespie@digital.cabinet-office.gov.uk" }
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.40.63",
     "httpx>=0.28.0",
