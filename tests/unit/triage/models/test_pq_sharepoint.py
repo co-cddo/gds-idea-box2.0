@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -16,6 +16,12 @@ _REQUIRED_FIELDS = {
     "answering_body_name": "Department for Science, Innovation and Technology",
     "asking_member_name": "Jane Smith MP",
     "urgency": "urgent",
+    "is_named_day": False,
+    "target_date": date(2026, 2, 25),
+    "draft_due": date(2026, 2, 24),
+    "spads": "With Spads",
+    "officials": "With Officials",
+    "notes": None,
 }
 
 

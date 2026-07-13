@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import AnyHttpUrl, BaseModel, Field
@@ -23,9 +23,22 @@ class SharepointPQs(BaseModel):
 
     answering_body_name: str = Field(description="Name of department answering the PQ")
 
+    is_named_day: bool = Field(
+        description="Parliamentary question that the Government are required to answer on a specific date"
+    )
+
     asking_member_name: str = Field(description="Name of member of parliament asking the PQ")
 
     # --- AI-generated fields (may be None if pipeline stage fails) ---
+
+    responding_minister: str | None = Field(
+        default=None, description="Responding minister based on house (commons/lords). House always takes precedent"
+    )
+
+    policy_minister: str | None = Field(
+        default=None,
+        description="Responding minister based on area of expertise. If it's a lords PQ however, this takes precedent and will always be answered by a lord minister",
+    )
 
     ai_expansive_answer: str | None = Field(default=None, description="Detailed LLM draft response")
 
@@ -50,6 +63,18 @@ class SharepointPQs(BaseModel):
     urgency: Literal["urgent", "not urgent"] = Field(
         description="Urgency for the minister to review draft response. Urgent responses <=2 days before dateforAnswer"
     )
+
+    target_date: date = Field(description="Calculated date for parliamentary unit from date_for_answer")
+
+    draft_due: date = Field(description="Calculated date ")
+
+    spads: Literal["With Spads", "Spads", "Uncontroversial"] = Field(description="Spads clearance status")
+
+    officials: Literal["With Officials", "Officials Sent", "Officials"] = Field(
+        description="Officials clearance status"
+    )
+
+    notes: str | None = Field(description="Additional notes")
 
     # --- Minister review fields (populated after human review) ---
 
