@@ -31,11 +31,11 @@ class SharepointPQs(BaseModel):
 
     # --- AI-generated fields (may be None if pipeline stage fails) ---
 
-    responding_minister: str | None = Field(
+    ai_responding_minister: str | None = Field(
         default=None, description="Responding minister based on house (commons/lords). House always takes precedent"
     )
 
-    policy_minister: str | None = Field(
+    ai_policy_minister: str | None = Field(
         default=None,
         description="Responding minister based on area of expertise. If it's a lords PQ however, this takes precedent and will always be answered by a lord minister",
     )
