@@ -34,6 +34,8 @@ def test_construct_with_required_fields_only():
     pq = SharepointPQs(**_REQUIRED_FIELDS)
 
     assert pq.title == "123456"
+    assert pq.ai_responding_minister is None
+    assert pq.ai_policy_minister is None
     assert pq.ai_expansive_answer is None
     assert pq.ai_generic_answer is None
     assert pq.ai_predicted_directorate is None
@@ -50,6 +52,8 @@ def test_construct_with_all_fields():
     """SharepointPQs should accept all fields including AI-generated ones."""
     pq = SharepointPQs(
         **_REQUIRED_FIELDS,
+        ai_responding_minister="Lord Vallance",
+        ai_policy_minister="George Freeman MP",
         ai_expansive_answer="A detailed draft response covering the key policy points.",
         ai_generic_answer="A generic draft response for the parliamentary question.",
         url=["https://www.gov.uk/example"],
@@ -60,6 +64,8 @@ def test_construct_with_all_fields():
         ai_routing_alternative_directorate="Cross-Government S&T",
     )
 
+    assert pq.ai_responding_minister == "Lord Vallance"
+    assert pq.ai_policy_minister == "George Freeman MP"
     assert pq.ai_expansive_answer is not None
     assert pq.ai_predicted_directorate == "Science, Research & Innovation"
     assert len(pq.url) == 1
