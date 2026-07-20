@@ -589,3 +589,25 @@ def test_upsert_item_raises_on_multiple_matches(client, mock_session):
         client.upsert_item({"Title": "Dup"})
     assert exc_info.value.status_code == 409
     assert exc_info.value.error_code == "ambiguousKey"
+
+
+def test_get_items_follows_pagination(client, mock_session):
+    """get_items should follow @odata.nextLink and return every page."""
+    page_one = [{"id": "1", "fields": {"Title": "A"}}]
+    page_two = [{"id": "2", "fields": {"Title": "B"}}]
+    next_url = f"https://graph.microsoft.com/v1.0/sites/{SITE_ID}/lists/{LIST_ID}/items?$skiptoken=abc"
+    # reset so the constructor's list-resolution call is not counted here
+    mock_session.request.reset_mock()
+    mock_session.request.side_effect = [
+        {"value": page_one, "@odata.nextLink": next_url},
+        {"value": page_two},
+    ]
+
+    result = client.get_items()
+
+    assert result == page_one + page_two
+    assert mock_session.request.call_count == 2
+    # the follow-up request targets the nextLink and drops the initial params
+    second_call = mock_session.request.call_args_list[1]
+    assert second_call.args[1] == next_url
+    assert second_call.kwargs["params"] is None

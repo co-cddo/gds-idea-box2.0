@@ -258,13 +258,26 @@ class ListClient:
 
         extra_headers = {"Prefer": "HonorNonIndexedQueriesWarningMayFailRandomly"} if prefer_unindexed else None
 
-        data = self._session.request(
-            "GET",
-            f"/sites/{self._site_id}/lists/{self._list_id}/items",
-            params=params,
-            extra_headers=extra_headers,
-        )
-        return data.get("value", [])
+        # Graph returns items a page at a time (200 by default) with an
+        # ``@odata.nextLink`` cursor for the rest. Follow it until the list is
+        # exhausted, otherwise anything past the first page is silently lost.
+        items: list[dict[str, Any]] = []
+        next_link: str | None = f"/sites/{self._site_id}/lists/{self._list_id}/items"
+        request_params: dict[str, str] | None = params
+        while next_link:
+            data = self._session.request(
+                "GET",
+                next_link,
+                params=request_params,
+                extra_headers=extra_headers,
+            )
+            items.extend(data.get("value", []))
+            # nextLink is an absolute URL that already encodes the query
+            # string, so the params only apply to the first request.
+            next_link = data.get("@odata.nextLink")
+            request_params = None
+
+        return items
 
     def get_recent(self, minutes: int = 2) -> list[dict[str, Any]]:
         """Get items modified in the last N minutes.
