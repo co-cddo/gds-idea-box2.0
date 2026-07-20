@@ -68,10 +68,12 @@ class SharepointPQs(BaseModel):
 
     draft_due: date = Field(description="Calculated date ")
 
-    spads: Literal["With Spads", "Spads", "Uncontroversial"] = Field(description="Spads clearance status")
+    spads: Literal["With Spads", "Spads", "Uncontroversial"] | None = Field(
+        default=None, description="Spads clearance status"
+    )
 
-    officials: Literal["With Officials", "Officials Sent", "Officials"] = Field(
-        description="Officials clearance status"
+    officials: Literal["With Officials", "Officials Sent", "Officials"] | None = Field(
+        default=None, description="Officials clearance status"
     )
 
     notes: str | None = Field(description="Additional notes")
