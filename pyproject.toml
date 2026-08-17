@@ -10,29 +10,29 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "boto3>=1.40.63",
+    "boto3>=1.43.72",
     "httpx>=0.28.0",
-    "pydantic>=2.0.0",
+    "pydantic>=2.13.4",
     "python-dateutil>=2.9.0.post0",
 ]
 
 [project.optional-dependencies]
 sharepoint = [
-    "azure-identity>=1.20.0",
+    "azure-identity>=1.25.3",
 ]
 pipeline = [
-    "pandas>=2.3.3",
+    "pandas>=3.0.5",
     "pydantic-ai>=1.56.0",
-    "pypdf>=5.3.0",
+    "pypdf>=6.16.1",
     "python-docx>=1.1.2",
 ]
 receiver = [
-    "azure-identity>=1.20.0",
-    "fastapi>=0.115.0",
+    "azure-identity>=1.25.3",
+    "fastapi>=0.141.1",
     "mangum>=0.19.0",
     "pydantic-ai>=1.56.0",
     "pyngrok>=7.2.0",
-    "uvicorn>=0.34.0",
+    "uvicorn>=0.52.3",
 ]
 all = [
     "box2[sharepoint,pipeline,receiver]",
@@ -68,13 +68,13 @@ LICENCE = "sha256:e6356e2315581a3c231279cbc7ca90111c55e9c10625b17a935359c800a355
 [dependency-groups]
 dev = [
     "fuzzywuzzy>=0.18.0",
-    "ipython>=9.6.0",
-    "pre-commit>=4.6.0",
-    "pytest>=9.0.0",
-    "pytest-check>=2.6.2",
-    "python-dotenv>=1.2.1",
-    "python-levenshtein>=0.27.3",
-    "ruff>=0.14.0",
+    "ipython>=9.16.1",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-check>=2.9.1",
+    "python-dotenv>=1.2.2",
+    "python-levenshtein>=0.27.4",
+    "ruff>=0.16.3",
 ]
 
 
