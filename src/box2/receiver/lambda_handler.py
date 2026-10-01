@@ -20,9 +20,9 @@ Environment variables (optional):
     DOCS_LIBRARY_NAME        — document library name (default: Documents)
     INVITATION_LIST_NAME     — SharePoint invitation list (default: Invitations)
     SUBMISSION_LIST_NAME     — SharePoint submission list (default: Submissions)
-    ACTIONS_LIST_NAME        — SharePoint actions list (default: Actions)
-    QA_INVITATION_LIST_NAME  — QA invitations list (default: QA Invitations)
-    REJECTED_INVITATION_LIST_NAME — rejected invitations list (default: Rejected Invitations)
+    ACTIONS_LIST_NAME        — SharePoint actions list (default: Actions_Tracker)
+    QA_INVITATION_LIST_NAME  — QA invitations list (default: QA_Invitations)
+    REJECTED_INVITATION_LIST_NAME — rejected invitations list (default: Rejected_Invitations)
     AWS_REGION               — AWS region for STS (default: eu-west-2)
 
 Deployment:
