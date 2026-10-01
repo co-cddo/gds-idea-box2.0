@@ -133,7 +133,7 @@ def start_ngrok() -> str:
 
 def main() -> None:
     """Run the end-to-end document library webhook test."""
-    from box2.sharepoint import DocsClient, SharePointSession, WebhookClient
+    from gds_idea_sharepoint import DocsClient, SharePointSession, WebhookClient
 
     banner("DOCS WEBHOOK END-TO-END TEST")
     print()

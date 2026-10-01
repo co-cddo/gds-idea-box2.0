@@ -111,7 +111,7 @@ async def main() -> None:
 
     # Optionally write to SharePoint
     if WRITE_TO_SHAREPOINT:
-        from box2.sharepoint import ListClient, SharePointSession
+        from gds_idea_sharepoint import ListClient, SharePointSession
 
         session = SharePointSession.from_env()
         list_client = ListClient(session, list_name=list_name)

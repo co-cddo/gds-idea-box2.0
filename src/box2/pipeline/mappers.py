@@ -10,10 +10,10 @@ import re
 from datetime import datetime
 from typing import Any, Literal, get_origin
 
+from gds_idea_sharepoint import contains_url_type, unwrap_optional
 from pydantic import BaseModel
 
 from box2.pipeline.models import ActionReviewResult, TriagedInvitation
-from box2.sharepoint import contains_url_type, unwrap_optional
 from box2.triage.models import (
     Action,
     SharepointAction,

@@ -1,13 +1,14 @@
 # Box 2.0
 
-AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — a **sharepoint** module for authenticated access to SharePoint via Microsoft Graph API (lists and document libraries), and a **receiver** module (FastAPI webhook endpoint) for processing Microsoft Graph change notifications.
+AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — a **pipeline** module that maps triage results to SharePoint list schemas, and a **receiver** module (FastAPI webhook endpoint, deployed as an AWS Lambda) for processing Microsoft Graph change notifications. SharePoint access comes from the separate [`gds-idea-sharepoint`](https://github.com/co-cddo/gds-idea-pkg-sharepoint) package.
 
 ## Installation
 
-Install as a library dependency:
+Install as a library dependency from the GDS IDEA package index (this also installs
+[`gds-idea-sharepoint`](https://github.com/co-cddo/gds-idea-pkg-sharepoint)):
 
 ```bash
-pip install box2
+pip install box2 --extra-index-url https://co-cddo.github.io/gds-idea-pypi/simple/
 ```
 
 The receiver module (FastAPI webhook endpoint) is an optional extra:
@@ -18,7 +19,7 @@ pip install box2[receiver]
 
 ## Development setup
 
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
+Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 git clone git@github.com:co-cddo/gds-idea-box2.0.git
@@ -81,8 +82,6 @@ The `examples/` directory contains runnable scripts demonstrating each pipeline 
 ```bash
 AWS_PROFILE=bedrock-dev uv run python examples/triage/email_end_to_end.py
 AWS_PROFILE=bedrock-dev uv run python examples/triage/triage.py
-uv run python examples/sharepoint/auth.py
-uv run python examples/sharepoint/list_operations.py
 AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/lists_webhook_e2e.py
 AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/docs_webhook_e2e.py
 uv run python examples/sharepoint/run_receiver.py
@@ -124,32 +123,30 @@ src/box2/
     submission_reply.py
     pii_redaction.py
     file_parser.py
-  sharepoint/                    # SharePoint module
-    session.py                   # Auth: AWS STS -> Azure AD -> Graph API
-    list_client.py               # CRUD operations on SharePoint lists
-    docs_client.py               # Document library operations (drive files)
-    webhook_client.py            # Microsoft Graph subscription management
-    protocols.py                 # SubscribableResource protocol
-    models.py                    # Subscription model
-    exceptions.py                # SharePoint exception hierarchy
+  pipeline/                      # Orchestration and SharePoint list mappers
+    file_triage.py               # triage_file: parse, classify, extract, triage
+    components.py                # Agent-based pipeline components
+    mappers.py                   # Triage models <-> SharePoint list fields
   receiver/                      # Webhook receiver (optional: pip install box2[receiver])
     app.py                       # FastAPI app factory
     handlers.py                  # Notification processing and dispatch
     models.py                    # Notification/NotificationPayload models
     dedup.py                     # Deduplication store (protocol + in-memory impl)
     config.py                    # ReceiverConfig
+    route_handlers.py            # Business handlers (triage, QA, action extraction)
+    lambda_handler.py            # AWS Lambda entry point (Mangum)
 tests/
   unit/
     triage/                      # unit tests for triage module
-    sharepoint/                  # unit tests for SharePoint module
+    pipeline/                    # unit tests for pipeline mappers
     receiver/                    # unit tests for receiver module
   integration/
     triage/                      # LLM integration tests (deterministic)
-    sharepoint/                  # SharePoint integration tests
+    receiver/                    # self-write filter against live SharePoint
   evals/
     triage/                      # LLM output quality evals (TODO: proper eval framework)
 examples/
   triage/                        # triage example scripts
-  sharepoint/                    # SharePoint example scripts
+  sharepoint/                    # webhook end-to-end and local receiver scripts
   data/                          # sample data for examples
 ```

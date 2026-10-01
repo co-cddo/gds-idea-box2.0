@@ -288,8 +288,8 @@ wheels = [
 name = "box2"
 source = { editable = "." }
 dependencies = [
-    { name = "azure-identity" },
     { name = "boto3" },
+    { name = "gds-idea-sharepoint" },
     { name = "httpx" },
     { name = "pydantic" },
     { name = "python-dateutil" },
@@ -334,10 +334,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "azure-identity", specifier = ">=1.20.0" },
     { name = "boto3", specifier = ">=1.40.63" },
     { name = "fastapi", marker = "extra == 'all'", specifier = ">=0.115.0" },
     { name = "fastapi", marker = "extra == 'receiver'", specifier = ">=0.115.0" },
+    { name = "gds-idea-sharepoint", specifier = ">=0.1.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "mangum", marker = "extra == 'all'", specifier = ">=0.19.0" },
     { name = "mangum", marker = "extra == 'receiver'", specifier = ">=0.19.0" },
@@ -947,6 +947,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/11/4b/0a002eea91be6048a2b5d53c5f1b4dafd57ba2e36eea961d05086d7c28ce/fuzzywuzzy-0.18.0.tar.gz", hash = "sha256:45016e92264780e58972dca1b3d939ac864b78437422beecebb3095f8efd00e8", size = 28888, upload-time = "2020-02-13T21:06:27.054Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/43/ff/74f23998ad2f93b945c0309f825be92e04e0348e062026998b5eefef4c33/fuzzywuzzy-0.18.0-py2.py3-none-any.whl", hash = "sha256:928244b28db720d1e0ee7587acf660ea49d7e4c632569cad4f1cd7e68a5f0993", size = 18272, upload-time = "2020-02-13T21:06:25.209Z" },
+]
+
+[[package]]
+name = "gds-idea-sharepoint"
+version = "0.1.0"
+source = { registry = "https://co-cddo.github.io/gds-idea-pypi/simple/" }
+dependencies = [
+    { name = "azure-identity" },
+    { name = "boto3" },
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://github.com/co-cddo/gds-idea-pkg-sharepoint/releases/download/v0.1.0/gds_idea_sharepoint-0.1.0.tar.gz", hash = "sha256:ec8b68ef70795bfb69d722426ff9badeb4a33f8bf51529a9652c465988671cf6" }
+wheels = [
+    { url = "https://github.com/co-cddo/gds-idea-pkg-sharepoint/releases/download/v0.1.0/gds_idea_sharepoint-0.1.0-py3-none-any.whl", hash = "sha256:5f0bebdb2146cd20101e831d8c86a9d18026b99783829c67563f90e41c72f501" },
 ]
 
 [[package]]

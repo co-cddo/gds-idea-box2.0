@@ -29,6 +29,8 @@ import os
 from collections.abc import Awaitable, Callable
 from typing import Literal
 
+from gds_idea_sharepoint import DocsClient, ListClient
+
 from box2.pipeline import (
     TriagedInvitation,
     extract_actions_from_review,
@@ -40,7 +42,6 @@ from box2.pipeline import (
     to_sharepoint_submission,
     triage_file,
 )
-from box2.sharepoint import DocsClient, ListClient
 from box2.triage.models import SharepointInvitationQA, Submission
 
 logger = logging.getLogger(__name__)
