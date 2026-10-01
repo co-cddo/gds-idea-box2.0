@@ -2,7 +2,7 @@
 
 Each ``make_*_handler`` factory accepts the clients it needs and returns
 an ``async def handler(item: dict) -> None`` matching the signature
-expected by :class:`~box2.receiver.routes.WebhookRoute`.
+expected by :class:`~gds_idea_sharepoint.receiver.WebhookRoute`.
 
 Usage in ``lambda_handler.py``::
 

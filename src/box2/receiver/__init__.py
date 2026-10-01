@@ -1,50 +1,9 @@
-"""box2.receiver — FastAPI webhook receiver for Microsoft Graph notifications.
+"""box2.receiver — the application's webhook handlers and AWS Lambda entry point.
 
-This is an optional submodule. Install with ``pip install box2[receiver]``
-to get FastAPI and uvicorn dependencies.
+The webhook receiver framework (``create_app``, ``WebhookRoute``, ``ReceiverConfig``,
+deduplication, ...) lives in ``gds_idea_sharepoint.receiver``. This package holds only what
+is specific to this application:
 
-Usage::
-
-    from box2.receiver import create_app, ReceiverConfig, WebhookRoute
-
-    config = ReceiverConfig(
-        client_state="my-shared-secret",
-        app_identity="<service-principal-app-id>",
-    )
-
-    app = create_app(
-        config=config,
-        routes=[
-            WebhookRoute(
-                path="/file_uploaded",
-                get_items=lambda: docs_client.get_recent(minutes=2),
-                handler=process_new_file,
-                filter_self=False,
-            ),
-        ],
-    )
+- ``route_handlers`` — the triage, QA and action-extraction handlers.
+- ``lambda_handler`` — wires the routes to SharePoint and exposes the Mangum ``handler``.
 """
-
-from box2.receiver.app import create_app
-from box2.receiver.config import ReceiverConfig
-from box2.receiver.dedup import (
-    DeduplicationStore,
-    DynamoDedup,
-    InMemoryDedup,
-    build_item_dedup_key,
-)
-from box2.receiver.models import Notification, NotificationPayload, ResourceData
-from box2.receiver.routes import WebhookRoute
-
-__all__ = [
-    "create_app",
-    "ReceiverConfig",
-    "WebhookRoute",
-    "DeduplicationStore",
-    "DynamoDedup",
-    "InMemoryDedup",
-    "build_item_dedup_key",
-    "Notification",
-    "NotificationPayload",
-    "ResourceData",
-]

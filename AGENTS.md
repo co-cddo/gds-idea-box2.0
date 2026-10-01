@@ -11,9 +11,10 @@ redaction, redrafting). Uses **pydantic-ai** agents on **AWS Bedrock** (Claude m
 Source layout: `src/box2/` (library code), `tests/unit/`, `tests/integration/`, `examples/`.
 
 SharePoint / Microsoft Graph access (`SharePointSession`, `ListClient`, `DocsClient`,
-`WebhookClient`, `generate_graph_schema`) lives in the separate `gds-idea-sharepoint` package
-(import `gds_idea_sharepoint`, repo `co-cddo/gds-idea-pkg-sharepoint`), installed from the GDS IDEA
-package index. Change it there, not here.
+`WebhookClient`, `generate_graph_schema`) and the webhook receiver framework
+(`gds_idea_sharepoint.receiver`) live in the separate `gds-idea-sharepoint` package (repo
+`co-cddo/gds-idea-pkg-sharepoint`), installed from the GDS IDEA package index. Change them there,
+not here. See "Application Architecture" below.
 
 ## Build and Run Commands
 
@@ -198,146 +199,52 @@ uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv ru
 - **Deterministic where possible** -- e.g., submission replies use templates, not LLMs.
 - **Versioning is automatic** -- do not edit a version in `pyproject.toml`. Releases are tagged on merge to `main`; use the `bump:minor` / `bump:major` PR labels to raise the level.
 
-## Receiver v2 Design Plan (pending implementation)
+## Application Architecture (AWS Lambda)
 
-The current receiver (`src/box2/receiver/`) is a minimal webhook endpoint with a placeholder
-`dispatch()`. The v2 design replaces this with a production-ready app factory that handles
-the full notification-to-handler pipeline.
+box2 is deployed as a single AWS Lambda: API Gateway -> Mangum -> FastAPI. The Lambda entry
+point is `box2.receiver.lambda_handler.handler` (this path is configured in the deployment, so
+do not move it).
 
-### Deployment target
+### Where the code lives
 
-API Gateway → Lambda (Mangum wrapping FastAPI). The existing FastAPI app works unchanged
-with Mangum as the Lambda handler entry point.
+| Concern | Location |
+|---|---|
+| SharePoint / Graph client, webhook subscriptions | `gds-idea-sharepoint` (`gds_idea_sharepoint`) |
+| Webhook receiver framework (`create_app`, `WebhookRoute`, dedup) | `gds-idea-sharepoint` (`gds_idea_sharepoint.receiver`, extra `[receiver]` / `[lambda]`) |
+| LLM triage, extraction, redaction, models | `src/box2/triage/` |
+| Orchestration and SharePoint list mappers | `src/box2/pipeline/` |
+| This application's handlers and Lambda wiring | `src/box2/receiver/` (`route_handlers.py`, `lambda_handler.py`) |
 
-### Application workflow
+The framework and the SharePoint client are changed in `co-cddo/gds-idea-pkg-sharepoint`, not here.
+box2 pins a minimum version in `pyproject.toml`.
 
-1. A file is uploaded to a **Files List** in SharePoint.
-2. Graph sends a webhook notification to the backend.
-3. The backend queries the list for recently changed items, identifies the new file, and
-   processes it (triage, extraction, etc.).
-4. The backend creates items in one of several **Processing Lists**.
-5. A human reviews and comments/edits the item in SharePoint.
-6. Graph sends a webhook notification to the backend.
-7. The backend detects the human edit, runs a workflow, and writes to an **Output List**.
+### Workflow
 
-### Key design decisions
+1. A file is uploaded to the documents library.
+2. Graph calls `/file_uploaded`. The handler downloads the file, runs `triage_file`, and writes an
+   invitation to the **QA Invitations** list or a submission to the **Submissions** list.
+3. Private office reviews a QA item (`/qa_reviewed`). Approved items are copied to **Invitations**;
+   rejected items to **Rejected Invitations**; both are then deleted from the QA list.
+4. The minister reviews an invitation or submission (`/invitation_reviewed`, `/submission_reviewed`).
+   The handler extracts actions with an LLM and writes one row per action to the **Actions** list.
 
-- **Endpoint-per-subscription** — each subscription points at its own URL
-  (e.g. `/file_uploaded`, `/item_reviewed`). Graph does the routing.
-- **No delta tokens** — use a rolling time window (`lookback_minutes`, default 2) to
-  query recently changed items via `$filter=lastModifiedDateTime gt '{cutoff}'`.
-- **Self-write filtering** — the app only creates items in processing lists, never updates
-  them. Items where `lastModifiedBy.application.id` matches the service principal are
-  skipped. Configurable per route (`filter_self=True/False`).
-- **Item-level dedup** — key is `{list_id}:{item_id}:{lastModifiedDateTime}`. Prevents
-  the same edit from being processed twice when overlapping lookback windows span
-  consecutive notifications. Uses the same `DeduplicationStore` protocol.
-- **Record before calling handler** — the dedup record is written *before* the handler
-  runs, giving at-most-once semantics. This is required because handlers call LLMs and
-  cannot guarantee idempotency.
-- **DynamoDB dedup required for Lambda** — concurrent Lambda invocations share no memory.
-  `DynamoDedup` with conditional writes (`attribute_not_exists(pk)`) gives atomic
-  at-most-once semantics. `InMemoryDedup` is fine for local dev only.
-- **Configurable filter field** — `createdDateTime` for new-item detection (Files List),
-  `lastModifiedDateTime` for edit detection (Processing Lists).
+### Receiver design decisions
 
-### App factory API
+- **Endpoint per subscription** -- each Graph subscription points at its own route; Graph does the routing.
+- **No delta tokens** -- each notification triggers `get_recent(minutes=LOOKBACK_MINUTES)` (default 2).
+- **Self-write filtering** -- routes that the app also writes to use `filter_self=True`, which skips
+  items where `lastModifiedBy.application.id` equals `APP_IDENTITY`.
+- **Item-level dedup** -- key is `item:{route}:{item_id}:{lastModifiedDateTime}`, so overlapping
+  lookback windows do not reprocess the same edit.
+- **Record before calling the handler** -- gives at-most-once handling, which is required because
+  handlers call LLMs and are not idempotent.
+- **DynamoDB dedup on Lambda** -- concurrent invocations share no memory; `DynamoDedup` uses
+  conditional writes. `InMemoryDedup` is for local development only.
 
-```python
-from box2.receiver import create_app, ReceiverConfig, WebhookRoute
+Handlers are `async def handler(item: dict) -> None`, called once per matching item with the full
+Graph item (fields expanded).
 
-config = ReceiverConfig(
-    client_state="my-shared-secret",
-    app_identity="<service-principal-app-id>",
-    lookback_minutes=2,
-)
+### Not yet implemented
 
-app = create_app(
-    config=config,
-    routes=[
-        WebhookRoute(
-            path="/file_uploaded",
-            list_client=files_list,
-            handler=process_new_file,
-            filter_self=False,
-            filter_field="createdDateTime",
-        ),
-        WebhookRoute(
-            path="/item_reviewed",
-            list_client=processing_list,
-            handler=process_human_edit,
-            filter_self=True,
-            filter_field="lastModifiedDateTime",
-        ),
-    ],
-)
-```
-
-### Per-request flow (handled by the factory for every route)
-
-```
-Notification arrives
-    │
-    ├─ Validation handshake? → echo token, return
-    │
-    ├─ Client state check → reject silently if wrong
-    │
-    ├─ Notification-level dedup → skip if duplicate notification
-    │
-    ▼
-Query list: items where {filter_field} > {now - lookback_minutes}, $expand=fields
-    │
-    ├─ filter_self=True? → drop items where lastModifiedBy.application.id == app_identity
-    │
-    ├─ Item-level dedup → drop items already processed (same item + same lastModifiedDateTime)
-    │
-    ▼
-For each remaining item:
-    ├─ Record in dedup store (before handler, to prevent concurrent processing)
-    └─ Call handler(item)
-```
-
-### Handler signature
-
-Handlers are called once per matching item. They receive a single item dict (the full
-Graph API response with fields expanded):
-
-```python
-async def process_human_edit(item: dict) -> None:
-    """Called once per item modified by a human."""
-    status = item["fields"]["Status"]
-    # ... run workflow, write to output list
-```
-
-### WebhookRoute dataclass
-
-```python
-@dataclass
-class WebhookRoute:
-    path: str                                       # URL path, e.g. "/file_uploaded"
-    list_client: ListClient                         # queries items after notification
-    handler: Callable[[dict], Awaitable[None]]      # called once per matching item
-    filter_self: bool = True                        # skip items modified by the app
-    filter_field: str = "lastModifiedDateTime"      # or "createdDateTime" for new items
-```
-
-### Files to modify/create
-
-- `src/box2/receiver/config.py` — add `app_identity: str`, `lookback_minutes: int = 2`
-- `src/box2/receiver/routes.py` (new) — `WebhookRoute` dataclass
-- `src/box2/receiver/app.py` — refactor `create_app()` to accept routes, generate
-  endpoints dynamically, implement the per-request flow above
-- `src/box2/receiver/handlers.py` — replace placeholder `dispatch()` with the item
-  query + filter + dedup + handler-call pipeline
-- `src/box2/receiver/dedup.py` — extend for item-level dedup (same protocol, different keys)
-- `src/box2/receiver/__init__.py` — export `WebhookRoute`
-- `examples/sharepoint/webhook_e2e.py` — update for new `create_app()` signature
-- `examples/sharepoint/run_receiver.py` — update similarly
-- Tests — update existing, add new for item filtering, dedup, routing
-
-### Not yet implemented (future work)
-
-- `DynamoDedup` — protocol-based, conditional writes for Lambda concurrency safety
-- Mangum adapter / Lambda handler entry point
-- Dead-letter / retry mechanism for failed handler invocations
-- Specific workflow handler implementations (triage, extraction, etc.)
+- Dead-letter / retry for failed handler invocations (a failed item is not retried, because it is
+  already recorded in the dedup store).
