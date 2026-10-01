@@ -1,10 +1,13 @@
+import sys
 from datetime import datetime
 from enum import Enum
 from pprint import pprint
+from typing import Optional
 
-from pydantic import AnyHttpUrl, BaseModel, Field
+import pytest
+from pydantic import AnyHttpUrl, AnyUrl, BaseModel, Field, HttpUrl
 
-from src.box2.sharepoint.graph_api_schema import generate_graph_schema
+from box2.sharepoint.graph_api_schema import contains_url_type, generate_graph_schema, unwrap_optional
 
 # --- Mock Models for Testing ---
 
@@ -93,3 +96,46 @@ def test_url_list_to_rich_text():
 def test_debug_schema_output():
     schema = generate_graph_schema(MockModel, "Test List")
     pprint(schema)
+
+
+# ===== Public type helpers =====
+
+
+def test_unwrap_optional_strips_typing_optional():
+    """Optional[T] is unwrapped to T."""
+    assert unwrap_optional(Optional[str]) is str  # noqa: UP045 - deliberately testing the legacy form
+
+
+@pytest.mark.parametrize("tp", [str, int, list[str], str | int])
+def test_unwrap_optional_leaves_other_types_unchanged(tp):
+    """Types that are not a single-type Optional are returned as-is."""
+    assert unwrap_optional(tp) == tp
+
+
+def test_unwrap_optional_pep604_union_depends_on_python_version():
+    """``T | None`` is unwrapped on Python 3.14+ (where it is a typing.Union) but not before.
+
+    Pins the current cross-version behaviour so that a change to it is deliberate.
+    """
+    expected = str if sys.version_info >= (3, 14) else str | None
+    assert unwrap_optional(str | None) == expected
+
+
+@pytest.mark.parametrize("tp", [AnyHttpUrl, HttpUrl, AnyUrl, list[AnyHttpUrl], list[HttpUrl]])
+def test_contains_url_type_true_for_url_types(tp):
+    """Bare URL types and generic aliases wrapping them are detected."""
+    assert contains_url_type(tp) is True
+
+
+@pytest.mark.parametrize("tp", [str, int, list[str], datetime])
+def test_contains_url_type_false_for_other_types(tp):
+    """Non-URL types are not detected as URL types."""
+    assert contains_url_type(tp) is False
+
+
+def test_helpers_exported_from_package():
+    """unwrap_optional and contains_url_type are part of the public sharepoint API."""
+    import box2.sharepoint as sp
+
+    assert sp.unwrap_optional is unwrap_optional
+    assert sp.contains_url_type is contains_url_type
