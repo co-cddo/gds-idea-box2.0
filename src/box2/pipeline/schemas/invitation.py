@@ -3,17 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
-class EventType(str, Enum):
-    """Type of ministerial event."""
-
-    MEETING = "meeting"
-    SPEECH = "speech"
-    PANEL = "panel"
-    RECEPTION = "reception"
-    SITE_VISIT = "site_visit"
-    CONFERENCE = "conference"
-    OTHER = "other"
+from box2.triage.models.invitation import EventType
 
 
 class MinisterDecision(str, Enum):

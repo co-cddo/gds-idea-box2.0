@@ -158,7 +158,10 @@ pydantic-ai agents follow a consistent structure in each module:
 
 ### Pydantic Models
 
-All data models live in `src/box2/triage/models/` and are re-exported from `__init__.py`.
+LLM and domain data models live in `src/box2/triage/models/` and are re-exported from `__init__.py`.
+The SharePoint list-schema models (`SharepointInvitation`, `SharepointSubmission`, `SharepointAction`,
+`SharepointInvitationQA`, `SharepointPQs`) are persistence shapes, not domain objects: they live in
+`src/box2/pipeline/schemas/`, next to the mappers that convert to and from them.
 Use `BaseModel` with `Field(...)` for validation. Use union types for classification
 results (e.g., `Invitation | NotInvitation`).
 
@@ -212,7 +215,7 @@ do not move it).
 | SharePoint / Graph client, webhook subscriptions | `gds-idea-sharepoint` (`gds_idea_sharepoint`) |
 | Webhook receiver framework (`create_app`, `WebhookRoute`, dedup) | `gds-idea-sharepoint` (`gds_idea_sharepoint.receiver`, extra `[receiver]` / `[lambda]`) |
 | LLM triage, extraction, redaction, models | `src/box2/triage/` |
-| Orchestration and SharePoint list mappers | `src/box2/pipeline/` |
+| Orchestration, SharePoint list schemas and mappers | `src/box2/pipeline/` (`schemas/`, `mappers.py`) |
 | This application's handlers and Lambda wiring | `src/box2/receiver/` (`route_handlers.py`, `lambda_handler.py`) |
 
 The framework and the SharePoint client are changed in `co-cddo/gds-idea-pkg-sharepoint`, not here.

@@ -14,7 +14,6 @@ from box2.triage.models.action import (
     FinalDraft,
     InvitationResponse,
 )
-from box2.triage.models.actions_sharepoint import SharepointAction
 from box2.triage.models.calendar import CalendarEvent
 from box2.triage.models.decision import TriagedDecision
 from box2.triage.models.document import (
@@ -24,16 +23,12 @@ from box2.triage.models.document import (
     generate_document_id,
 )
 from box2.triage.models.invitation import EventType, Invitation, NotInvitation
-from box2.triage.models.invitation_qa_sharepoint import SharepointInvitationQA
-from box2.triage.models.invitation_sharepoint import SharepointInvitation
-from box2.triage.models.parli_question_sharepoint import SharepointPQs
 from box2.triage.models.persona import MinisterPersona
 from box2.triage.models.submission import NotSubmission, Submission
 from box2.triage.models.submission_reply import (
     SubmissionReply,
     SubmissionResponse,
 )
-from box2.triage.models.submission_sharepoint import SharepointSubmission
 
 # ---------------------------------------------------------------------------
 # Lazy imports — email.py depends on pandas (optional, in box2[pipeline]).
@@ -70,11 +65,6 @@ __all__ = [
     "RawEmail",
     "SafeDocument",
     "SafeEmail",
-    "SharepointAction",
-    "SharepointInvitation",
-    "SharepointInvitationQA",
-    "SharepointSubmission",
-    "SharepointPQs",
     "Submission",
     "SubmissionReply",
     "SubmissionResponse",

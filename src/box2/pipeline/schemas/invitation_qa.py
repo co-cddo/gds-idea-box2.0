@@ -8,7 +8,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from box2.triage.models.invitation_sharepoint import SharepointInvitation
+from box2.pipeline.schemas.invitation import SharepointInvitation
 
 
 class SharepointInvitationQA(SharepointInvitation):
