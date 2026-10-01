@@ -13,7 +13,7 @@ from typing import Any, Literal, get_origin
 from pydantic import BaseModel
 
 from box2.pipeline.models import ActionReviewResult, TriagedInvitation
-from box2.sharepoint.graph_api_schema import _contains_url_type, _unwrap_optional
+from box2.sharepoint import contains_url_type, unwrap_optional
 from box2.triage.models import (
     Action,
     SharepointAction,
@@ -65,8 +65,8 @@ def to_sharepoint_fields(model: BaseModel) -> dict[str, Any]:
     # so we can format them as HTML links during serialisation.
     url_fields: set[str] = set()
     for fname, finfo in model.__class__.model_fields.items():
-        tp = _unwrap_optional(finfo.annotation)
-        if _contains_url_type(tp):
+        tp = unwrap_optional(finfo.annotation)
+        if contains_url_type(tp):
             url_fields.add(fname)
 
     for name, value in model.model_dump().items():
@@ -123,8 +123,8 @@ def from_sharepoint_fields[T: BaseModel](fields: dict[str, Any], model_type: typ
     url_fields: set[str] = set()
 
     for fname, finfo in model_type.model_fields.items():
-        tp = _unwrap_optional(finfo.annotation)
-        if _contains_url_type(tp):
+        tp = unwrap_optional(finfo.annotation)
+        if contains_url_type(tp):
             url_fields.add(fname)
         elif get_origin(tp) is list:
             list_fields.add(fname)
