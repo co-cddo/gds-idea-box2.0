@@ -12,7 +12,8 @@ from box2.pipeline.mappers import (
     to_sharepoint_invitation_qa,
 )
 from box2.pipeline.models import TriagedInvitation
-from box2.triage.models import Invitation, SharepointInvitation, SharepointInvitationQA, TriagedDecision
+from box2.pipeline.schemas import SharepointInvitation, SharepointInvitationQA
+from box2.triage.models import Invitation, TriagedDecision
 from box2.triage.models.invitation import EventType
 
 # ===== Fixtures =====

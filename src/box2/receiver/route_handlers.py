@@ -42,7 +42,8 @@ from box2.pipeline import (
     to_sharepoint_submission,
     triage_file,
 )
-from box2.triage.models import SharepointInvitationQA, Submission
+from box2.pipeline.schemas import SharepointInvitationQA
+from box2.triage.models import Submission
 
 logger = logging.getLogger(__name__)
 

@@ -121,7 +121,8 @@ src/box2/
     submission_reply.py
     pii_redaction.py
     file_parser.py
-  pipeline/                      # Orchestration and SharePoint list mappers
+  pipeline/                      # Orchestration, SharePoint list schemas and mappers
+    schemas/                     # Pydantic models for each SharePoint list (columns)
     file_triage.py               # triage_file: parse, classify, extract, triage
     components.py                # Agent-based pipeline components
     mappers.py                   # Triage models <-> SharePoint list fields

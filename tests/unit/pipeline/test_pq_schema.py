@@ -3,7 +3,7 @@ from datetime import date, datetime
 import pytest
 from pydantic import ValidationError
 
-from src.box2.triage.models.parli_question_sharepoint import SharepointPQs
+from box2.pipeline.schemas import SharepointPQs
 
 # Minimal kwargs for a valid SharepointPQs — only Parliament API fields + urgency.
 _REQUIRED_FIELDS = {

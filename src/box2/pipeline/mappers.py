@@ -14,14 +14,13 @@ from gds_idea_sharepoint import contains_url_type, unwrap_optional
 from pydantic import BaseModel
 
 from box2.pipeline.models import ActionReviewResult, TriagedInvitation
-from box2.triage.models import (
-    Action,
+from box2.pipeline.schemas import (
     SharepointAction,
     SharepointInvitation,
     SharepointInvitationQA,
     SharepointSubmission,
-    Submission,
 )
+from box2.triage.models import Action, Submission
 
 # SharePoint internal column names are limited to 32 characters.
 # generate_graph_schema sets the internal name from the Pydantic field name,
