@@ -1,6 +1,6 @@
 # Box 2.0
 
-AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — a **pipeline** module that maps triage results to SharePoint list schemas, and a **receiver** module (FastAPI webhook endpoint, deployed as an AWS Lambda) for processing Microsoft Graph change notifications. SharePoint access comes from the separate [`gds-idea-sharepoint`](https://github.com/co-cddo/gds-idea-pkg-sharepoint) package.
+AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — a **pipeline** module that maps triage results to SharePoint list schemas, and the application's AWS Lambda **receiver** handlers for Microsoft Graph change notifications. SharePoint access and the webhook receiver framework come from the separate [`gds-idea-sharepoint`](https://github.com/co-cddo/gds-idea-pkg-sharepoint) package.
 
 ## Installation
 
@@ -11,10 +11,11 @@ Install as a library dependency from the GDS IDEA package index (this also insta
 pip install box2 --extra-index-url https://co-cddo.github.io/gds-idea-pypi/simple/
 ```
 
-The receiver module (FastAPI webhook endpoint) is an optional extra:
+The extras are:
 
 ```bash
-pip install box2[receiver]
+pip install box2[pipeline]   # triage pipeline dependencies (pydantic-ai, pypdf, python-docx, pandas)
+pip install box2[receiver]   # everything the AWS Lambda needs: the pipeline plus the webhook receiver (FastAPI, Mangum)
 ```
 
 ## Development setup
@@ -27,7 +28,7 @@ cd gds-idea-box2.0
 uv sync --all-extras
 ```
 
-`--all-extras` installs everything including optional dependencies (FastAPI, uvicorn, pyngrok). This is required for development — some tests depend on the optional extras.
+`--all-extras` installs every optional dependency (the LLM pipeline and the receiver's FastAPI and Mangum). This is required for development — some tests depend on the optional extras.
 
 ### Running tests
 
@@ -82,12 +83,9 @@ The `examples/` directory contains runnable scripts demonstrating each pipeline 
 ```bash
 AWS_PROFILE=bedrock-dev uv run python examples/triage/email_end_to_end.py
 AWS_PROFILE=bedrock-dev uv run python examples/triage/triage.py
-AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/lists_webhook_e2e.py
-AWS_PROFILE=bedrock-dev uv run python examples/sharepoint/docs_webhook_e2e.py
-uv run python examples/sharepoint/run_receiver.py
 ```
 
-The webhook E2E scripts (`lists_webhook_e2e.py` and `docs_webhook_e2e.py`) run the full notification loop in a single process — they start a local FastAPI receiver, open an ngrok tunnel, create a subscription, trigger changes, and clean up. They require `NGROK_AUTH_TOKEN` in your `.env` file and AWS credentials. `run_receiver.py` starts just the receiver for manual testing.
+The SharePoint and webhook examples (authentication, list operations, the local receiver and the ngrok end-to-end scripts) live with the library in [`gds-idea-pkg-sharepoint`](https://github.com/co-cddo/gds-idea-pkg-sharepoint/tree/main/examples).
 
 ## Versioning
 
@@ -127,26 +125,19 @@ src/box2/
     file_triage.py               # triage_file: parse, classify, extract, triage
     components.py                # Agent-based pipeline components
     mappers.py                   # Triage models <-> SharePoint list fields
-  receiver/                      # Webhook receiver (optional: pip install box2[receiver])
-    app.py                       # FastAPI app factory
-    handlers.py                  # Notification processing and dispatch
-    models.py                    # Notification/NotificationPayload models
-    dedup.py                     # Deduplication store (protocol + in-memory impl)
-    config.py                    # ReceiverConfig
+  receiver/                      # This application's webhook handlers (framework: gds_idea_sharepoint.receiver)
     route_handlers.py            # Business handlers (triage, QA, action extraction)
     lambda_handler.py            # AWS Lambda entry point (Mangum)
 tests/
   unit/
     triage/                      # unit tests for triage module
     pipeline/                    # unit tests for pipeline mappers
-    receiver/                    # unit tests for receiver module
+    receiver/                    # unit tests for the QA and review handlers
   integration/
     triage/                      # LLM integration tests (deterministic)
-    receiver/                    # self-write filter against live SharePoint
   evals/
     triage/                      # LLM output quality evals (TODO: proper eval framework)
 examples/
   triage/                        # triage example scripts
-  sharepoint/                    # webhook end-to-end and local receiver scripts
   data/                          # sample data for examples
 ```

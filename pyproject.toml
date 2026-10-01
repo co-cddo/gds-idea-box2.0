@@ -11,8 +11,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.40.63",
-    "gds-idea-sharepoint>=0.1.0",
-    "httpx>=0.28.0",
+    "gds-idea-sharepoint>=0.2.0",
     "pydantic>=2.0.0",
     "python-dateutil>=2.9.0.post0",
 ]
@@ -24,12 +23,12 @@ pipeline = [
     "pypdf>=5.3.0",
     "python-docx>=1.1.2",
 ]
+# Everything the Lambda needs: the webhook receiver framework (FastAPI, Mangum)
+# from gds-idea-sharepoint, plus the pipeline that its handlers call.
 receiver = [
-    "fastapi>=0.115.0",
+    "box2[pipeline]",
+    "gds-idea-sharepoint[lambda]>=0.2.0",
     "mangum>=0.19.0",
-    "pydantic-ai>=1.56.0",
-    "pyngrok>=7.2.0",
-    "uvicorn>=0.34.0",
 ]
 all = [
     "box2[pipeline,receiver]",
@@ -93,7 +92,6 @@ addopts = [
 ]
 markers = [
     "integration: tests that require AWS credentials and call live LLM",
-    "webhook: tests that require a public notification URL for Microsoft Graph webhooks",
     "eval: LLM output quality evals -- excluded by default, run with: uv run pytest -m eval",
 ]
 
