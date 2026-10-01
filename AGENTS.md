@@ -204,9 +204,13 @@ uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv ru
 
 ## Application Architecture (AWS Lambda)
 
-box2 is deployed as a single AWS Lambda: API Gateway -> Mangum -> FastAPI. The Lambda entry
-point is `box2.receiver.lambda_handler.handler` (this path is configured in the deployment, so
-do not move it).
+> **Status: parked.** Nothing is currently deployed and nothing calls this code; it is kept so the
+> Lambda can be redeployed. Treat the description below as how it was designed to run, not as a
+> statement that it is live. See "Redeploying" at the end of this section before you do.
+
+box2 was deployed as a single AWS Lambda: API Gateway -> Mangum -> FastAPI. The Lambda entry
+point is `box2.receiver.lambda_handler.handler` (this path was configured in the deployment, so
+do not move it if you redeploy into the same infrastructure).
 
 ### Where the code lives
 
@@ -251,3 +255,45 @@ Graph item (fields expanded).
 
 - Dead-letter / retry for failed handler invocations (a failed item is not retried, because it is
   already recorded in the dedup store).
+- Nothing in this repo renews Graph subscriptions. `WebhookClient.renew_if_expiring` exists in
+  `gds-idea-sharepoint`, but the scheduler that called it lived in code that has been deleted.
+  Subscriptions last 7 days by default.
+
+### Redeploying
+
+Last version known to have run in a live deployment: **not recorded** (fill this in).
+Everything from `v0.6.0` on (the `gds-idea-sharepoint` split, the receiver move, the
+`T | None` schema fix, the `pipeline/schemas` move) has only been exercised with mocks and in
+CI, never against a live tenant. Expect to debug the first deploy.
+
+1. **Install from the GDS IDEA index**, not from source: `pip install "box2[receiver]"` with
+   `--extra-index-url https://co-cddo.github.io/gds-idea-pypi/simple/`. That pulls in
+   `gds-idea-sharepoint`, FastAPI, Mangum and the LLM pipeline.
+2. **Importing `lambda_handler.py` calls Graph.** Cold start resolves the site, then the drive and
+   each of the five lists by name. A name that does not exist raises `SharePointAPIError` on
+   import, so every request fails. Every list named below must already exist.
+3. **Environment variables.** Required: `CLIENT_STATE`, `APP_IDENTITY` (must equal the service
+   principal's client ID, or the self-write filter will not recognise the app's own writes),
+   `DYNAMO_TABLE_NAME`, `SHAREPOINT_TENANT_ID`, `SHAREPOINT_CLIENT_ID`, `SHAREPOINT_SITE_HOST`,
+   `SHAREPOINT_SITE_PATH`, `SHAREPOINT_ROLE_ARN`. Optional, with the defaults the code uses:
+   `LOOKBACK_MINUTES=2`, `DEDUP_WINDOW_SECONDS=300`, `DOCS_LIBRARY_NAME=Documents`,
+   `INVITATION_LIST_NAME=Invitations`, `SUBMISSION_LIST_NAME=Submissions`,
+   `ACTIONS_LIST_NAME=Actions_Tracker`, `QA_INVITATION_LIST_NAME=QA_Invitations`,
+   `REJECTED_INVITATION_LIST_NAME=Rejected_Invitations`. For Bedrock: `AWS_REGION` and
+   `CLAUDE_MODEL`.
+4. **DynamoDB table** with partition key `pk` (String) and TTL enabled on the `ttl` attribute.
+5. **IAM.** The function role must be able to assume `SHAREPOINT_ROLE_ARN`, which must be allowed
+   to vend the STS web-identity token for Azure AD, call Bedrock, and write to the dedup table.
+   If the role's trust policy conditions on `sts:RoleSessionName`, note the session name defaults
+   to `box2-sharepoint` and can be changed with `SHAREPOINT_ROLE_SESSION_NAME`.
+6. **Use a dev SharePoint site and a separate dedup table first.** The handlers write to lists
+   and call Bedrock, so pointing production subscriptions at an untested deploy changes real data.
+7. **Smoke test** without touching SharePoint: `POST /<route>?validationToken=abc` should return
+   `200` and `abc` as plain text for each of `/file_uploaded`, `/submission_reviewed`,
+   `/invitation_reviewed` and `/qa_reviewed` (which also proves cold start worked), and
+   `GET /health` should return OK. Then exercise each workflow once with a real item.
+8. **Create the subscriptions** with `WebhookClient.subscribe` (one per route) and arrange for
+   them to be renewed; see "Not yet implemented" above.
+9. **Lists created from the schemas** (`ListClient.new_with_schema` / `ensure`) get a dropdown for
+   `minister_decision` on every Python version since `gds-idea-sharepoint` v0.3.0. Lists that
+   already exist are not changed.

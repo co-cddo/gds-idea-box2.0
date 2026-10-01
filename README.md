@@ -1,6 +1,9 @@
 # Box 2.0
 
-AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — a **pipeline** module that maps triage results to SharePoint list schemas, and the application's AWS Lambda **receiver** handlers for Microsoft Graph change notifications. SharePoint access and the webhook receiver framework come from the separate [`gds-idea-sharepoint`](https://github.com/co-cddo/gds-idea-pkg-sharepoint) package.
+> **Status: parked.** Nothing is currently deployed and nothing calls the Lambda handlers; the code is
+> kept so it can be redeployed. See "Redeploying" in [AGENTS.md](AGENTS.md).
+
+AI tools for private office workflows. Currently includes a **triage** module that processes ministerial correspondence — classifying documents, extracting structured data, triaging decisions, and drafting responses — a **pipeline** module that maps triage results to SharePoint list schemas, and the application's AWS Lambda **receiver** handlers for Microsoft Graph change notifications (currently not deployed). SharePoint access and the webhook receiver framework come from the separate [`gds-idea-sharepoint`](https://github.com/co-cddo/gds-idea-pkg-sharepoint) package.
 
 ## Installation
 
@@ -15,7 +18,7 @@ The extras are:
 
 ```bash
 pip install box2[pipeline]   # triage pipeline dependencies (pydantic-ai, pypdf, python-docx, pandas)
-pip install box2[receiver]   # everything the AWS Lambda needs: the pipeline plus the webhook receiver (FastAPI, Mangum)
+pip install box2[receiver]   # everything the Lambda handlers need: the pipeline plus the webhook receiver (FastAPI, Mangum)
 ```
 
 ## Development setup
@@ -128,7 +131,7 @@ src/box2/
     mappers.py                   # Triage models <-> SharePoint list fields
   receiver/                      # This application's webhook handlers (framework: gds_idea_sharepoint.receiver)
     route_handlers.py            # Business handlers (triage, QA, action extraction)
-    lambda_handler.py            # AWS Lambda entry point (Mangum)
+    lambda_handler.py            # AWS Lambda entry point (Mangum); not currently deployed
 tests/
   unit/
     triage/                      # unit tests for triage module
