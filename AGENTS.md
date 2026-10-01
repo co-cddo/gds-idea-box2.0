@@ -10,6 +10,11 @@ redaction, redrafting). Uses **pydantic-ai** agents on **AWS Bedrock** (Claude m
 
 Source layout: `src/box2/` (library code), `tests/unit/`, `tests/integration/`, `examples/`.
 
+SharePoint / Microsoft Graph access (`SharePointSession`, `ListClient`, `DocsClient`,
+`WebhookClient`, `generate_graph_schema`) lives in the separate `gds-idea-sharepoint` package
+(import `gds_idea_sharepoint`, repo `co-cddo/gds-idea-pkg-sharepoint`), installed from the GDS IDEA
+package index. Change it there, not here.
+
 ## Build and Run Commands
 
 All commands use `uv run`. Install dependencies first with `uv sync`.
@@ -42,9 +47,10 @@ AWS_PROFILE=bedrock-dev uv run pytest tests/integration/ -v
 uv run pytest -v
 ```
 
-CI runs lint, format check, and unit tests across Python 3.11-3.14. Integration tests
-are never run in CI (no AWS credentials). The CI also enforces a version bump in
-`pyproject.toml` before merging to `main`.
+CI runs lint, format check, and unit tests across Python 3.12-3.14. Integration tests
+are never run in CI (no AWS credentials). Versions are not set by hand: they come from git
+tags (hatch-vcs), and merging to `main` auto-tags a release (patch by default; label the PR
+`bump:minor` or `bump:major` to change the level).
 
 ## Code Style
 
@@ -190,7 +196,7 @@ uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv ru
 - **PII-first design** -- text is always redacted before being sent to LLMs.
 - **Async throughout** -- all LLM-calling functions are `async`.
 - **Deterministic where possible** -- e.g., submission replies use templates, not LLMs.
-- **Version bump required** -- every PR must increment the version in `pyproject.toml`.
+- **Versioning is automatic** -- do not edit a version in `pyproject.toml`. Releases are tagged on merge to `main`; use the `bump:minor` / `bump:major` PR labels to raise the level.
 
 ## Receiver v2 Design Plan (pending implementation)
 

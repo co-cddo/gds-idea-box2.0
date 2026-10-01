@@ -4,8 +4,7 @@ import logging
 from uuid import uuid4
 
 import pytest
-
-from box2.sharepoint import ListClient, SharePointSession
+from gds_idea_sharepoint import ListClient, SharePointSession
 
 logger = logging.getLogger(__name__)
 

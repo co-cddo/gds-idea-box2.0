@@ -33,12 +33,12 @@ Deployment:
 import logging
 import os
 
+from gds_idea_sharepoint import DocsClient, ListClient, SharePointSession
 from mangum import Mangum
 
 from box2.receiver import ReceiverConfig, WebhookRoute, create_app
 from box2.receiver.dedup import DynamoDedup
 from box2.receiver.route_handlers import make_file_upload_handler, make_list_review_handler, make_qa_review_handler
-from box2.sharepoint import DocsClient, ListClient, SharePointSession
 
 logger = logging.getLogger(__name__)
 

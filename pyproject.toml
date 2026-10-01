@@ -10,8 +10,8 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "azure-identity>=1.20.0",
     "boto3>=1.40.63",
+    "gds-idea-sharepoint>=0.1.0",
     "httpx>=0.28.0",
     "pydantic>=2.0.0",
     "python-dateutil>=2.9.0.post0",
@@ -34,6 +34,10 @@ receiver = [
 all = [
     "box2[pipeline,receiver]",
 ]
+
+[[tool.uv.index]]
+name = "gds-idea"
+url = "https://co-cddo.github.io/gds-idea-pypi/simple/"
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
